@@ -24,7 +24,7 @@ const run = async () => {
     const desktopBrand = await desktop.locator(".brand").textContent();
     const desktopLinks = await desktop.locator(".desktop-nav .nav-link").allTextContents();
     const desktopMenuVisible = await desktop.locator(".menu-button").isVisible();
-    if (desktopBrand !== "LifeOS v0.0.3") {
+    if (desktopBrand !== "LifeOS v0.0.4") {
       throw new Error(`Unexpected desktop brand: ${desktopBrand}`);
     }
     if (desktopLinks.join(", ") !== "Today, Schedules, Setting") {
@@ -45,8 +45,10 @@ const run = async () => {
     const mobileMenuVisible = await mobile.locator(".menu-button").isVisible();
     await mobile.locator(".menu-button").click();
     const drawerOpen = await mobile.locator(".drawer").evaluate((element) => element.classList.contains("is-open"));
-    const drawerLinks = await mobile.locator(".drawer-link").allTextContents();
-    if (mobileBrand !== "LifeOS v0.0.3") {
+    const drawerHeader = await mobile.locator(".drawer-brand").textContent();
+    const drawerVersion = await mobile.locator(".drawer-version").textContent();
+    const drawerLinks = await mobile.locator(".drawer-link-label").allTextContents();
+    if (mobileBrand !== "LifeOS v0.0.4") {
       throw new Error(`Unexpected mobile brand: ${mobileBrand}`);
     }
     if (mobileNavVisible) {
@@ -57,6 +59,9 @@ const run = async () => {
     }
     if (!drawerOpen) {
       throw new Error("Mobile drawer did not open.");
+    }
+    if (drawerHeader !== "LifeOS" || drawerVersion !== "v0.0.4") {
+      throw new Error(`Unexpected drawer header: ${drawerHeader} ${drawerVersion}`);
     }
     if (drawerLinks.join(", ") !== "Today, Schedules, Setting") {
       throw new Error(`Unexpected mobile drawer links: ${drawerLinks.join(", ")}`);

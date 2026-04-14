@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.0.3`
+- Current version: `v0.0.4`
 - Current production entry file: `public/index.html`
 - Static asset stylesheet: `public/styles/main.css`
 - Supporting pages: `public/schedules.html`, `public/setting.html`
@@ -35,15 +35,16 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.0.1`
 - `release/v0.0.2`
 - `release/v0.0.3`
+- `release/v0.0.4`
 - `release/v0.1.0`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.0.3`.
+- The navbar shows `LifeOS v0.0.4`.
 - The desktop navbar centers the links `Today`, `Schedules`, and `Setting`.
-- The mobile menu button opens a drawer with the same navigation items.
+- The mobile menu button opens a left-side navigation sheet with branded header content and the same navigation items.
 - Each page shows only its centered page title content.
 - Cloudflare Pages is configured to deploy from the `public` output directory.
 - The pushed `main` branch matches the intended production version.

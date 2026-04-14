@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.0.4
+
+- Improved the mobile navigation drawer into a branded left-side navigation sheet.
+- Increased mobile tap target sizes and strengthened the active navigation state.
+- Added drawer metadata and supporting copy for each mobile destination.
+- Improved drawer behavior with focus return, focus trapping, and close-on-link selection.
+
 ## v0.0.3
 
 - Reorganized the repository into clearer app, docs, and test directories.

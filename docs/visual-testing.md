@@ -21,5 +21,6 @@ npm run test:visual
 
 - Desktop shows the navbar brand and centered navigation links.
 - Mobile hides the desktop navigation and shows the menu button.
-- The drawer opens on mobile and lists `Today`, `Schedules`, and `Setting`.
+- The drawer opens on mobile as a branded left-side sheet.
+- The drawer lists `Today`, `Schedules`, and `Setting`.
 - The visible page title matches the selected page.
