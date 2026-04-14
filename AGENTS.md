@@ -15,6 +15,7 @@ Follow these principles for all work in this repository:
 - Add useful comments where intent or logic may not be immediately obvious.
 - Maintain a code hierarchy tree file in the repository so the structure of the codebase stays easy to visualize during development.
 - Prefer a simple structure that is easy to deploy and maintain.
+- Keep deployable site files under `public/`, project documentation under `docs/`, and automated checks under `tests/`.
 
 ### Versioning And Releases
 
@@ -35,6 +36,7 @@ Follow these principles for all work in this repository:
 ### Testing
 
 - Visually verify frontend behavior and user-facing flows when applicable.
+- Every release pass must include a browser-based visual check before the release is considered complete.
 - Prefer automated visual regression testing for frontend UI when practical, using repeatable screenshots across key viewport sizes.
 - Keep approved baseline images or equivalent visual references so future UI changes can be compared against known-good output.
 - Verify important UI text, layout alignment, and obvious overflow or rendering issues as part of visual testing.

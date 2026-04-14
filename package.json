@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "test:visual": "node tests/playwright/visual-check.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.59.1"
+  }
+}

@@ -9,15 +9,36 @@ Life OS/
 |-- AGENTS.md
 |-- CODEBASE_TREE.md
 |-- DEPLOYMENT.md
-|-- index.html
-|-- schedules.html
-|-- script.js
-|-- setting.html
-`-- styles.css
+|-- .gitignore
+|-- package-lock.json
+|-- package.json
+|-- docs/
+|   |-- release-notes.md
+|   `-- visual-testing.md
+|-- public/
+|   |-- assets/
+|   |   `-- images/
+|   |-- scripts/
+|   |   `-- navigation.js
+|   |-- styles/
+|   |   `-- main.css
+|   |-- index.html
+|   |-- schedules.html
+|   `-- setting.html
+|-- tests/
+|   |-- playwright/
+|   |   `-- visual-check.js
+|   `-- visual/
+|       |-- baselines/
+|       `-- screenshots/
+|           |-- visual-test-desktop-v0.0.2.png
+|           `-- visual-test-mobile-v0.0.2.png
+`-- tools/
 ```
 
 ## Notes
 
-- Keep the tree focused on code structure and key project files.
-- Prefer a simple top-down view that is easy to scan.
+- Keep the root focused on release, deployment, and package-level files.
+- Keep deployable site files under `public/`.
+- Keep automated checks and screenshot artifacts under `tests/`.
 - Update this file alongside meaningful structural changes.
