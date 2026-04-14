@@ -130,10 +130,10 @@ body.drawer-open .site-header {
 
 .menu-button span {
   display: block;
-  width: 18px;
+  width: 24px;
   height: 2px;
-  margin: 3px auto;
-  border-radius: 999px;
+  margin: 2px auto;
+  border-radius: 2px;
   background: currentColor;
 }
 

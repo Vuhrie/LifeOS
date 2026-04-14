@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.0.6
+
+- Refined the mobile menu trigger into a cleaner three-line `=`-style icon.
+- Tightened the hamburger spacing and made the bars more uniform for a more balanced appearance.
+
 ## v0.0.5
 
 - Fixed the mobile drawer layering so the sheet properly sits above the navbar and background content.
