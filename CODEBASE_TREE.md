@@ -13,14 +13,21 @@ Life OS/
 |-- package-lock.json
 |-- package.json
 |-- docs/
+|   |-- google-calendar-setup.md
 |   |-- release-notes.md
 |   `-- visual-testing.md
 |-- public/
 |   |-- assets/
 |   |   `-- images/
 |   |-- scripts/
+|   |   |-- calendar-client.js
+|   |   |-- calendar-ui.js
+|   |   |-- config.js
+|   |   |-- schedules-page.js
+|   |   |-- today-page.js
 |   |   `-- navigation.js
 |   |-- styles/
+|   |   |-- calendar.css
 |   |   `-- main.css
 |   |-- index.html
 |   |-- schedules.html
@@ -32,7 +39,9 @@ Life OS/
 |       |-- baselines/
 |       `-- screenshots/
 |           |-- visual-test-desktop-v0.0.2.png
-|           `-- visual-test-mobile-v0.0.2.png
+|           |-- visual-test-desktop-schedules-v0.1.0.png
+|           |-- visual-test-mobile-open-v0.1.0.png
+|           `-- visual-test-mobile-v0.1.0.png
 `-- tools/
 ```
 

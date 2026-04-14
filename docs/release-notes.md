@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.1.0
+
+- Added Google Calendar integration scaffolding using Google Identity Services and Calendar API readonly access.
+- Updated the `Today` page to show today-only events from Google Calendar after sign-in.
+- Updated the `Schedules` page to show grouped upcoming events with selectable 7/14/30-day ranges.
+- Added connect, refresh, and sign-out controls with clear loading/error/empty states.
+- Expanded visual testing to capture desktop `Today`, desktop `Schedules`, mobile closed state, and mobile drawer-open state with versioned artifacts.
+
 ## v0.0.7
 
 - Fixed the mobile menu trigger layout so the three bars stack vertically instead of rendering in a row.

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.0.7";
+const releaseVersion = "v0.1.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -25,6 +25,7 @@ const run = async () => {
     const desktopBrand = await desktop.locator(".brand").textContent();
     const desktopLinks = await desktop.locator(".desktop-nav .nav-link").allTextContents();
     const desktopMenuVisible = await desktop.locator(".menu-button").isVisible();
+    const todayTitle = await desktop.locator("#today-title").textContent();
     if (desktopBrand !== `LifeOS ${releaseVersion}`) {
       throw new Error(`Unexpected desktop brand: ${desktopBrand}`);
     }
@@ -33,6 +34,9 @@ const run = async () => {
     }
     if (desktopMenuVisible) {
       throw new Error("Mobile menu button should be hidden on desktop.");
+    }
+    if (todayTitle !== "Today") {
+      throw new Error(`Unexpected Today title: ${todayTitle}`);
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-current.png"),
@@ -43,12 +47,36 @@ const run = async () => {
       fullPage: true,
     });
 
+    await desktop.goto("http://127.0.0.1:4173/schedules.html", { waitUntil: "networkidle" });
+    const schedulesTitle = await desktop.locator("#schedules-title").textContent();
+    if (schedulesTitle !== "Schedules") {
+      throw new Error(`Unexpected Schedules title: ${schedulesTitle}`);
+    }
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, "visual-test-desktop-schedules-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-schedules-${releaseVersion}.png`),
+      fullPage: true,
+    });
+
     const mobile = await browser.newPage({ ...devices["iPhone 13"] });
     await mobile.goto("http://127.0.0.1:4173/index.html", { waitUntil: "networkidle" });
     const mobileBrand = await mobile.locator(".brand").textContent();
     const mobileNavVisible = await mobile.locator(".desktop-nav").isVisible();
     const mobileMenuVisible = await mobile.locator(".menu-button").isVisible();
+    const mobileMenuLines = await mobile.locator(".menu-button span").count();
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, "visual-test-mobile-current.png"),
+      fullPage: true,
+    });
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, `visual-test-mobile-${releaseVersion}.png`),
+      fullPage: true,
+    });
     await mobile.locator(".menu-button").click();
+    await wait(300);
     const drawerOpen = await mobile.locator(".drawer").evaluate((element) => element.classList.contains("is-open"));
     const drawerHeader = await mobile.locator(".drawer-brand").textContent();
     const drawerVersion = await mobile.locator(".drawer-version").textContent();
@@ -62,6 +90,9 @@ const run = async () => {
     if (!mobileMenuVisible) {
       throw new Error("Mobile menu button should be visible on mobile.");
     }
+    if (mobileMenuLines !== 3) {
+      throw new Error(`Mobile menu button should show three lines. Found: ${mobileMenuLines}`);
+    }
     if (!drawerOpen) {
       throw new Error("Mobile drawer did not open.");
     }
@@ -72,15 +103,15 @@ const run = async () => {
       throw new Error(`Unexpected mobile drawer links: ${drawerLinks.join(", ")}`);
     }
     const drawerBox = await mobile.locator(".drawer-panel").boundingBox();
-    if (!drawerBox || drawerBox.x > 1 || drawerBox.width < 280) {
+    if (!drawerBox || Math.abs(drawerBox.x) > 1 || drawerBox.width < 280) {
       throw new Error(`Unexpected mobile drawer panel geometry: ${JSON.stringify(drawerBox)}`);
     }
     await mobile.screenshot({
-      path: path.join(screenshotsDir, "visual-test-mobile-current.png"),
+      path: path.join(screenshotsDir, "visual-test-mobile-open-current.png"),
       fullPage: true,
     });
     await mobile.screenshot({
-      path: path.join(screenshotsDir, `visual-test-mobile-${releaseVersion}.png`),
+      path: path.join(screenshotsDir, `visual-test-mobile-open-${releaseVersion}.png`),
       fullPage: true,
     });
 

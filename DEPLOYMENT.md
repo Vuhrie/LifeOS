@@ -14,11 +14,11 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.0.7`
+- Current version: `v0.1.0`
 - Current production entry file: `public/index.html`
 - Static asset stylesheet: `public/styles/main.css`
 - Supporting pages: `public/schedules.html`, `public/setting.html`
-- Shared navigation script: `public/scripts/navigation.js`
+- Shared scripts: `public/scripts/navigation.js`, `public/scripts/calendar-client.js`, `public/scripts/calendar-ui.js`
 - Visual test entrypoint: `tests/playwright/visual-check.js`
 
 ### Cloudflare Pages Setup
@@ -45,10 +45,11 @@ This project is set up as a simple static site so it can be deployed directly wi
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.0.7`.
+- The navbar shows `LifeOS v0.1.0`.
 - The desktop navbar centers the links `Today`, `Schedules`, and `Setting`.
 - The mobile menu button opens a left-side navigation sheet with branded header content and the same navigation items.
-- Each page shows only its centered page title content.
+- `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.
+- `Schedules` shows the Google Calendar panel with selectable upcoming ranges.
 - Cloudflare Pages is configured to deploy from the `public` output directory.
 - The pushed `main` branch matches the intended production version.
 - A backup release branch exists before each new production update after the initial release.
