@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.0.7
+
+- Fixed the mobile menu trigger layout so the three bars stack vertically instead of rendering in a row.
+- Preserved the cleaner equal-width `=`-style appearance while making the hamburger icon read correctly at a glance.
+
 ## v0.0.6
 
 - Refined the mobile menu trigger into a cleaner three-line `=`-style icon.
