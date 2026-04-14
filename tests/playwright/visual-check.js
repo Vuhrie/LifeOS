@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.1.1";
+const releaseVersion = "v0.2.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -26,6 +26,7 @@ const run = async () => {
     const desktopLinks = await desktop.locator(".desktop-nav .nav-link").allTextContents();
     const desktopMenuVisible = await desktop.locator(".menu-button").isVisible();
     const todayTitle = await desktop.locator("#today-title").textContent();
+    const todayStatus = await desktop.locator("#calendar-status").textContent();
     if (desktopBrand !== `LifeOS ${releaseVersion}`) {
       throw new Error(`Unexpected desktop brand: ${desktopBrand}`);
     }
@@ -38,6 +39,9 @@ const run = async () => {
     if (todayTitle !== "Today") {
       throw new Error(`Unexpected Today title: ${todayTitle}`);
     }
+    if (!todayStatus?.includes("Connect your Google account")) {
+      throw new Error(`Unexpected Today status on load: ${todayStatus}`);
+    }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-current.png"),
       fullPage: true,
@@ -49,8 +53,12 @@ const run = async () => {
 
     await desktop.goto("http://127.0.0.1:4173/schedules.html", { waitUntil: "networkidle" });
     const schedulesTitle = await desktop.locator("#schedules-title").textContent();
+    const schedulesStatus = await desktop.locator("#calendar-status").textContent();
     if (schedulesTitle !== "Schedules") {
       throw new Error(`Unexpected Schedules title: ${schedulesTitle}`);
+    }
+    if (!schedulesStatus?.includes("Connect your Google account")) {
+      throw new Error(`Unexpected Schedules status on load: ${schedulesStatus}`);
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-schedules-current.png"),

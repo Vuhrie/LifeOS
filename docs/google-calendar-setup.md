@@ -37,6 +37,7 @@ window.LIFEOS_CALENDAR_CONFIG = {
 ## 4. Validate
 
 1. Open `Today` or `Schedules`.
-2. Click **Connect Google**.
-3. Grant readonly calendar access.
-4. Confirm events load correctly.
+2. Confirm there is no sign-in popup on initial page load.
+3. Click **Connect Google** to start interactive sign-in.
+4. Grant readonly calendar access.
+5. Confirm events load correctly.

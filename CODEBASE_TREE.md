@@ -29,7 +29,8 @@ Life OS/
 |   |   `-- navigation.js
 |   |-- styles/
 |   |   |-- calendar.css
-|   |   `-- main.css
+|   |   |-- main.css
+|   |   `-- theme.css
 |   |-- index.html
 |   |-- schedules.html
 |   `-- setting.html
@@ -40,9 +41,9 @@ Life OS/
 |       |-- baselines/
 |       `-- screenshots/
 |           |-- visual-test-desktop-v0.0.2.png
-|           |-- visual-test-desktop-schedules-v0.1.1.png
-|           |-- visual-test-mobile-open-v0.1.1.png
-|           `-- visual-test-mobile-v0.1.1.png
+|           |-- visual-test-desktop-schedules-v0.2.0.png
+|           |-- visual-test-mobile-open-v0.2.0.png
+|           `-- visual-test-mobile-v0.2.0.png
 `-- tools/
 ```
 

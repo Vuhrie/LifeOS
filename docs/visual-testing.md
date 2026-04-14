@@ -28,6 +28,7 @@ npm run test:visual
 - Mobile menu button renders as three horizontal lines.
 - The drawer opens on mobile as a branded left-side sheet.
 - The drawer lists `Today`, `Schedules`, and `Setting`.
+- Loading either page should not trigger a Google sign-in popup until `Connect Google` is clicked.
 - Versioned screenshot artifacts are generated for desktop, desktop schedules, mobile closed, and mobile drawer-open states.
 - Generated screenshots are also reviewed through Codex image-based inspection.
 - Release screenshots are saved with both `current` and versioned filenames.

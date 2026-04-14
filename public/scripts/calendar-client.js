@@ -183,15 +183,9 @@ export const createCalendarClient = ({ onStateChange }) => {
       emit();
       return true;
     }
-
-    try {
-      await requestToken("", true);
-      return true;
-    } catch {
-      clearSession();
-      emit();
-      return false;
-    }
+    clearSession();
+    emit();
+    return false;
   };
 
   const ensureSignedIn = async () => {

@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.2.0
+
+- Updated auth bootstrap behavior so Google sign-in popup no longer opens automatically on page load.
+- Kept session restore for valid saved tokens, so events can still auto-load without interactive sign-in.
+- Redesigned the UI with a Frutiger Aero-inspired glass and ocean visual theme for desktop and mobile.
+- Preserved existing navigation and Google Calendar flows while refreshing visual styling.
+
 ## v0.1.1
 
 - Added auth session persistence so Google Calendar access can be reused across page reloads for about one hour.

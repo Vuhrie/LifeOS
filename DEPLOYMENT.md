@@ -14,11 +14,11 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.1.1`
+- Current version: `v0.2.0`
 - Current production entry file: `public/index.html`
-- Static asset stylesheet: `public/styles/main.css`
+- Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/calendar.css`
 - Supporting pages: `public/schedules.html`, `public/setting.html`
-- Shared scripts: `public/scripts/navigation.js`, `public/scripts/calendar-client.js`, `public/scripts/calendar-ui.js`
+- Shared scripts: `public/scripts/navigation.js`, `public/scripts/auth-session.js`, `public/scripts/calendar-client.js`, `public/scripts/calendar-ui.js`
 - Visual test entrypoint: `tests/playwright/visual-check.js`
 
 ### Cloudflare Pages Setup
@@ -41,16 +41,18 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.0.7`
 - `release/v0.1.0`
 - `release/v0.1.1`
+- `release/v0.2.0`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.1.1`.
+- The navbar shows `LifeOS v0.2.0`.
 - The desktop navbar centers the links `Today`, `Schedules`, and `Setting`.
 - The mobile menu button opens a left-side navigation sheet with branded header content and the same navigation items.
 - `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.
 - `Schedules` shows the Google Calendar panel with selectable upcoming ranges.
+- Google sign-in popup opens only when the user explicitly clicks `Connect Google`.
 - Cloudflare Pages is configured to deploy from the `public` output directory.
 - The pushed `main` branch matches the intended production version.
 - A backup release branch exists before each new production update after the initial release.
