@@ -10,6 +10,9 @@ Life OS/
 |-- CODEBASE_TREE.md
 |-- DEPLOYMENT.md
 |-- index.html
+|-- schedules.html
+|-- script.js
+|-- setting.html
 `-- styles.css
 ```
 

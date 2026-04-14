@@ -18,6 +18,7 @@ Follow these principles for all work in this repository:
 
 ### Versioning And Releases
 
+- Treat every requested implementation task as a release pass by default unless explicitly stated otherwise.
 - Use semantic-style version naming such as `v0.0.1`, `v0.1.0`, and `v1.0.0`.
 - Before promoting a new version to production, create a backup branch from the current production state using the format `release/vX.Y.Z`.
 - Treat each `release/vX.Y.Z` branch as a restore point for the version currently or previously deployed.
@@ -34,5 +35,8 @@ Follow these principles for all work in this repository:
 ### Testing
 
 - Visually verify frontend behavior and user-facing flows when applicable.
+- Prefer automated visual regression testing for frontend UI when practical, using repeatable screenshots across key viewport sizes.
+- Keep approved baseline images or equivalent visual references so future UI changes can be compared against known-good output.
+- Verify important UI text, layout alignment, and obvious overflow or rendering issues as part of visual testing.
 - Test backend logic and execution paths to confirm correctness.
 - Treat both usability and functional reliability as part of done.

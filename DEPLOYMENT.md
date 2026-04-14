@@ -12,11 +12,13 @@ This project is set up as a simple static site so it can be deployed directly wi
 4. Push the approved production-ready changes to `main`.
 5. Let Cloudflare Pages deploy `main` as the production site.
 
-### Initial Release Notes
+### Current Release Notes
 
-- Current version: `v0.0.1`
+- Current version: `v0.0.2`
 - Current production entry file: `index.html`
 - Static asset stylesheet: `styles.css`
+- Supporting pages: `schedules.html`, `setting.html`
+- Shared navigation script: `script.js`
 
 ### Cloudflare Pages Setup
 
@@ -30,12 +32,16 @@ This project is set up as a simple static site so it can be deployed directly wi
 ### Release Branch Examples
 
 - `release/v0.0.1`
+- `release/v0.0.2`
 - `release/v0.1.0`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The text `Life OS v0.0.1` appears centered on the page.
+- The navbar shows `LifeOS v0.0.2`.
+- The desktop navbar centers the links `Today`, `Schedules`, and `Setting`.
+- The mobile menu button opens a drawer with the same navigation items.
+- Each page shows only its centered page title content.
 - The pushed `main` branch matches the intended production version.
 - A backup release branch exists before each new production update after the initial release.
