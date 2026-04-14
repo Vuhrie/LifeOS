@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.3.0
+
+- Added a new `Planner` page and navigation entry across desktop and mobile.
+- Added a deterministic planning engine with weekly minor goals, optional tasks, manual availability rules, and repeatable scoring.
+- Added draft generation with unscheduled reasoning and overlap warning preview.
+- Added explicit commit flow for writing planner draft events to Google Calendar with event upsert behavior.
+- Upgraded planner Google integration to write-capable scope while preserving explicit user-triggered auth.
+
 ## v0.2.0
 
 - Updated auth bootstrap behavior so Google sign-in popup no longer opens automatically on page load.

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.2.0";
+const releaseVersion = "v0.3.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -30,7 +30,7 @@ const run = async () => {
     if (desktopBrand !== `LifeOS ${releaseVersion}`) {
       throw new Error(`Unexpected desktop brand: ${desktopBrand}`);
     }
-    if (desktopLinks.join(", ") !== "Today, Schedules, Setting") {
+    if (desktopLinks.join(", ") !== "Today, Schedules, Planner, Setting") {
       throw new Error(`Unexpected desktop links: ${desktopLinks.join(", ")}`);
     }
     if (desktopMenuVisible) {
@@ -66,6 +66,20 @@ const run = async () => {
     });
     await desktop.screenshot({
       path: path.join(screenshotsDir, `visual-test-desktop-schedules-${releaseVersion}.png`),
+      fullPage: true,
+    });
+
+    await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    const plannerTitle = await desktop.locator("#planner-title").textContent();
+    if (plannerTitle !== "Planner") {
+      throw new Error(`Unexpected Planner title: ${plannerTitle}`);
+    }
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, "visual-test-desktop-planner-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-planner-${releaseVersion}.png`),
       fullPage: true,
     });
 
@@ -107,7 +121,7 @@ const run = async () => {
     if (drawerHeader !== "LifeOS" || drawerVersion !== releaseVersion) {
       throw new Error(`Unexpected drawer header: ${drawerHeader} ${drawerVersion}`);
     }
-    if (drawerLinks.join(", ") !== "Today, Schedules, Setting") {
+    if (drawerLinks.join(", ") !== "Today, Schedules, Planner, Setting") {
       throw new Error(`Unexpected mobile drawer links: ${drawerLinks.join(", ")}`);
     }
     const drawerBox = await mobile.locator(".drawer-panel").boundingBox();
@@ -120,6 +134,16 @@ const run = async () => {
     });
     await mobile.screenshot({
       path: path.join(screenshotsDir, `visual-test-mobile-open-${releaseVersion}.png`),
+      fullPage: true,
+    });
+
+    await mobile.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, "visual-test-mobile-planner-current.png"),
+      fullPage: true,
+    });
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, `visual-test-mobile-planner-${releaseVersion}.png`),
       fullPage: true,
     });
 

@@ -14,11 +14,11 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.2.0`
+- Current version: `v0.3.0`
 - Current production entry file: `public/index.html`
-- Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/calendar.css`
-- Supporting pages: `public/schedules.html`, `public/setting.html`
-- Shared scripts: `public/scripts/navigation.js`, `public/scripts/auth-session.js`, `public/scripts/calendar-client.js`, `public/scripts/calendar-ui.js`
+- Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/calendar.css`, `public/styles/planner.css`
+- Supporting pages: `public/schedules.html`, `public/planner.html`, `public/setting.html`
+- Shared scripts: `public/scripts/navigation.js`, `public/scripts/auth-session.js`, `public/scripts/calendar-client.js`, `public/scripts/calendar-ui.js`, `public/scripts/planner-storage.js`, `public/scripts/planner-engine.js`, `public/scripts/calendar-write-client.js`, `public/scripts/planner-page.js`
 - Visual test entrypoint: `tests/playwright/visual-check.js`
 
 ### Cloudflare Pages Setup
@@ -42,16 +42,18 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.1.0`
 - `release/v0.1.1`
 - `release/v0.2.0`
+- `release/v0.3.0`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.2.0`.
-- The desktop navbar centers the links `Today`, `Schedules`, and `Setting`.
-- The mobile menu button opens a left-side navigation sheet with branded header content and the same navigation items.
+- The navbar shows `LifeOS v0.3.0`.
+- The desktop navbar centers the links `Today`, `Schedules`, `Planner`, and `Setting`.
+- The mobile menu button opens a left-side navigation sheet with the same navigation items.
 - `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.
 - `Schedules` shows the Google Calendar panel with selectable upcoming ranges.
+- `Planner` supports deterministic draft generation and explicit commit to Google Calendar.
 - Google sign-in popup opens only when the user explicitly clicks `Connect Google`.
 - Cloudflare Pages is configured to deploy from the `public` output directory.
 - The pushed `main` branch matches the intended production version.

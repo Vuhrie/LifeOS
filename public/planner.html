@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planner | LifeOS v0.3.0</title>
+  <link rel="stylesheet" href="styles/theme.css">
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/planner.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navbar" aria-label="Primary">
+      <a class="brand" href="index.html">LifeOS v0.3.0</a>
+      <div class="desktop-nav">
+        <a class="nav-link" href="index.html">Today</a>
+        <a class="nav-link" href="schedules.html">Schedules</a>
+        <a class="nav-link is-active" href="planner.html" aria-current="page">Planner</a>
+        <a class="nav-link" href="setting.html">Setting</a>
+      </div>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-drawer" aria-haspopup="dialog" aria-label="Open navigation menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </nav>
+  </header>
+
+  <aside class="drawer" id="mobile-drawer" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div class="drawer-brand-block">
+          <p class="drawer-eyebrow">Navigation</p>
+          <div>
+            <p class="drawer-brand">LifeOS</p>
+            <p class="drawer-version">v0.3.0</p>
+          </div>
+        </div>
+        <button class="drawer-close" type="button" aria-label="Close navigation menu">
+          <span aria-hidden="true">X</span>
+        </button>
+      </div>
+      <div class="drawer-section">
+        <p class="drawer-section-title" id="drawer-title">Go To</p>
+        <div class="drawer-links">
+          <a class="drawer-link" href="index.html">
+            <span class="drawer-link-label">Today</span>
+            <span class="drawer-link-copy">Focus on the current day</span>
+          </a>
+          <a class="drawer-link" href="schedules.html">
+            <span class="drawer-link-label">Schedules</span>
+            <span class="drawer-link-copy">Review upcoming plans</span>
+          </a>
+          <a class="drawer-link is-active" href="planner.html" aria-current="page">
+            <span class="drawer-link-label">Planner</span>
+            <span class="drawer-link-copy">Build and commit weekly plans</span>
+          </a>
+          <a class="drawer-link" href="setting.html">
+            <span class="drawer-link-label">Setting</span>
+            <span class="drawer-link-copy">Adjust workspace preferences</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="page-content page-content--planner">
+    <section class="planner-shell" aria-labelledby="planner-title">
+      <header class="planner-head">
+        <div>
+          <p class="planner-eyebrow">Deterministic Engine</p>
+          <h1 id="planner-title">Planner</h1>
+          <p class="planner-subtitle">Define your weekly direction, generate a deterministic draft, then commit to Google Calendar.</p>
+        </div>
+        <div class="planner-actions">
+          <button class="action-button action-button--primary" type="button" id="connect-google">Connect Google</button>
+          <button class="action-button" type="button" id="generate-draft">Generate Draft</button>
+          <button class="action-button action-button--danger" type="button" id="clear-draft">Clear Draft</button>
+        </div>
+      </header>
+
+      <section class="planner-status" id="planner-status" aria-live="polite">
+        Complete goal setup and weekly inputs, then generate your draft schedule.
+      </section>
+
+      <section class="planner-grid">
+        <article class="planner-card">
+          <h2>Goal Setup</h2>
+          <label>Goal
+            <input id="goal-title" type="text" maxlength="160" placeholder="Example: Complete portfolio website launch">
+          </label>
+          <div class="inline-fields">
+            <label>Deadline
+              <input id="goal-deadline" type="date">
+            </label>
+            <label>Priority
+              <select id="goal-priority">
+                <option value="5">5 - Critical</option>
+                <option value="4">4 - High</option>
+                <option value="3" selected>3 - Normal</option>
+                <option value="2">2 - Low</option>
+                <option value="1">1 - Optional</option>
+              </select>
+            </label>
+          </div>
+          <label>Weekly Hours
+            <input id="goal-weekly-hours" type="number" min="1" max="80" step="1" value="8">
+          </label>
+        </article>
+
+        <article class="planner-card">
+          <h2>Weekly Minor Goals</h2>
+          <div class="inline-fields">
+            <label>Title
+              <input id="minor-goal-title" type="text" maxlength="120" placeholder="Example: Finish chapter 3 labs">
+            </label>
+            <label>Target Hours
+              <input id="minor-goal-hours" type="number" min="1" max="40" step="1" value="2">
+            </label>
+          </div>
+          <button class="action-button" type="button" id="add-minor-goal">Add Minor Goal</button>
+          <ul class="list-block" id="minor-goals-list"></ul>
+        </article>
+
+        <article class="planner-card">
+          <h2>Optional Tasks</h2>
+          <div class="inline-fields">
+            <label>Task
+              <input id="task-title" type="text" maxlength="120" placeholder="Example: Build login page skeleton">
+            </label>
+            <label>Estimate (mins)
+              <input id="task-estimate" type="number" min="30" max="480" step="15" value="90">
+            </label>
+          </div>
+          <div class="inline-fields">
+            <label>Priority
+              <select id="task-priority">
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3" selected>3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </label>
+            <label>Energy
+              <select id="task-energy">
+                <option value="deep" selected>Deep</option>
+                <option value="light">Light</option>
+              </select>
+            </label>
+          </div>
+          <button class="action-button" type="button" id="add-task">Add Task</button>
+          <ul class="list-block" id="tasks-list"></ul>
+        </article>
+
+        <article class="planner-card">
+          <h2>Manual Availability Rules</h2>
+          <p class="planner-note">Set one availability window per day. Scheduler uses only these windows for slot generation.</p>
+          <div id="availability-grid" class="availability-grid"></div>
+        </article>
+      </section>
+
+      <section class="planner-output">
+        <article class="planner-card">
+          <h2>Draft Schedule</h2>
+          <ul class="list-block" id="draft-list"></ul>
+        </article>
+        <article class="planner-card">
+          <h2>Unscheduled Items</h2>
+          <ul class="list-block" id="unscheduled-list"></ul>
+        </article>
+        <article class="planner-card">
+          <h2>Conflict Warnings</h2>
+          <ul class="list-block" id="warnings-list"></ul>
+          <button class="action-button action-button--primary" type="button" id="commit-draft">Commit Draft To Calendar</button>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script src="scripts/config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="scripts/navigation.js"></script>
+  <script type="module" src="scripts/planner-page.js"></script>
+</body>
+</html>

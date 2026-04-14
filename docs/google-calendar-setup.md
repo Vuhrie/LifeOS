@@ -1,6 +1,7 @@
 # Google Calendar Setup
 
-This app uses Google Identity Services (OAuth token model) and the Google Calendar REST API with readonly access.
+This app uses Google Identity Services (OAuth token model) and the Google Calendar REST API.
+Today/Schedules use readonly access, while Planner commit operations require write-capable access.
 
 ## 1. Create OAuth Client
 
@@ -34,6 +35,8 @@ window.LIFEOS_CALENDAR_CONFIG = {
 `calendarId` can remain `primary` or be set to a specific Google Calendar ID.
 `authPersistence` can be `local` (persist across tabs/reloads) or `session` (browser-tab session only).
 
+When prompted by Planner, approve write-capable calendar permission so commits can create or update events.
+
 ## 4. Validate
 
 1. Open `Today` or `Schedules`.
@@ -41,3 +44,4 @@ window.LIFEOS_CALENDAR_CONFIG = {
 3. Click **Connect Google** to start interactive sign-in.
 4. Grant readonly calendar access.
 5. Confirm events load correctly.
+6. On Planner, generate a draft and confirm commit writes events to Google Calendar.

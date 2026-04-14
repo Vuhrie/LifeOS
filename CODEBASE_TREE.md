@@ -21,17 +21,23 @@ Life OS/
 |   |   `-- images/
 |   |-- scripts/
 |   |   |-- auth-session.js
+|   |   |-- calendar-write-client.js
 |   |   |-- calendar-client.js
 |   |   |-- calendar-ui.js
 |   |   |-- config.js
+|   |   |-- planner-engine.js
+|   |   |-- planner-page.js
+|   |   |-- planner-storage.js
 |   |   |-- schedules-page.js
 |   |   |-- today-page.js
 |   |   `-- navigation.js
 |   |-- styles/
 |   |   |-- calendar.css
 |   |   |-- main.css
+|   |   |-- planner.css
 |   |   `-- theme.css
 |   |-- index.html
+|   |-- planner.html
 |   |-- schedules.html
 |   `-- setting.html
 |-- tests/
@@ -41,9 +47,11 @@ Life OS/
 |       |-- baselines/
 |       `-- screenshots/
 |           |-- visual-test-desktop-v0.0.2.png
-|           |-- visual-test-desktop-schedules-v0.2.0.png
-|           |-- visual-test-mobile-open-v0.2.0.png
-|           `-- visual-test-mobile-v0.2.0.png
+|           |-- visual-test-desktop-schedules-v0.3.0.png
+|           |-- visual-test-desktop-planner-v0.3.0.png
+|           |-- visual-test-mobile-open-v0.3.0.png
+|           |-- visual-test-mobile-planner-v0.3.0.png
+|           `-- visual-test-mobile-v0.3.0.png
 `-- tools/
 ```
 
