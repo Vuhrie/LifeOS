@@ -25,10 +25,14 @@ Update `public/scripts/config.js`:
 window.LIFEOS_CALENDAR_CONFIG = {
   googleClientId: "YOUR_CLIENT_ID.apps.googleusercontent.com",
   calendarId: "primary",
+  authPersistence: "local",
+  authDurationSeconds: 3600,
+  refreshSkewSeconds: 120,
 };
 ```
 
 `calendarId` can remain `primary` or be set to a specific Google Calendar ID.
+`authPersistence` can be `local` (persist across tabs/reloads) or `session` (browser-tab session only).
 
 ## 4. Validate
 

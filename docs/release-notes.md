@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.1.1
+
+- Added auth session persistence so Google Calendar access can be reused across page reloads for about one hour.
+- Added automatic auth bootstrap and silent sign-in attempt on page load for both `Today` and `Schedules`.
+- Added configurable auth session settings in `public/scripts/config.js` (`authPersistence`, `authDurationSeconds`, `refreshSkewSeconds`).
+- Kept sign-out as a full session clear by removing stored token state from browser storage.
+
 ## v0.1.0
 
 - Added Google Calendar integration scaffolding using Google Identity Services and Calendar API readonly access.

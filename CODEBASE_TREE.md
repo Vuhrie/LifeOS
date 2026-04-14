@@ -20,6 +20,7 @@ Life OS/
 |   |-- assets/
 |   |   `-- images/
 |   |-- scripts/
+|   |   |-- auth-session.js
 |   |   |-- calendar-client.js
 |   |   |-- calendar-ui.js
 |   |   |-- config.js
@@ -39,9 +40,9 @@ Life OS/
 |       |-- baselines/
 |       `-- screenshots/
 |           |-- visual-test-desktop-v0.0.2.png
-|           |-- visual-test-desktop-schedules-v0.1.0.png
-|           |-- visual-test-mobile-open-v0.1.0.png
-|           `-- visual-test-mobile-v0.1.0.png
+|           |-- visual-test-desktop-schedules-v0.1.1.png
+|           |-- visual-test-mobile-open-v0.1.1.png
+|           `-- visual-test-mobile-v0.1.1.png
 `-- tools/
 ```
 

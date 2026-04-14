@@ -1,3 +1,10 @@
+import {
+  clearPersistedSession,
+  getPersistenceConfig,
+  loadPersistedSession,
+  savePersistedSession,
+} from "./auth-session.js";
+
 const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
 const CONFIG = window.LIFEOS_CALENDAR_CONFIG ?? {};
@@ -30,6 +37,7 @@ const waitForGoogleIdentity = async (timeoutMs = 8000) => {
 };
 
 export const createCalendarClient = ({ onStateChange }) => {
+  const persistence = getPersistenceConfig(CONFIG);
   const state = {
     isConfigured: typeof CONFIG.googleClientId === "string" && CONFIG.googleClientId.includes(".apps.googleusercontent.com"),
     isSignedIn: false,
@@ -38,6 +46,7 @@ export const createCalendarClient = ({ onStateChange }) => {
   };
 
   let accessToken = "";
+  let accessTokenExpiryMs = 0;
   let tokenClient = null;
 
   const emit = () => {
@@ -54,6 +63,57 @@ export const createCalendarClient = ({ onStateChange }) => {
   const setError = (errorMessage) => {
     state.error = errorMessage;
     emit();
+  };
+
+  const isTokenUsable = () => {
+    if (!accessToken || !accessTokenExpiryMs) {
+      return false;
+    }
+    const now = Date.now();
+    const refreshSkewMs = persistence.refreshSkewSeconds * 1000;
+    return accessTokenExpiryMs - now > refreshSkewMs;
+  };
+
+  const applyTokenResponse = (response) => {
+    if (!response || typeof response.access_token !== "string") {
+      throw new Error("No access token returned by Google.");
+    }
+    const expiresIn = Number(response.expires_in);
+    const fallbackExpiry = persistence.durationSeconds;
+    const expiresInSeconds = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : fallbackExpiry;
+    const expiresAt = Date.now() + expiresInSeconds * 1000;
+
+    accessToken = response.access_token;
+    accessTokenExpiryMs = expiresAt;
+    state.isSignedIn = true;
+
+    savePersistedSession(persistence.mode, {
+      accessToken,
+      expiresAt,
+    });
+  };
+
+  const clearSession = () => {
+    accessToken = "";
+    accessTokenExpiryMs = 0;
+    state.isSignedIn = false;
+    clearPersistedSession();
+  };
+
+  const restoreSessionIfValid = () => {
+    const session = loadPersistedSession(persistence.mode);
+    if (!session) {
+      return false;
+    }
+    if (Date.now() >= session.expiresAt) {
+      clearPersistedSession();
+      return false;
+    }
+
+    accessToken = session.accessToken;
+    accessTokenExpiryMs = session.expiresAt;
+    state.isSignedIn = true;
+    return true;
   };
 
   const ensureTokenClient = async () => {
@@ -81,7 +141,7 @@ export const createCalendarClient = ({ onStateChange }) => {
     return tokenClient;
   };
 
-  const requestToken = async (prompt) => {
+  const requestToken = async (prompt, silent = false) => {
     const client = await ensureTokenClient();
     setLoading(true);
     setError("");
@@ -89,24 +149,53 @@ export const createCalendarClient = ({ onStateChange }) => {
       client.callback = (response) => {
         setLoading(false);
         if (!response || response.error || !response.access_token) {
-          state.isSignedIn = false;
+          clearSession();
           emit();
-          reject(new Error(response?.error || "No access token returned by Google."));
+          const fallbackError = silent
+            ? "Silent sign-in not available. Please use Connect Google."
+            : "Google sign-in failed. Please try again.";
+          reject(new Error(response?.error || fallbackError));
           return;
         }
 
-        accessToken = response.access_token;
-        state.isSignedIn = true;
-        emit();
-        resolve(accessToken);
+        try {
+          applyTokenResponse(response);
+          emit();
+          resolve(accessToken);
+        } catch (error) {
+          clearSession();
+          emit();
+          reject(error);
+        }
       };
 
       client.requestAccessToken({ prompt });
     });
   };
 
+  const bootstrapAuth = async () => {
+    if (!state.isConfigured) {
+      emit();
+      return false;
+    }
+
+    if (restoreSessionIfValid() && isTokenUsable()) {
+      emit();
+      return true;
+    }
+
+    try {
+      await requestToken("", true);
+      return true;
+    } catch {
+      clearSession();
+      emit();
+      return false;
+    }
+  };
+
   const ensureSignedIn = async () => {
-    if (accessToken) {
+    if (isTokenUsable()) {
       return accessToken;
     }
     return requestToken("consent");
@@ -128,9 +217,8 @@ export const createCalendarClient = ({ onStateChange }) => {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        accessToken = "";
-        state.isSignedIn = false;
+      if (response.status === 401 || response.status === 403) {
+        clearSession();
         emit();
       }
       const errorBody = await response.text();
@@ -166,14 +254,14 @@ export const createCalendarClient = ({ onStateChange }) => {
     if (accessToken && window.google?.accounts?.oauth2?.revoke) {
       window.google.accounts.oauth2.revoke(accessToken);
     }
-    accessToken = "";
-    state.isSignedIn = false;
+    clearSession();
     emit();
   };
 
   emit();
 
   return {
+    bootstrapAuth,
     connect,
     signOut,
     fetchTodayEvents,

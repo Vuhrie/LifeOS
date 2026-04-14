@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.1.0`
+- Current version: `v0.1.1`
 - Current production entry file: `public/index.html`
 - Static asset stylesheet: `public/styles/main.css`
 - Supporting pages: `public/schedules.html`, `public/setting.html`
@@ -40,12 +40,13 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.0.6`
 - `release/v0.0.7`
 - `release/v0.1.0`
+- `release/v0.1.1`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.1.0`.
+- The navbar shows `LifeOS v0.1.1`.
 - The desktop navbar centers the links `Today`, `Schedules`, and `Setting`.
 - The mobile menu button opens a left-side navigation sheet with branded header content and the same navigation items.
 - `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.

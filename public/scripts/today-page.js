@@ -86,4 +86,12 @@ signOutButton.addEventListener("click", () => {
   setStatus("Signed out from Google Calendar for this session.", "neutral");
 });
 
-updateControls(calendar.getState());
+const initializePage = async () => {
+  updateControls(calendar.getState());
+  const restored = await calendar.bootstrapAuth();
+  if (restored) {
+    await loadTodayEvents();
+  }
+};
+
+initializePage();
