@@ -37,8 +37,12 @@ Follow these principles for all work in this repository:
 
 - Visually verify frontend behavior and user-facing flows when applicable.
 - Every release pass must include a browser-based visual check before the release is considered complete.
+- Every release pass with visual testing must also include image-based review of the generated screenshots through Codex image analysis.
+- Release visual testing must explicitly cover both desktop and mobile viewports.
 - Prefer automated visual regression testing for frontend UI when practical, using repeatable screenshots across key viewport sizes.
 - Keep approved baseline images or equivalent visual references so future UI changes can be compared against known-good output.
+- Release-pass screenshots must be versioned by release number, not just saved as `current`.
+- `current` screenshots are temporary working outputs, while versioned screenshots are the permanent release artifacts.
 - Verify important UI text, layout alignment, and obvious overflow or rendering issues as part of visual testing.
 - Test backend logic and execution paths to confirm correctness.
 - Treat both usability and functional reliability as part of done.

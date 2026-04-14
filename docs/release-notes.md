@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.0.5
+
+- Fixed the mobile drawer layering so the sheet properly sits above the navbar and background content.
+- Increased the scrim strength and softened the background while the mobile sheet is open.
+- Tightened drawer spacing so navigation content sits more comfortably inside the sheet.
+- Updated visual testing to save both temporary `current` screenshots and versioned release screenshots.
+
 ## v0.0.4
 
 - Improved the mobile navigation drawer into a branded left-side navigation sheet.

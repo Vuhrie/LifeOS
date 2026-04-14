@@ -10,6 +10,8 @@ Every release pass must include a browser-based visual check before the release 
 - Serve the `public/` directory locally.
 - Check desktop and mobile layouts against expected navigation behavior.
 - Save generated screenshots under `tests/visual/screenshots/`.
+- Review the generated screenshots through Codex image analysis before considering the release visually complete.
+- Save both temporary `current` screenshots and versioned screenshots tied to the release number.
 
 ## Current Command
 
@@ -24,3 +26,5 @@ npm run test:visual
 - The drawer opens on mobile as a branded left-side sheet.
 - The drawer lists `Today`, `Schedules`, and `Setting`.
 - The visible page title matches the selected page.
+- Generated screenshots are also reviewed through Codex image-based inspection.
+- Release screenshots are saved with both `current` and versioned filenames.

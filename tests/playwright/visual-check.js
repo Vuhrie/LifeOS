@@ -5,6 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
+const releaseVersion = "v0.0.5";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -24,7 +25,7 @@ const run = async () => {
     const desktopBrand = await desktop.locator(".brand").textContent();
     const desktopLinks = await desktop.locator(".desktop-nav .nav-link").allTextContents();
     const desktopMenuVisible = await desktop.locator(".menu-button").isVisible();
-    if (desktopBrand !== "LifeOS v0.0.4") {
+    if (desktopBrand !== `LifeOS ${releaseVersion}`) {
       throw new Error(`Unexpected desktop brand: ${desktopBrand}`);
     }
     if (desktopLinks.join(", ") !== "Today, Schedules, Setting") {
@@ -35,6 +36,10 @@ const run = async () => {
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-${releaseVersion}.png`),
       fullPage: true,
     });
 
@@ -48,7 +53,7 @@ const run = async () => {
     const drawerHeader = await mobile.locator(".drawer-brand").textContent();
     const drawerVersion = await mobile.locator(".drawer-version").textContent();
     const drawerLinks = await mobile.locator(".drawer-link-label").allTextContents();
-    if (mobileBrand !== "LifeOS v0.0.4") {
+    if (mobileBrand !== `LifeOS ${releaseVersion}`) {
       throw new Error(`Unexpected mobile brand: ${mobileBrand}`);
     }
     if (mobileNavVisible) {
@@ -60,14 +65,22 @@ const run = async () => {
     if (!drawerOpen) {
       throw new Error("Mobile drawer did not open.");
     }
-    if (drawerHeader !== "LifeOS" || drawerVersion !== "v0.0.4") {
+    if (drawerHeader !== "LifeOS" || drawerVersion !== releaseVersion) {
       throw new Error(`Unexpected drawer header: ${drawerHeader} ${drawerVersion}`);
     }
     if (drawerLinks.join(", ") !== "Today, Schedules, Setting") {
       throw new Error(`Unexpected mobile drawer links: ${drawerLinks.join(", ")}`);
     }
+    const drawerBox = await mobile.locator(".drawer-panel").boundingBox();
+    if (!drawerBox || drawerBox.x > 1 || drawerBox.width < 280) {
+      throw new Error(`Unexpected mobile drawer panel geometry: ${JSON.stringify(drawerBox)}`);
+    }
     await mobile.screenshot({
       path: path.join(screenshotsDir, "visual-test-mobile-current.png"),
+      fullPage: true,
+    });
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, `visual-test-mobile-${releaseVersion}.png`),
       fullPage: true,
     });
 

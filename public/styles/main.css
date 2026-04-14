@@ -7,10 +7,10 @@
   --text-color: #10233f;
   --muted-text: #4f637d;
   --accent-color: #0d5bd7;
-  --drawer-overlay: rgba(10, 22, 43, 0.38);
+  --drawer-overlay: rgba(10, 22, 43, 0.52);
   --drawer-surface: #fbfcff;
   --drawer-active: linear-gradient(135deg, rgba(13, 91, 215, 0.18), rgba(13, 91, 215, 0.08));
-  --drawer-shadow: 16px 0 48px rgba(16, 35, 63, 0.16);
+  --drawer-shadow: 18px 0 52px rgba(16, 35, 63, 0.22);
 }
 
 * {
@@ -29,6 +29,11 @@ body.drawer-open {
   overflow: hidden;
 }
 
+body.drawer-open .page-content {
+  transform: scale(0.985);
+  filter: blur(3px);
+}
+
 a,
 button {
   font: inherit;
@@ -39,6 +44,12 @@ button {
   top: 0;
   z-index: 10;
   padding: 20px 20px 0;
+  transition: filter 220ms ease, opacity 220ms ease;
+}
+
+body.drawer-open .site-header {
+  filter: blur(2px);
+  opacity: 0.78;
 }
 
 .navbar {
@@ -136,9 +147,11 @@ button {
 .drawer {
   position: fixed;
   inset: 0;
+  z-index: 40;
   display: flex;
   justify-content: flex-start;
   background: var(--drawer-overlay);
+  backdrop-filter: blur(10px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -150,9 +163,9 @@ button {
 }
 
 .drawer-panel {
-  width: min(86vw, 360px);
+  width: min(84vw, 352px);
   height: 100%;
-  padding: max(20px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom));
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
   background: var(--drawer-surface);
   box-shadow: var(--drawer-shadow);
   transform: translateX(-100%);
@@ -168,7 +181,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .drawer-brand-block {
@@ -216,7 +229,7 @@ button {
 }
 
 .drawer-section {
-  padding-top: 18px;
+  padding-top: 20px;
   border-top: 1px solid rgba(16, 35, 63, 0.08);
 }
 
@@ -232,18 +245,18 @@ button {
 .drawer-links {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .drawer-link {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-height: 72px;
-  padding: 14px 16px;
+  gap: 6px;
+  min-height: 78px;
+  padding: 16px 18px;
   border: 1px solid transparent;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .drawer-link-label {
@@ -274,6 +287,7 @@ button {
   place-items: center;
   padding: 32px 24px 24px;
   text-align: center;
+  transition: filter 220ms ease, transform 220ms ease;
 }
 
 .page-content h1 {
@@ -306,7 +320,7 @@ button {
   }
 
   .drawer-panel {
-    width: min(88vw, 360px);
+    width: min(84vw, 348px);
   }
 
   .page-content {
