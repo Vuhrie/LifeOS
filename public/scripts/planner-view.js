@@ -19,6 +19,15 @@ export const createPlannerView = (ui) => {
     );
   };
 
+  const renderStaticCommitments = (items) => {
+    renderList(
+      ui.staticList,
+      items,
+      (item) =>
+        `<li>${item.title} | ${item.startDate} to ${item.endDate} | ${item.start}-${item.end} <button type="button" class="inline-remove" data-rm-static="${item.id}">Remove</button></li>`,
+    );
+  };
+
   const renderMinorGoals = (items) => {
     renderList(
       ui.minorList,
@@ -61,7 +70,7 @@ export const createPlannerView = (ui) => {
       ui.draftList,
       draft.slots,
       (slot) =>
-        `<li>${slot.title} | ${new Date(slot.start).toLocaleString()} - ${new Date(slot.end).toLocaleTimeString()} <span class="muted">score ${slot.score}</span></li>`,
+        `<li>${slot.title} | ${new Date(slot.start).toLocaleString()} - ${new Date(slot.end).toLocaleTimeString()} <span class="muted">score ${slot.score}${slot.preserved ? " | kept" : ""}</span></li>`,
     );
     renderList(
       ui.unscheduledList,
@@ -82,6 +91,7 @@ export const createPlannerView = (ui) => {
 
   return {
     renderFixedCommitments,
+    renderStaticCommitments,
     renderMinorGoals,
     renderTasks,
     renderAvailability,

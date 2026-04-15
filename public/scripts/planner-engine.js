@@ -1,4 +1,10 @@
-import { getDateForDay, toMinutes } from "./planner-storage.js";
+import { toMinutes } from "./planner-time.js";
+import {
+  buildPlanningWindows,
+  canKeepExistingSlot,
+  hasOverlap,
+  lockExistingSlots,
+} from "./planner-policy.js";
 
 const chunkTask = (task) => {
   const chunks = [];
@@ -59,25 +65,6 @@ const urgencyScore = (deadlineIso, slotStart) => {
   return Math.max(1, 10 - Math.min(9, diffDays - 1));
 };
 
-const buildWindows = (weekStart, availabilityRules) =>
-  availabilityRules
-    .filter((rule) => !rule.hardBlock)
-    .map((rule) => {
-      const baseDate = getDateForDay(weekStart, Number(rule.day));
-      const startMinutes = toMinutes(rule.start);
-      const endMinutes = toMinutes(rule.end);
-      return {
-        day: Number(rule.day),
-        date: baseDate,
-        startMinutes,
-        endMinutes,
-        maxMinutes: Math.min(Number(rule.maxHours || 0) * 60, Math.max(0, endMinutes - startMinutes)),
-        maxDeepBlocks: Math.max(0, Number(rule.maxDeepBlocks || 0)),
-      };
-    });
-
-const overlaps = (startA, endA, startB, endB) => startA < endB && endA > startB;
-
 const scoreCandidate = ({ unit, start, dayPlan, dayRule }) => {
   const urgency = urgencyScore(unit.deadlineIso, start) * 40;
   const priority = Number(unit.priority || 3) * 25;
@@ -117,22 +104,76 @@ export const validatePlannerInput = ({ goal, minorGoals, availabilityRules }) =>
   return { ok: errors.length === 0, errors };
 };
 
-export const generateDraftPlan = ({ goal, minorGoals, tasks, availabilityRules, weekStart }) => {
+const tryKeepExistingSlots = ({ existingSlots, hardBlocks, lockedUntil, horizonStart, horizonEnd, units }) => {
+  const keep = [];
+  const consumed = new Set();
+  const sorted = [...existingSlots].sort((left, right) => new Date(left.start) - new Date(right.start));
+  sorted.forEach((slot) => {
+    if (!canKeepExistingSlot({ slot, hardBlocks, lockedUntil, horizonStart, horizonEnd })) return;
+    if (!units.find((unit) => unit.id === slot.id) || consumed.has(slot.id)) return;
+    consumed.add(slot.id);
+    keep.push({
+      ...slot,
+      start: new Date(slot.start),
+      end: new Date(slot.end),
+      preserved: true,
+      score: Number(slot.score || 0),
+    });
+  });
+  return { keep, consumed };
+};
+
+export const generateDraftPlan = ({
+  goal,
+  minorGoals,
+  tasks,
+  availabilityRules,
+  horizonStart,
+  horizonDays = 7,
+  profile,
+  existingSlots = [],
+  lockedHorizonHours = 12,
+}) => {
   const validation = validatePlannerInput({ goal, minorGoals, availabilityRules });
   if (!validation.ok) {
     return { validation, slots: [], unscheduled: [], warnings: [], trace: [] };
   }
 
-  const windows = buildWindows(weekStart, availabilityRules);
+  const now = new Date();
+  const lockedUntil = new Date(now.getTime() + lockedHorizonHours * 3600000);
+  const horizonEnd = new Date(horizonStart);
+  horizonEnd.setDate(horizonStart.getDate() + horizonDays);
+  const lockedSlots = lockExistingSlots({ existingSlots, lockedUntil });
+  const { windows, hardBlocks } = buildPlanningWindows({
+    horizonStart,
+    horizonDays,
+    profile,
+    availabilityRules,
+    reservedSlots: lockedSlots,
+  });
   const units = buildUnits({ goal, minorGoals, tasks });
+  const { keep, consumed } = tryKeepExistingSlots({
+    existingSlots,
+    hardBlocks,
+    lockedUntil,
+    horizonStart,
+    horizonEnd,
+    units,
+  });
+  const pendingUnits = units.filter((unit) => !consumed.has(unit.id));
   const dayPlans = new Map();
   const trace = [];
-  const slots = [];
+  const slots = [...keep];
   const unscheduled = [];
 
-  windows.forEach((window) => dayPlans.set(window.day, []));
+  windows.forEach((window) => dayPlans.set(window.date.toDateString(), []));
+  keep.forEach((slot) => {
+    const key = new Date(slot.start).toDateString();
+    if (!dayPlans.has(key)) dayPlans.set(key, []);
+    dayPlans.get(key).push(slot);
+  });
 
-  const sortedUnits = [...units].sort((left, right) => {
+  const sortedUnits = [...pendingUnits].sort((left, right) => {
     if (right.mustDo !== left.mustDo) return right.mustDo - left.mustDo;
     if (right.priority !== left.priority) return right.priority - left.priority;
     return left.id.localeCompare(right.id);
@@ -141,19 +182,23 @@ export const generateDraftPlan = ({ goal, minorGoals, tasks, availabilityRules, 
   sortedUnits.forEach((unit) => {
     let best = null;
     windows.forEach((window) => {
-      const dayPlan = dayPlans.get(window.day) || [];
+      const key = window.date.toDateString();
+      const dayPlan = dayPlans.get(key) || [];
       const plannedMinutes = dayPlan.reduce((sum, item) => sum + item.durationMinutes, 0);
       if (plannedMinutes + unit.durationMinutes > window.maxMinutes) {
         return;
       }
 
-      for (let minute = window.startMinutes; minute + unit.durationMinutes <= window.endMinutes; minute += 30) {
+      const startMinute = window.start.getHours() * 60 + window.start.getMinutes();
+      const endMinute = window.end.getHours() * 60 + window.end.getMinutes();
+      for (let minute = startMinute; minute + unit.durationMinutes <= endMinute; minute += 30) {
         const start = new Date(window.date);
-        start.setHours(0, minute, 0, 0);
+        start.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
         const end = new Date(start);
         end.setMinutes(start.getMinutes() + unit.durationMinutes);
 
-        const collides = dayPlan.some((existing) => overlaps(start, end, existing.start, existing.end));
+        const collides = dayPlan.some((existing) => hasOverlap(start, end, existing.start, existing.end))
+          || hardBlocks.some((block) => hasOverlap(start, end, block.start, block.end));
         if (collides) {
           continue;
         }
@@ -195,13 +240,20 @@ export const generateDraftPlan = ({ goal, minorGoals, tasks, availabilityRules, 
       start: best.start,
       end: best.end,
       score: best.score,
+      preserved: false,
     };
-    dayPlans.get(best.window.day).push(slot);
+    const key = best.window.date.toDateString();
+    dayPlans.get(key).push(slot);
     slots.push(slot);
     trace.push(`Scheduled ${unit.title} at ${best.start.toLocaleString()} score=${best.score}.`);
   });
 
   const ordered = slots.sort((left, right) => left.start - right.start || left.id.localeCompare(right.id));
+  const previousById = new Set(existingSlots.map((item) => item.id));
+  const nowById = new Set(ordered.map((item) => item.id));
+  const removedCount = [...previousById].filter((id) => !nowById.has(id)).length;
+  const unchangedCount = ordered.filter((item) => item.preserved).length;
+  const addedCount = ordered.length - unchangedCount;
   return {
     validation,
     slots: ordered,
@@ -212,6 +264,9 @@ export const generateDraftPlan = ({ goal, minorGoals, tasks, availabilityRules, 
       scheduledCount: ordered.length,
       unscheduledCount: unscheduled.length,
       totalScheduledMinutes: ordered.reduce((sum, item) => sum + item.durationMinutes, 0),
+      unchangedCount,
+      addedCount,
+      removedCount,
     },
   };
 };
@@ -225,7 +280,7 @@ export const previewOverlapWarnings = (slots, existingEvents) => {
       }
       const existingStart = new Date(event.start);
       const existingEnd = new Date(event.end);
-      if (overlaps(slot.start, slot.end, existingStart, existingEnd)) {
+      if (hasOverlap(slot.start, slot.end, existingStart, existingEnd)) {
         warnings.push({
           slotId: slot.id,
           slotTitle: slot.title,

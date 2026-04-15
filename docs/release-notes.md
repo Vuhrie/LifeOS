@@ -1,5 +1,14 @@
 # Release Notes
 
+## v0.6.0
+
+- Upgraded Planner deterministic engine to rolling-horizon scheduling (default 7 days) with lock-window preservation for near-term slots.
+- Added protected necessities and static date-range commitments so non-negotiable time is treated as hard blocks.
+- Added replan-improvement behavior that preserves valid managed slots and reports kept/new/removed schedule metrics.
+- Upgraded AI bridge prompt builder to include schedule context, hard blocks, and policy constraints.
+- Switched AI import contract to validated patch operations (`operations[]`) for safer modifications.
+- Refactored planner and shared styles/scripts into modular files to keep code files within the 300-line guideline.
+
 ## v0.5.0
 
 - Added a manual AI-assist bridge in Planner Step 2 for copy/paste planning with any chatbot (non-API flow).

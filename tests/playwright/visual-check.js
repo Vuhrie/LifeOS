@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.5.0";
+const releaseVersion = "v0.6.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -103,6 +103,11 @@ const run = async () => {
     }
     if (!firstStepActive) {
       throw new Error("Planner should open on step 1.");
+    }
+    const horizonVisible = await desktop.locator("#horizon-days").isVisible();
+    const staticVisible = await desktop.locator("#add-static").isVisible();
+    if (!horizonVisible || !staticVisible) {
+      throw new Error("Planner step 1 should include horizon + static commitment controls.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-current.png"),
@@ -210,6 +215,10 @@ const run = async () => {
     const mobilePlannerSteps = await mobile.locator(".step-pill").count();
     if (mobilePlannerSteps !== 3) {
       throw new Error(`Planner mobile should have 3 step pills. Found: ${mobilePlannerSteps}`);
+    }
+    const mobileHorizonVisible = await mobile.locator("#horizon-days").isVisible();
+    if (!mobileHorizonVisible) {
+      throw new Error("Planner mobile should show rolling horizon input.");
     }
     await mobile.screenshot({
       path: path.join(screenshotsDir, "visual-test-mobile-planner-current.png"),

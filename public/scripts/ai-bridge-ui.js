@@ -40,15 +40,23 @@ export const createAiBridgeUi = ({
     }
   };
 
-  buildButton.addEventListener("click", () => {
-    const prompt = onBuildPrompt();
-    output.value = prompt;
-    clearValidation();
-    onPersist({
-      lastPrompt: prompt,
-      lastImportText: importInput.value,
-    });
-    setStatus("Prompt built. Copy it and ask your AI tool for JSON only.", "success");
+  buildButton.addEventListener("click", async () => {
+    buildButton.disabled = true;
+    setStatus("Building prompt context...", "neutral");
+    try {
+      const prompt = await onBuildPrompt();
+      output.value = prompt;
+      clearValidation();
+      onPersist({
+        lastPrompt: prompt,
+        lastImportText: importInput.value,
+      });
+      setStatus("Prompt built. Copy it and ask your AI tool for JSON only.", "success");
+    } catch (error) {
+      setStatus(`Prompt build failed: ${error.message}`, "error");
+    } finally {
+      buildButton.disabled = false;
+    }
   });
 
   copyButton.addEventListener("click", () => {
@@ -114,4 +122,3 @@ export const createAiBridgeUi = ({
     setStatus,
   };
 };
-

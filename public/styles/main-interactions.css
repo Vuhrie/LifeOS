@@ -1,0 +1,32 @@
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:hover {
+    background: var(--hover-bg);
+    border-color: var(--hover-border);
+    box-shadow: var(--hover-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: var(--hover-lift);
+  }
+
+  .drawer-link:hover {
+    color: var(--ink);
+    border-color: var(--hover-border);
+    background: linear-gradient(160deg, rgba(246, 254, 255, 0.94), rgba(203, 245, 255, 0.7));
+    box-shadow: var(--hover-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: var(--hover-lift);
+  }
+
+  .menu-button:hover,
+  .drawer-close:hover {
+    background: rgba(205, 244, 255, 0.7);
+    transform: var(--hover-lift);
+  }
+}
+
+body.drawer-open {
+  overflow: hidden;
+}
+
+body.drawer-open .page-content {
+  transform: scale(0.986);
+  filter: blur(2px);
+}
+

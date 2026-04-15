@@ -25,6 +25,7 @@ npm run test:visual
 - Desktop `Today` page shows Google Calendar heading and control buttons.
 - Desktop `Schedules` page shows Google Calendar heading, range selector, and control buttons.
 - Desktop `Planner` page shows deterministic planner sections and action buttons.
+- Desktop `Planner` step 1 shows rolling horizon controls and static date-range commitment form.
 - Desktop restored-auth checks show `Google Connected` on `Today`, `Schedules`, and `Planner`.
 - Desktop `Planner` shows the 3-step quick planner pills and starts on `1. Life Constraints`.
 - Desktop `Planner` step 2 shows the modern habit switch controls.
@@ -37,6 +38,7 @@ npm run test:visual
 - The drawer lists `Today`, `Schedules`, `Planner`, and `Setting`.
 - Loading either page should not trigger a Google sign-in popup until `Connect Google` is clicked.
 - Mobile `Planner` also shows all three planner step pills.
+- Mobile `Planner` step 1 shows rolling horizon controls without layout breakage.
 - Mobile `Planner` step 2 shows the modern habit switch controls without overflow.
 - Mobile `Planner` step 2 shows AI-assist controls without layout overflow.
 - Versioned screenshot artifacts are generated for desktop today, desktop schedules, desktop planner, desktop planner step 2, desktop hover state, mobile closed, mobile drawer-open, mobile planner, and mobile planner step 2 states.

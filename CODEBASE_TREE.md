@@ -30,9 +30,14 @@ Life OS/
 |   |   |-- calendar-ui.js
 |   |   |-- config.js
 |   |   |-- google-connect-button.js
+|   |   |-- planner-controller.js
+|   |   |-- planner-dom.js
 |   |   |-- planner-engine.js
+|   |   |-- planner-logic.js
 |   |   |-- planner-page.js
+|   |   |-- planner-policy.js
 |   |   |-- planner-storage.js
+|   |   |-- planner-time.js
 |   |   |-- planner-view.js
 |   |   |-- schedules-page.js
 |   |   |-- today-page.js
@@ -40,8 +45,15 @@ Life OS/
 |   |-- styles/
 |   |   |-- calendar.css
 |   |   |-- main.css
+|   |   |-- main-drawer.css
+|   |   |-- main-interactions.css
+|   |   |-- main-shell.css
 |   |   |-- planner-interactions.css
 |   |   |-- planner.css
+|   |   |-- planner-ai.css
+|   |   |-- planner-cards.css
+|   |   |-- planner-responsive.css
+|   |   |-- planner-shell.css
 |   |   `-- theme.css
 |   |-- index.html
 |   |-- planner.html
@@ -106,7 +118,16 @@ Life OS/
 |           |-- visual-test-mobile-v0.5.0.png
 |           |-- visual-test-mobile-open-v0.5.0.png
 |           |-- visual-test-mobile-planner-v0.5.0.png
-|           `-- visual-test-mobile-planner-step2-v0.5.0.png
+|           |-- visual-test-mobile-planner-step2-v0.5.0.png
+|           |-- visual-test-desktop-v0.6.0.png
+|           |-- visual-test-desktop-schedules-v0.6.0.png
+|           |-- visual-test-desktop-planner-v0.6.0.png
+|           |-- visual-test-desktop-planner-step2-v0.6.0.png
+|           |-- visual-test-desktop-hover-v0.6.0.png
+|           |-- visual-test-mobile-v0.6.0.png
+|           |-- visual-test-mobile-open-v0.6.0.png
+|           |-- visual-test-mobile-planner-v0.6.0.png
+|           `-- visual-test-mobile-planner-step2-v0.6.0.png
 `-- tools/
 ```
 
