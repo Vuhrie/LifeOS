@@ -131,6 +131,11 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const ensureSignedIn = async () => (tokenValid() ? accessToken : requestToken("consent"));
+  const getAccessToken = async ({ interactive = false } = {}) => {
+    if (tokenValid()) return accessToken;
+    if (!interactive) return "";
+    return ensureSignedIn();
+  };
 
   const fetchExistingEvents = async ({ startIso, endIso }) => {
     const token = await ensureSignedIn();
@@ -183,6 +188,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
     fetchExistingEvents,
     commitDraft,
     resolveAccountKey,
+    getAccessToken,
     getState: () => ({ ...state }),
     setError,
   };

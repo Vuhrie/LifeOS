@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.8.0
+
+- Reworked planner commitments UI with type-adaptive fields: one-off now hides weekdays, weekly keeps full weekday selection, and date-range enables weekday selection with range applicability rules.
+- Replaced native weekday checkboxes with accessible glass-style day chips for cleaner mobile/desktop interaction.
+- Added commitment validation layer to enforce type-specific requirements and clearer user-facing errors.
+- Added planner cloud-sync client scaffold with conflict-aware push/pull flow tied to Google sign-in identity.
+- Added Cloudflare Worker + D1 API scaffold for cross-device planner profile sync (`/api/planner/profile`).
+
 ## v0.7.0
 
 - Unified planner commitment modeling into one configurable system (`weekly_recurring`, `date_range_recurring`, `one_off`) with contextual controls.

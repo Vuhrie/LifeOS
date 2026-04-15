@@ -20,10 +20,15 @@ export const createPlannerView = (ui) => {
   };
 
   const renderCommitments = (items) => {
+    const summary = (item) => {
+      if (item.mode === "one_off") return `${item.date} | ${item.start}-${item.end}`;
+      if (item.mode === "date_range_recurring") return `${item.startDate}..${item.endDate} | ${item.start}-${item.end}`;
+      return `${(item.days || []).map((day) => dayName(day).slice(0, 3)).join(", ")} | ${item.start}-${item.end}`;
+    };
     renderList(
       ui.commitmentsList,
       items,
-      (item) => `<li>${item.title} | ${item.mode} | ${item.start}-${item.end} <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
+      (item) => `<li>${item.title} | ${summary(item)} <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
     );
   };
 
@@ -86,4 +91,3 @@ export const createPlannerView = (ui) => {
 
   return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderDraft, setStep };
 };
-

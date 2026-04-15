@@ -29,7 +29,7 @@ const defaultWeekState = () => ({
   aiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
-const defaultState = () => ({ schemaVersion: 7, currentWeekKey: "", weeks: {}, history: [] });
+const defaultState = () => ({ schemaVersion: 8, currentWeekKey: "", weeks: {}, history: [] });
 
 const normalizeNeed = (value, fallbackDuration) => {
   const item = parse(value, {});
@@ -132,7 +132,7 @@ export const loadPlannerState = (accountKey = "anon") => {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
-    const state = { schemaVersion: 7, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
+    const state = { schemaVersion: 8, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
     Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => { state.weeks[key] = normalizeWeekState(value); });
     return state;
   } catch {
@@ -174,4 +174,3 @@ export const createMinorGoal = ({ weekKey, title, targetHours }) => ({ id: uid("
 export const createCommitment = ({ mode, title, start, end, days, startDate, endDate, date }) => ({ id: uid("commit"), mode, title, start, end, days: days || [], startDate: startDate || "", endDate: endDate || "", date: date || "", isLocked: true, source: "manual" });
 
 export { buildAvailabilityRulesFromProfile, dayName, getDateForDay, getPlanningWeekKey, getWeekKey, getWeekStartFromKey, normalizeTime, toMinutes } from "./planner-time.js";
-

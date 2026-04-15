@@ -16,6 +16,12 @@ Life OS/
 |   |-- google-calendar-setup.md
 |   |-- release-notes.md
 |   `-- visual-testing.md
+|-- cloudflare/
+|   `-- planner-sync-worker/
+|       |-- schema.sql
+|       |-- wrangler.toml
+|       `-- src/
+|           `-- index.js
 |-- public/
 |   |-- assets/
 |   |   `-- images/
@@ -31,13 +37,16 @@ Life OS/
 |   |   |-- config.js
 |   |   |-- google-connect-button.js
 |   |   |-- planner-controller.js
+|   |   |-- planner-commitment-ui.js
 |   |   |-- planner-dom.js
 |   |   |-- planner-engine.js
 |   |   |-- planner-logic.js
 |   |   |-- planner-page.js
 |   |   |-- planner-policy.js
 |   |   |-- planner-storage.js
+|   |   |-- planner-sync-client.js
 |   |   |-- planner-time.js
+|   |   |-- planner-validation.js
 |   |   |-- planner-view.js
 |   |   |-- schedules-page.js
 |   |   |-- today-page.js
@@ -136,7 +145,16 @@ Life OS/
 |           |-- visual-test-mobile-v0.7.0.png
 |           |-- visual-test-mobile-open-v0.7.0.png
 |           |-- visual-test-mobile-planner-v0.7.0.png
-|           `-- visual-test-mobile-planner-step2-v0.7.0.png
+|           |-- visual-test-mobile-planner-step2-v0.7.0.png
+|           |-- visual-test-desktop-v0.8.0.png
+|           |-- visual-test-desktop-schedules-v0.8.0.png
+|           |-- visual-test-desktop-planner-v0.8.0.png
+|           |-- visual-test-desktop-planner-step2-v0.8.0.png
+|           |-- visual-test-desktop-hover-v0.8.0.png
+|           |-- visual-test-mobile-v0.8.0.png
+|           |-- visual-test-mobile-open-v0.8.0.png
+|           |-- visual-test-mobile-planner-v0.8.0.png
+|           `-- visual-test-mobile-planner-step2-v0.8.0.png
 `-- tools/
 ```
 

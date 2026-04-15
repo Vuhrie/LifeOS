@@ -5,3 +5,7 @@ window.LIFEOS_CALENDAR_CONFIG = {
   authDurationSeconds: 3600,
   refreshSkewSeconds: 120,
 };
+
+window.LIFEOS_PLANNER_SYNC_CONFIG = {
+  apiBaseUrl: "/api/planner",
+};

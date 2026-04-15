@@ -14,11 +14,12 @@ import {
   normalizeTime,
   rotateWeekIfNeeded,
   savePlannerState,
-  toMinutes,
 } from "./planner-storage.js";
 import { createPlannerView } from "./planner-view.js";
 import { applyGoogleConnectButtonState } from "./google-connect-button.js";
-import { getSelectedDays } from "./planner-dom.js";
+import { createCommitmentTypeUi } from "./planner-commitment-ui.js";
+import { validateCommitmentInput } from "./planner-validation.js";
+import { createPlannerSyncClient } from "./planner-sync-client.js";
 
 const dateOnly = (value) => {
   const date = new Date(value);
@@ -30,10 +31,14 @@ export const initPlannerController = (ui) => {
   let app = loadPlannerState(accountKey);
   let weekKey = rotateWeekIfNeeded(app, new Date());
   let week = ensureWeekState(app, weekKey);
-  const save = () => savePlannerState(app, accountKey);
+  const save = () => {
+    savePlannerState(app, accountKey);
+    if (lastAuthStateRef.current.isSignedIn) syncClient.queuePush(accountKey);
+  };
   const view = createPlannerView(ui);
   let currentStep = 1;
   const lastAuthStateRef = { current: { isConfigured: true, isSignedIn: false, isLoading: false, error: "", accountKey: "anon" } };
+  const commitmentUi = createCommitmentTypeUi(ui);
 
   const refreshAvailabilityFromProfile = () => { week.availabilityRules = buildAvailabilityRulesFromProfile(week.profile); };
   const rerenderAll = () => {
@@ -69,6 +74,35 @@ export const initPlannerController = (ui) => {
     lockedHorizonHours: Math.max(0, Math.min(48, Number(ui.lockedHours.value) || 12)),
   });
 
+  const loadAccountState = (nextAccountKey) => {
+    accountKey = nextAccountKey || "anon";
+    app = loadPlannerState(accountKey);
+    weekKey = rotateWeekIfNeeded(app, new Date());
+    week = ensureWeekState(app, weekKey);
+    if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
+    applyUiFromState();
+    commitmentUi.refresh();
+    rerenderAll();
+  };
+
+  const syncClient = createPlannerSyncClient({
+    onSyncStatus: (message, kind) => {
+      if (!lastAuthStateRef.current.error && lastAuthStateRef.current.isSignedIn) view.setStatus(message, kind);
+    },
+    getAccessToken: (options) => writeClient.getAccessToken(options),
+    loadLocalState: (nextAccountKey) => loadPlannerState(nextAccountKey),
+    saveLocalState: (state, nextAccountKey) => savePlannerState(state, nextAccountKey),
+    onRemoteStateApplied: (remoteState, nextAccountKey) => {
+      if (nextAccountKey !== accountKey) return;
+      app = remoteState;
+      weekKey = rotateWeekIfNeeded(app, new Date());
+      week = ensureWeekState(app, weekKey);
+      if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
+      applyUiFromState();
+      rerenderAll();
+    },
+  });
+
   const writeClient = createCalendarWriteClient({
     onStateChange: async (state) => {
       lastAuthStateRef.current = state;
@@ -78,15 +112,10 @@ export const initPlannerController = (ui) => {
       if (state.error) view.setStatus(state.error, "error");
       if (!state.error && state.isSignedIn) view.setStatus(`Planner ready for ${state.accountKey || "account"}.`, "success");
       if (state.isSignedIn && state.accountKey && state.accountKey !== accountKey) {
-        accountKey = state.accountKey;
-        app = loadPlannerState(accountKey);
-        weekKey = rotateWeekIfNeeded(app, new Date());
-        week = ensureWeekState(app, weekKey);
-        if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
-        applyUiFromState();
-        rerenderAll();
+        loadAccountState(state.accountKey);
         save();
         view.setStatus(`Planner loaded for ${accountKey}.`, "success");
+        if (syncClient.isEnabled()) await syncClient.bootstrap(accountKey);
       }
     },
   });
@@ -143,13 +172,21 @@ export const initPlannerController = (ui) => {
     const date = dateOnly(ui.commitmentDay.value);
     const startDate = dateOnly(ui.commitmentStartDate.value);
     const endDate = dateOnly(ui.commitmentEndDate.value);
-    const days = getSelectedDays(ui.commitmentDays);
-    if (toMinutes(end) <= toMinutes(start)) return view.setStatus("Commitment end must be after start.", "warning");
-    if (mode === "one_off" && !date) return view.setStatus("One-off commitments need a date.", "warning");
-    if (mode === "date_range_recurring" && (!startDate || !endDate || !days.length)) return view.setStatus("Date-range commitments need range + weekdays.", "warning");
-    if (mode === "weekly_recurring" && !days.length) return view.setStatus("Weekly commitments need weekdays.", "warning");
-    week.profile.commitments.push(createCommitment({ mode, title, start, end, days, startDate, endDate, date }));
+    const selectedDays = commitmentUi.getSelectedDays();
+    const validation = validateCommitmentInput({
+      mode,
+      start,
+      end,
+      date,
+      startDate,
+      endDate,
+      selectedDays,
+      applicableDays: commitmentUi.getApplicableDays(),
+    });
+    if (!validation.ok) return view.setStatus(validation.message, "warning");
+    week.profile.commitments.push(createCommitment({ mode, title, start, end, days: validation.days, startDate, endDate, date }));
     ui.commitmentTitle.value = "";
+    if (mode === "one_off") ui.commitmentDay.value = "";
     onProfileChange();
     view.setStatus("Commitment added.", "success");
   });
@@ -234,6 +271,7 @@ export const initPlannerController = (ui) => {
 
   if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
   applyUiFromState();
+  commitmentUi.refresh();
   rerenderAll();
   aiBridge.hydrateSavedState(week.aiAssist);
   currentStep = view.setStep(1);

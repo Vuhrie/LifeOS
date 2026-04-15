@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.7.0";
+const releaseVersion = "v0.8.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -119,6 +119,28 @@ const run = async () => {
       path: path.join(screenshotsDir, `visual-test-desktop-planner-${releaseVersion}.png`),
       fullPage: true,
     });
+    await wait(250);
+    const dayWrapInitialHidden = await desktop.locator("#commitment-day-wrap").isHidden();
+    const dateRangeInitialHidden = await desktop.locator("#commitment-date-range-row").isHidden();
+    const weekdaysInitialVisible = await desktop.locator("#commitment-weekdays").isVisible();
+    if (!dayWrapInitialHidden || !dateRangeInitialHidden || !weekdaysInitialVisible) {
+      throw new Error("Weekly recurring mode should show weekdays only.");
+    }
+    await desktop.selectOption("#commitment-type", "one_off");
+    const dayWrapOneOffVisible = await desktop.locator("#commitment-day-wrap").isVisible();
+    const weekdaysOneOffHidden = await desktop.locator("#commitment-weekdays").isHidden();
+    if (!dayWrapOneOffVisible || !weekdaysOneOffHidden) {
+      throw new Error("One-off mode should show date field and hide weekdays.");
+    }
+    await desktop.selectOption("#commitment-type", "date_range_recurring");
+    await desktop.fill("#commitment-start-date", "2026-04-14");
+    await desktop.fill("#commitment-end-date", "2026-04-14");
+    await wait(100);
+    const disabledDayCount = await desktop.locator(".day-chip.is-disabled").count();
+    if (disabledDayCount < 6) {
+      throw new Error(`Date-range applicability should disable non-applicable weekdays. Found disabled count: ${disabledDayCount}`);
+    }
+    await desktop.selectOption("#commitment-type", "weekly_recurring");
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(200);
     const aiAssistTitle = await desktop.locator("#ai-assist-title").textContent();
@@ -226,6 +248,12 @@ const run = async () => {
     if (!mobileHorizonVisible) {
       throw new Error("Planner mobile should show rolling horizon input.");
     }
+    await mobile.selectOption("#commitment-type", "one_off");
+    const mobileWeekdaysHidden = await mobile.locator("#commitment-weekdays").isHidden();
+    if (!mobileWeekdaysHidden) {
+      throw new Error("Planner mobile one-off mode should hide weekdays.");
+    }
+    await mobile.selectOption("#commitment-type", "weekly_recurring");
     await mobile.screenshot({
       path: path.join(screenshotsDir, "visual-test-mobile-planner-current.png"),
       fullPage: true,

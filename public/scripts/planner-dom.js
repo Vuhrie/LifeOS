@@ -22,9 +22,13 @@ export const getPlannerUi = () => ({
   commitmentTitle: $("#commitment-title"),
   commitmentStart: $("#commitment-start"),
   commitmentEnd: $("#commitment-end"),
+  commitmentDayWrap: $("#commitment-day-wrap"),
   commitmentDay: $("#commitment-day"),
+  commitmentDateRangeRow: $("#commitment-date-range-row"),
   commitmentStartDate: $("#commitment-start-date"),
   commitmentEndDate: $("#commitment-end-date"),
+  commitmentWeekdays: $("#commitment-weekdays"),
+  commitmentWeekdayHint: $("#commitment-weekday-hint"),
   commitmentDays: $("#commitment-days"),
   addCommitment: $("#add-commitment"),
   commitmentsList: $("#commitments-list"),
@@ -53,8 +57,3 @@ export const getPlannerUi = () => ({
   aiClearImport: $("#ai-clear-import"),
   aiStatus: $("#ai-assist-status"),
 });
-
-export const getSelectedDays = (container) =>
-  [...container.querySelectorAll('input[type="checkbox"]:checked')]
-    .map((input) => Number(input.value))
-    .filter((value) => Number.isInteger(value));
