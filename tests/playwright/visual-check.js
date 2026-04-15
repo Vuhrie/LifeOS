@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.4.0";
+const releaseVersion = "v0.4.1";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -92,6 +92,28 @@ const run = async () => {
       path: path.join(screenshotsDir, `visual-test-desktop-planner-${releaseVersion}.png`),
       fullPage: true,
     });
+    await desktop.locator('.step-pill[data-step="2"]').click();
+    await wait(200);
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-planner-step2-${releaseVersion}.png`),
+      fullPage: true,
+    });
+    const seededToken = { accessToken: "seeded-token", expiresAt: Date.now() + 3600_000 };
+    await desktop.evaluate((token) => {
+      window.localStorage.setItem("lifeos_google_calendar_write_auth_v1", JSON.stringify(token));
+    }, seededToken);
+    await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    const connectButtonText = await desktop.locator("#connect-google").textContent();
+    if (!connectButtonText?.includes("Google Connected")) {
+      throw new Error(`Planner connect button should show connected state. Found: ${connectButtonText}`);
+    }
+    await desktop.evaluate(() => {
+      window.localStorage.removeItem("lifeos_google_calendar_write_auth_v1");
+    });
 
     const mobile = await browser.newPage({ ...devices["iPhone 13"] });
     await mobile.goto("http://127.0.0.1:4173/index.html", { waitUntil: "networkidle" });
@@ -158,6 +180,16 @@ const run = async () => {
     });
     await mobile.screenshot({
       path: path.join(screenshotsDir, `visual-test-mobile-planner-${releaseVersion}.png`),
+      fullPage: true,
+    });
+    await mobile.locator('.step-pill[data-step="2"]').click();
+    await wait(200);
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, "visual-test-mobile-planner-step2-current.png"),
+      fullPage: true,
+    });
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, `visual-test-mobile-planner-step2-${releaseVersion}.png`),
       fullPage: true,
     });
 

@@ -66,6 +66,7 @@ const week = ensureWeekState(app, weekKey);
 const save = () => savePlannerState(app);
 
 let currentStep = 1;
+let lastAuthState = { isConfigured: true, isSignedIn: false, isLoading: false, error: "" };
 
 const goalFromUi = () => ({
   title: ui.goalTitle.value.trim(),
@@ -118,8 +119,7 @@ const onProfileChange = () => {
 
 const autoMinorGoals = (goal) => {
   const items = [createMinorGoal({ weekKey, title: goal.title, targetHours: goal.weeklyHours })];
-  const gym = week.profile.habits.gym;
-  const leisure = week.profile.habits.leisure;
+  const { gym, leisure } = week.profile.habits;
   if (gym.enabled && gym.frequency > 0) items.push(createMinorGoal({ weekKey, title: "Gym Session", targetHours: Number((gym.frequency * 1).toFixed(1)) }));
   if (leisure.enabled && leisure.frequency > 0) items.push(createMinorGoal({ weekKey, title: "Leisure / Recovery", targetHours: Number((leisure.frequency * 1.5).toFixed(1)) }));
   return items;
@@ -133,14 +133,44 @@ const rerenderAll = () => {
   view.renderDraft(week.draft);
 };
 
+const renderGoogleAuthState = (state) => {
+  if (!state.isConfigured) {
+    ui.connect.textContent = "Google Not Configured";
+    ui.connect.dataset.authState = "disabled";
+    ui.connect.disabled = true;
+    return;
+  }
+  if (state.isLoading) {
+    ui.connect.textContent = "Connecting...";
+    ui.connect.dataset.authState = "loading";
+    ui.connect.disabled = true;
+    return;
+  }
+  if (state.isSignedIn) {
+    ui.connect.textContent = "Google Connected";
+    ui.connect.dataset.authState = "connected";
+    ui.connect.disabled = false;
+    return;
+  }
+  ui.connect.textContent = "Connect Google";
+  ui.connect.dataset.authState = state.error ? "error" : "idle";
+  ui.connect.disabled = false;
+};
+
 const writeClient = createCalendarWriteClient({
   onStateChange: (state) => {
+    lastAuthState = state;
     ui.commit.disabled = !state.isSignedIn || state.isLoading;
+    renderGoogleAuthState(state);
     if (state.error) view.setStatus(state.error, "error");
   },
 });
 
 ui.connect.addEventListener("click", async () => {
+  if (lastAuthState.isSignedIn) {
+    view.setStatus("Google Calendar is already connected.", "success");
+    return;
+  }
   try {
     await writeClient.connect();
     view.setStatus("Google Calendar write access connected.", "success");
@@ -149,17 +179,9 @@ ui.connect.addEventListener("click", async () => {
   }
 });
 
-ui.prev.addEventListener("click", () => {
-  currentStep = view.setStep(currentStep - 1);
-});
-ui.next.addEventListener("click", () => {
-  currentStep = view.setStep(currentStep + 1);
-});
-ui.stepPills.forEach((pill) =>
-  pill.addEventListener("click", () => {
-    currentStep = view.setStep(Number(pill.dataset.step));
-  }),
-);
+ui.prev.addEventListener("click", () => { currentStep = view.setStep(currentStep - 1); });
+ui.next.addEventListener("click", () => { currentStep = view.setStep(currentStep + 1); });
+ui.stepPills.forEach((pill) => pill.addEventListener("click", () => { currentStep = view.setStep(Number(pill.dataset.step)); }));
 
 [ui.wake, ui.sleep, ui.gymEnabled, ui.gymFrequency, ui.leisureEnabled, ui.leisureFrequency].forEach((input) => input.addEventListener("change", onProfileChange));
 
@@ -293,6 +315,7 @@ ui.commit.addEventListener("click", async () => {
   }
   applyProfileToUi();
   rerenderAll();
+  renderGoogleAuthState(writeClient.getState());
   currentStep = view.setStep(1);
   const note = getPlanningWeekKey(new Date()) === weekKey ? "" : " Week rotated to new cycle.";
   view.setStatus(`Planner ready for week ${weekKey}.${note}`, "neutral");

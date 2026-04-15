@@ -35,6 +35,7 @@ Life OS/
 |   |-- styles/
 |   |   |-- calendar.css
 |   |   |-- main.css
+|   |   |-- planner-interactions.css
 |   |   |-- planner.css
 |   |   `-- theme.css
 |   |-- index.html
@@ -52,12 +53,20 @@ Life OS/
 |           |-- visual-test-desktop-planner-v0.3.0.png
 |           |-- visual-test-desktop-schedules-v0.4.0.png
 |           |-- visual-test-desktop-planner-v0.4.0.png
+|           |-- visual-test-desktop-v0.4.1.png
+|           |-- visual-test-desktop-schedules-v0.4.1.png
+|           |-- visual-test-desktop-planner-v0.4.1.png
+|           |-- visual-test-desktop-planner-step2-v0.4.1.png
 |           |-- visual-test-mobile-open-v0.3.0.png
 |           |-- visual-test-mobile-planner-v0.3.0.png
 |           |-- visual-test-mobile-open-v0.4.0.png
 |           |-- visual-test-mobile-planner-v0.4.0.png
 |           |-- visual-test-mobile-v0.3.0.png
-|           `-- visual-test-mobile-v0.4.0.png
+|           |-- visual-test-mobile-v0.4.0.png
+|           |-- visual-test-mobile-v0.4.1.png
+|           |-- visual-test-mobile-open-v0.4.1.png
+|           |-- visual-test-mobile-planner-v0.4.1.png
+|           `-- visual-test-mobile-planner-step2-v0.4.1.png
 `-- tools/
 ```
 

@@ -1,0 +1,107 @@
+#connect-google {
+  min-width: 170px;
+}
+
+#connect-google[data-auth-state="connected"] {
+  background: linear-gradient(155deg, #2ed8b4, #1ab0c3);
+  border-color: rgba(173, 255, 242, 0.9);
+  color: #f5ffff;
+  box-shadow: inset 0 1px 0 rgba(228, 255, 252, 0.9), 0 10px 20px rgba(20, 140, 138, 0.24);
+}
+
+#connect-google[data-auth-state="connected"]::before {
+  content: "✓ ";
+}
+
+#connect-google[data-auth-state="loading"] {
+  opacity: 0.9;
+}
+
+#connect-google[data-auth-state="error"] {
+  border-color: rgba(255, 188, 198, 0.9);
+}
+
+.habit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.habit-switch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(198, 240, 250, 0.9);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ink);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.habit-switch-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.habit-switch-title {
+  font-weight: 700;
+}
+
+.habit-switch-subtitle {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.habit-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.habit-switch-control {
+  position: relative;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(185, 230, 242, 0.9);
+  background: linear-gradient(150deg, rgba(242, 252, 255, 0.95), rgba(210, 231, 239, 0.8));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.habit-switch-control::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(155deg, #ffffff, #e7f6fb);
+  box-shadow: 0 3px 8px rgba(21, 90, 120, 0.24);
+  transition: transform 180ms ease;
+}
+
+.habit-switch input:checked + .habit-switch-control {
+  background: linear-gradient(150deg, #49c7ef, #11a5d7);
+  border-color: rgba(180, 246, 255, 0.95);
+}
+
+.habit-switch input:checked + .habit-switch-control::after {
+  transform: translateX(20px);
+}
+
+.habit-switch input:focus-visible + .habit-switch-control {
+  outline: 2px solid rgba(14, 162, 224, 0.9);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .habit-grid {
+    grid-template-columns: 1fr;
+  }
+}

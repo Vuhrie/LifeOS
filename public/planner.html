@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v0.4.0</title>
+  <title>Planner | LifeOS v0.4.1</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
+  <link rel="stylesheet" href="styles/planner-interactions.css">
 </head>
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v0.4.0</a>
+      <a class="brand" href="index.html">LifeOS v0.4.1</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -33,7 +34,7 @@
           <p class="drawer-eyebrow">Navigation</p>
           <div>
             <p class="drawer-brand">LifeOS</p>
-            <p class="drawer-version">v0.4.0</p>
+            <p class="drawer-version">v0.4.1</p>
           </div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu">
@@ -61,7 +62,7 @@
           <p class="planner-subtitle">Go from constraints to a weekly draft in minutes. Deterministic rules stay in control.</p>
         </div>
         <div class="planner-actions">
-          <button class="action-button action-button--primary" type="button" id="connect-google">Connect Google</button>
+          <button class="action-button action-button--primary" type="button" id="connect-google" data-auth-state="idle">Connect Google</button>
           <button class="action-button" type="button" id="commit-draft">Commit To Calendar</button>
         </div>
       </header>
@@ -135,8 +136,22 @@
         <article class="planner-card">
           <h2>Habits</h2>
           <div class="habit-grid">
-            <label class="habit-chip"><input id="habit-gym-enabled" type="checkbox"><span>Gym mornings</span></label>
-            <label class="habit-chip"><input id="habit-leisure-enabled" type="checkbox" checked><span>Night leisure</span></label>
+            <label class="habit-switch" for="habit-gym-enabled">
+              <span class="habit-switch-copy">
+                <span class="habit-switch-title">Gym mornings</span>
+                <span class="habit-switch-subtitle">Prioritize early fitness blocks</span>
+              </span>
+              <input id="habit-gym-enabled" type="checkbox" role="switch">
+              <span aria-hidden="true" class="habit-switch-control"></span>
+            </label>
+            <label class="habit-switch" for="habit-leisure-enabled">
+              <span class="habit-switch-copy">
+                <span class="habit-switch-title">Night leisure</span>
+                <span class="habit-switch-subtitle">Reserve recovery time in evenings</span>
+              </span>
+              <input id="habit-leisure-enabled" type="checkbox" role="switch" checked>
+              <span aria-hidden="true" class="habit-switch-control"></span>
+            </label>
           </div>
           <div class="inline-fields">
             <label>Gym Sessions/Week

@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.1
+
+- Updated planner Google auth controls so `Connect Google` visibly changes to `Google Connected` after sign-in.
+- Added explicit auth button visual states for connected, loading, idle, and error.
+- Redesigned planner habit controls into modern switch-style toggles with improved readability and tap targets.
+- Added dedicated planner step-2 screenshot coverage for both desktop and mobile visual checks.
+
 ## v0.4.0
 
 - Replaced the planner layout with a 3-step quick wizard: `Life Constraints`, `What I Want`, and `Draft and Commit`.
