@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.4.0
+
+- Replaced the planner layout with a 3-step quick wizard: `Life Constraints`, `What I Want`, and `Draft and Commit`.
+- Added deterministic quick-profile inputs for wake/sleep rhythm, fixed commitments, and habit toggles.
+- Added automatic availability derivation from fixed commitments to reduce planner setup friction.
+- Added a shared planner view module to keep planner logic modular and below the line-count guideline.
+- Updated release visual checks to validate planner stepper behavior on both desktop and mobile.
+
 ## v0.3.0
 
 - Added a new `Planner` page and navigation entry across desktop and mobile.

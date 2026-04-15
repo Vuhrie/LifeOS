@@ -1,5 +1,5 @@
 :root {
-  --planner-card-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.66), rgba(213, 245, 255, 0.4));
+  --planner-card-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.7), rgba(213, 245, 255, 0.42));
   --planner-border: rgba(206, 246, 255, 0.86);
 }
 
@@ -11,7 +11,7 @@
 .planner-shell {
   border: 1px solid var(--planner-border);
   border-radius: 30px;
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.48), rgba(182, 234, 249, 0.36));
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.5), rgba(182, 234, 249, 0.38));
   box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(16px);
   padding: 24px;
@@ -86,7 +86,7 @@
 }
 
 .planner-status {
-  margin: 14px 0 18px;
+  margin: 14px 0;
   border-radius: 15px;
   padding: 12px 14px;
   border: 1px solid var(--planner-border);
@@ -106,19 +106,36 @@
   border-color: rgba(255, 183, 190, 0.88);
 }
 
-.planner-grid,
-.planner-output {
+.planner-stepper {
   display: grid;
-  gap: 14px;
-}
-
-.planner-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
   margin-bottom: 14px;
 }
 
-.planner-output {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.step-pill {
+  border: 1px solid var(--planner-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ink-muted);
+  font-weight: 700;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.step-pill.is-active {
+  color: var(--ink);
+  border-color: rgba(147, 228, 249, 0.95);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 6px 12px rgba(9, 104, 154, 0.14);
+}
+
+.wizard-step {
+  display: none;
+  gap: 14px;
+}
+
+.wizard-step.is-active {
+  display: grid;
 }
 
 .planner-card {
@@ -129,9 +146,9 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
-.planner-card h2 {
+.planner-card h2,
+.planner-card h3 {
   margin: 0 0 10px;
-  font-size: 1.04rem;
 }
 
 .planner-card label {
@@ -151,15 +168,32 @@
   color: var(--ink);
 }
 
-.planner-note {
-  margin: 0 0 10px;
-  color: var(--ink-muted);
-}
-
 .inline-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.inline-fields--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.habit-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.habit-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--planner-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ink);
+  padding: 8px 12px;
 }
 
 .list-block {
@@ -193,6 +227,25 @@
   cursor: pointer;
 }
 
+.planner-advanced {
+  border: 1px solid var(--planner-border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.34);
+  padding: 10px 14px 14px;
+}
+
+.planner-advanced > summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.planner-advanced-body {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+
 .availability-grid {
   display: grid;
   gap: 8px;
@@ -215,6 +268,13 @@
   color: var(--ink-muted);
 }
 
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 .muted {
   color: var(--ink-muted);
 }
@@ -225,9 +285,17 @@
   font-weight: 700;
 }
 
-@media (max-width: 1024px) {
-  .planner-grid,
-  .planner-output {
+@media (max-width: 900px) {
+  .planner-stepper {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-fields,
+  .inline-fields--triple {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-row {
     grid-template-columns: 1fr;
   }
 }
@@ -244,13 +312,5 @@
 
   .planner-actions {
     justify-content: flex-start;
-  }
-
-  .inline-fields {
-    grid-template-columns: 1fr;
-  }
-
-  .availability-row {
-    grid-template-columns: 1fr;
   }
 }

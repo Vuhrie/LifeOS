@@ -25,11 +25,13 @@ npm run test:visual
 - Desktop `Today` page shows Google Calendar heading and control buttons.
 - Desktop `Schedules` page shows Google Calendar heading, range selector, and control buttons.
 - Desktop `Planner` page shows deterministic planner sections and action buttons.
+- Desktop `Planner` shows the 3-step quick planner pills and starts on `1. Life Constraints`.
 - Mobile hides the desktop navigation and shows the menu button.
 - Mobile menu button renders as three horizontal lines.
 - The drawer opens on mobile as a branded left-side sheet.
 - The drawer lists `Today`, `Schedules`, `Planner`, and `Setting`.
 - Loading either page should not trigger a Google sign-in popup until `Connect Google` is clicked.
+- Mobile `Planner` also shows all three planner step pills.
 - Versioned screenshot artifacts are generated for desktop today, desktop schedules, desktop planner, mobile closed, mobile drawer-open, and mobile planner states.
 - Generated screenshots are also reviewed through Codex image-based inspection.
 - Release screenshots are saved with both `current` and versioned filenames.

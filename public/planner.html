@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v0.3.0</title>
+  <title>Planner | LifeOS v0.4.0</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -11,7 +11,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v0.3.0</a>
+      <a class="brand" href="index.html">LifeOS v0.4.0</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -33,7 +33,7 @@
           <p class="drawer-eyebrow">Navigation</p>
           <div>
             <p class="drawer-brand">LifeOS</p>
-            <p class="drawer-version">v0.3.0</p>
+            <p class="drawer-version">v0.4.0</p>
           </div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu">
@@ -43,22 +43,10 @@
       <div class="drawer-section">
         <p class="drawer-section-title" id="drawer-title">Go To</p>
         <div class="drawer-links">
-          <a class="drawer-link" href="index.html">
-            <span class="drawer-link-label">Today</span>
-            <span class="drawer-link-copy">Focus on the current day</span>
-          </a>
-          <a class="drawer-link" href="schedules.html">
-            <span class="drawer-link-label">Schedules</span>
-            <span class="drawer-link-copy">Review upcoming plans</span>
-          </a>
-          <a class="drawer-link is-active" href="planner.html" aria-current="page">
-            <span class="drawer-link-label">Planner</span>
-            <span class="drawer-link-copy">Build and commit weekly plans</span>
-          </a>
-          <a class="drawer-link" href="setting.html">
-            <span class="drawer-link-label">Setting</span>
-            <span class="drawer-link-copy">Adjust workspace preferences</span>
-          </a>
+          <a class="drawer-link" href="index.html"><span class="drawer-link-label">Today</span><span class="drawer-link-copy">Focus on the current day</span></a>
+          <a class="drawer-link" href="schedules.html"><span class="drawer-link-label">Schedules</span><span class="drawer-link-copy">Review upcoming plans</span></a>
+          <a class="drawer-link is-active" href="planner.html" aria-current="page"><span class="drawer-link-label">Planner</span><span class="drawer-link-copy">Create weekly plans quickly</span></a>
+          <a class="drawer-link" href="setting.html"><span class="drawer-link-label">Setting</span><span class="drawer-link-copy">Adjust workspace preferences</span></a>
         </div>
       </div>
     </div>
@@ -68,26 +56,65 @@
     <section class="planner-shell" aria-labelledby="planner-title">
       <header class="planner-head">
         <div>
-          <p class="planner-eyebrow">Deterministic Engine</p>
+          <p class="planner-eyebrow">Quick Plan</p>
           <h1 id="planner-title">Planner</h1>
-          <p class="planner-subtitle">Define your weekly direction, generate a deterministic draft, then commit to Google Calendar.</p>
+          <p class="planner-subtitle">Go from constraints to a weekly draft in minutes. Deterministic rules stay in control.</p>
         </div>
         <div class="planner-actions">
           <button class="action-button action-button--primary" type="button" id="connect-google">Connect Google</button>
-          <button class="action-button" type="button" id="generate-draft">Generate Draft</button>
-          <button class="action-button action-button--danger" type="button" id="clear-draft">Clear Draft</button>
+          <button class="action-button" type="button" id="commit-draft">Commit To Calendar</button>
         </div>
       </header>
 
       <section class="planner-status" id="planner-status" aria-live="polite">
-        Complete goal setup and weekly inputs, then generate your draft schedule.
+        Start with life constraints, then continue to goals and draft generation.
       </section>
 
-      <section class="planner-grid">
+      <nav class="planner-stepper" aria-label="Planner steps">
+        <button type="button" class="step-pill is-active" data-step="1">1. Life Constraints</button>
+        <button type="button" class="step-pill" data-step="2">2. What I Want</button>
+        <button type="button" class="step-pill" data-step="3">3. Draft and Commit</button>
+      </nav>
+
+      <section class="wizard-step is-active" data-step-panel="1">
+        <article class="planner-card">
+          <h2>Daily Rhythm</h2>
+          <div class="inline-fields">
+            <label>Wake Time
+              <input id="wake-time" type="time" value="07:00">
+            </label>
+            <label>Sleep Time
+              <input id="sleep-time" type="time" value="22:00">
+            </label>
+          </div>
+        </article>
+        <article class="planner-card">
+          <h2>Fixed Commitments</h2>
+          <div class="inline-fields inline-fields--triple">
+            <label>Day
+              <select id="fixed-day">
+                <option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option>
+                <option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option>
+                <option value="0">Sun</option>
+              </select>
+            </label>
+            <label>Start
+              <input id="fixed-start" type="time" value="09:00">
+            </label>
+            <label>End
+              <input id="fixed-end" type="time" value="18:00">
+            </label>
+          </div>
+          <button class="action-button" type="button" id="add-fixed">Add Commitment</button>
+          <ul class="list-block" id="fixed-list"></ul>
+        </article>
+      </section>
+
+      <section class="wizard-step" data-step-panel="2">
         <article class="planner-card">
           <h2>Goal Setup</h2>
           <label>Goal
-            <input id="goal-title" type="text" maxlength="160" placeholder="Example: Complete portfolio website launch">
+            <input id="goal-title" type="text" maxlength="160" placeholder="Example: Finish machine learning course module">
           </label>
           <div class="inline-fields">
             <label>Deadline
@@ -95,86 +122,89 @@
             </label>
             <label>Priority
               <select id="goal-priority">
-                <option value="5">5 - Critical</option>
-                <option value="4">4 - High</option>
-                <option value="3" selected>3 - Normal</option>
-                <option value="2">2 - Low</option>
+                <option value="5">5 - Critical</option><option value="4">4 - High</option>
+                <option value="3" selected>3 - Normal</option><option value="2">2 - Low</option>
                 <option value="1">1 - Optional</option>
               </select>
             </label>
           </div>
-          <label>Weekly Hours
+          <label>Weekly Target Hours
             <input id="goal-weekly-hours" type="number" min="1" max="80" step="1" value="8">
           </label>
         </article>
-
         <article class="planner-card">
-          <h2>Weekly Minor Goals</h2>
-          <div class="inline-fields">
-            <label>Title
-              <input id="minor-goal-title" type="text" maxlength="120" placeholder="Example: Finish chapter 3 labs">
-            </label>
-            <label>Target Hours
-              <input id="minor-goal-hours" type="number" min="1" max="40" step="1" value="2">
-            </label>
-          </div>
-          <button class="action-button" type="button" id="add-minor-goal">Add Minor Goal</button>
-          <ul class="list-block" id="minor-goals-list"></ul>
-        </article>
-
-        <article class="planner-card">
-          <h2>Optional Tasks</h2>
-          <div class="inline-fields">
-            <label>Task
-              <input id="task-title" type="text" maxlength="120" placeholder="Example: Build login page skeleton">
-            </label>
-            <label>Estimate (mins)
-              <input id="task-estimate" type="number" min="30" max="480" step="15" value="90">
-            </label>
+          <h2>Habits</h2>
+          <div class="habit-grid">
+            <label class="habit-chip"><input id="habit-gym-enabled" type="checkbox"><span>Gym mornings</span></label>
+            <label class="habit-chip"><input id="habit-leisure-enabled" type="checkbox" checked><span>Night leisure</span></label>
           </div>
           <div class="inline-fields">
-            <label>Priority
-              <select id="task-priority">
-                <option value="5">5</option>
-                <option value="4">4</option>
-                <option value="3" selected>3</option>
-                <option value="2">2</option>
-                <option value="1">1</option>
-              </select>
+            <label>Gym Sessions/Week
+              <input id="habit-gym-frequency" type="number" min="0" max="14" step="1" value="3">
             </label>
-            <label>Energy
-              <select id="task-energy">
-                <option value="deep" selected>Deep</option>
-                <option value="light">Light</option>
-              </select>
+            <label>Leisure Sessions/Week
+              <input id="habit-leisure-frequency" type="number" min="0" max="14" step="1" value="5">
             </label>
           </div>
-          <button class="action-button" type="button" id="add-task">Add Task</button>
-          <ul class="list-block" id="tasks-list"></ul>
-        </article>
-
-        <article class="planner-card">
-          <h2>Manual Availability Rules</h2>
-          <p class="planner-note">Set one availability window per day. Scheduler uses only these windows for slot generation.</p>
-          <div id="availability-grid" class="availability-grid"></div>
         </article>
       </section>
 
-      <section class="planner-output">
+      <section class="wizard-step" data-step-panel="3">
         <article class="planner-card">
-          <h2>Draft Schedule</h2>
+          <h2>Draft Review</h2>
+          <button class="action-button action-button--primary" type="button" id="generate-draft">Generate My Week</button>
+          <button class="action-button action-button--danger" type="button" id="clear-draft">Clear Draft</button>
           <ul class="list-block" id="draft-list"></ul>
         </article>
         <article class="planner-card">
-          <h2>Unscheduled Items</h2>
+          <h2>Unscheduled</h2>
           <ul class="list-block" id="unscheduled-list"></ul>
         </article>
         <article class="planner-card">
           <h2>Conflict Warnings</h2>
           <ul class="list-block" id="warnings-list"></ul>
-          <button class="action-button action-button--primary" type="button" id="commit-draft">Commit Draft To Calendar</button>
         </article>
+        <details class="planner-advanced" id="planner-advanced">
+          <summary>Customize (Advanced)</summary>
+          <div class="planner-advanced-body">
+            <article class="planner-card">
+              <h3>Manual Minor Goals</h3>
+              <div class="inline-fields">
+                <label>Title <input id="minor-goal-title" type="text" maxlength="120"></label>
+                <label>Target Hours <input id="minor-goal-hours" type="number" min="1" max="40" step="1" value="2"></label>
+              </div>
+              <button class="action-button" type="button" id="add-minor-goal">Add Minor Goal</button>
+              <ul class="list-block" id="minor-goals-list"></ul>
+            </article>
+            <article class="planner-card">
+              <h3>Optional Tasks</h3>
+              <div class="inline-fields">
+                <label>Task <input id="task-title" type="text" maxlength="120"></label>
+                <label>Estimate (mins) <input id="task-estimate" type="number" min="30" max="480" step="15" value="90"></label>
+              </div>
+              <div class="inline-fields">
+                <label>Priority
+                  <select id="task-priority"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select>
+                </label>
+                <label>Energy
+                  <select id="task-energy"><option value="deep" selected>Deep</option><option value="light">Light</option></select>
+                </label>
+              </div>
+              <button class="action-button" type="button" id="add-task">Add Task</button>
+              <ul class="list-block" id="tasks-list"></ul>
+            </article>
+            <article class="planner-card">
+              <h3>Manual Availability Rules</h3>
+              <div id="availability-grid" class="availability-grid"></div>
+            </article>
+          </div>
+        </details>
       </section>
+
+      <footer class="wizard-footer">
+        <button class="action-button" type="button" id="step-prev">Back</button>
+        <button class="action-button action-button--primary" type="button" id="step-next">Continue</button>
+      </footer>
     </section>
   </main>
 

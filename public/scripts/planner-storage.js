@@ -1,5 +1,17 @@
 const STORAGE_KEY = "lifeos_planner_state_v1";
 
+const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+
+const defaultProfile = () => ({
+  wakeTime: "07:00",
+  sleepTime: "22:00",
+  fixedCommitments: [],
+  habits: {
+    gym: { enabled: false, frequency: 3 },
+    leisure: { enabled: true, frequency: 5 },
+  },
+});
+
 const defaultAvailability = () => [
   { day: 1, start: "19:00", end: "22:00", maxHours: 3, maxDeepBlocks: 2, hardBlock: false },
   { day: 2, start: "19:00", end: "22:00", maxHours: 3, maxDeepBlocks: 2, hardBlock: false },
@@ -11,6 +23,7 @@ const defaultAvailability = () => [
 ];
 
 const emptyWeekState = () => ({
+  profile: defaultProfile(),
   minorGoals: [],
   tasks: [],
   availabilityRules: defaultAvailability(),
@@ -19,12 +32,48 @@ const emptyWeekState = () => ({
 });
 
 const defaultState = () => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   goals: [],
   currentWeekKey: "",
   weeks: {},
   history: [],
 });
+
+const parse = (raw, fallback) => (raw && typeof raw === "object" ? raw : fallback);
+
+const sanitizeProfile = (profile) => {
+  const next = parse(profile, {});
+  const habits = parse(next.habits, {});
+  return {
+    wakeTime: normalizeTime(next.wakeTime, "07:00"),
+    sleepTime: normalizeTime(next.sleepTime, "22:00"),
+    fixedCommitments: Array.isArray(next.fixedCommitments) ? next.fixedCommitments : [],
+    habits: {
+      gym: {
+        enabled: Boolean(parse(habits.gym, {}).enabled),
+        frequency: Math.max(0, Math.min(14, Number(parse(habits.gym, {}).frequency || 3))),
+      },
+      leisure: {
+        enabled: parse(habits.leisure, {}).enabled !== false,
+        frequency: Math.max(0, Math.min(14, Number(parse(habits.leisure, {}).frequency || 5))),
+      },
+    },
+  };
+};
+
+const normalizeWeekState = (week) => {
+  const normalized = parse(week, emptyWeekState());
+  return {
+    profile: sanitizeProfile(normalized.profile),
+    minorGoals: Array.isArray(normalized.minorGoals) ? normalized.minorGoals : [],
+    tasks: Array.isArray(normalized.tasks) ? normalized.tasks : [],
+    availabilityRules: Array.isArray(normalized.availabilityRules) && normalized.availabilityRules.length
+      ? normalized.availabilityRules
+      : defaultAvailability(),
+    draft: normalized.draft || null,
+    commitLog: Array.isArray(normalized.commitLog) ? normalized.commitLog : [],
+  };
+};
 
 const mondayOfWeek = (date) => {
   const copy = new Date(date);
@@ -45,9 +94,7 @@ export const getWeekKey = (date = new Date()) => {
 
 export const getPlanningWeekKey = (now = new Date()) => {
   const copy = new Date(now);
-  if (copy.getDay() === 0 && copy.getHours() >= 22) {
-    copy.setDate(copy.getDate() + 1);
-  }
+  if (copy.getDay() === 0 && copy.getHours() >= 22) copy.setDate(copy.getDate() + 1);
   return getWeekKey(copy);
 };
 
@@ -67,14 +114,20 @@ export const getWeekStartFromKey = (weekKey) => {
 export const loadPlannerState = () => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return defaultState();
-    }
+    if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
-    if (!parsed || parsed.schemaVersion !== 1 || typeof parsed !== "object") {
-      return defaultState();
-    }
-    return parsed;
+    if (!parsed || typeof parsed !== "object") return defaultState();
+    const state = {
+      schemaVersion: 2,
+      goals: Array.isArray(parsed.goals) ? parsed.goals : [],
+      currentWeekKey: typeof parsed.currentWeekKey === "string" ? parsed.currentWeekKey : "",
+      weeks: {},
+      history: Array.isArray(parsed.history) ? parsed.history : [],
+    };
+    Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => {
+      state.weeks[key] = normalizeWeekState(value);
+    });
+    return state;
   } catch {
     return defaultState();
   }
@@ -85,9 +138,8 @@ export const savePlannerState = (state) => {
 };
 
 export const ensureWeekState = (state, weekKey) => {
-  if (!state.weeks[weekKey]) {
-    state.weeks[weekKey] = emptyWeekState();
-  }
+  if (!state.weeks[weekKey]) state.weeks[weekKey] = emptyWeekState();
+  state.weeks[weekKey] = normalizeWeekState(state.weeks[weekKey]);
   return state.weeks[weekKey];
 };
 
@@ -99,10 +151,7 @@ export const rotateWeekIfNeeded = (state, now = new Date()) => {
     ensureWeekState(state, nextWeekKey);
     return nextWeekKey;
   }
-  if (currentWeekKey === nextWeekKey) {
-    ensureWeekState(state, currentWeekKey);
-    return currentWeekKey;
-  }
+  if (currentWeekKey === nextWeekKey) return ensureWeekState(state, currentWeekKey) && currentWeekKey;
   state.history.push({
     weekKey: currentWeekKey,
     archivedAt: new Date().toISOString(),
@@ -114,7 +163,7 @@ export const rotateWeekIfNeeded = (state, now = new Date()) => {
 };
 
 export const createGoal = ({ title, deadlineIso, priority, weeklyHours }) => ({
-  id: `goal_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+  id: uid("goal"),
   title,
   deadlineIso,
   priority,
@@ -124,7 +173,7 @@ export const createGoal = ({ title, deadlineIso, priority, weeklyHours }) => ({
 });
 
 export const createMinorGoal = ({ weekKey, title, targetHours }) => ({
-  id: `mgoal_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+  id: uid("mgoal"),
   weekKey,
   title,
   targetHours,
@@ -132,7 +181,7 @@ export const createMinorGoal = ({ weekKey, title, targetHours }) => ({
 });
 
 export const createTask = ({ weekKey, title, estimateMinutes, priority, energy }) => ({
-  id: `task_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+  id: uid("task"),
   weekKey,
   title,
   estimateMinutes,
@@ -141,16 +190,56 @@ export const createTask = ({ weekKey, title, estimateMinutes, priority, energy }
   status: "active",
 });
 
+export const createFixedCommitment = ({ day, start, end, title = "Fixed commitment" }) => ({
+  id: uid("fixed"),
+  day: Number(day),
+  start,
+  end,
+  title: title.trim() || "Fixed commitment",
+});
+
 export const dayName = (day) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day] || "Day";
 
-export const normalizeTime = (value, fallback) => {
-  const pattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
-  return pattern.test(value) ? value : fallback;
-};
+export const normalizeTime = (value, fallback) => (/^([01]\d|2[0-3]):([0-5]\d)$/.test(value) ? value : fallback);
 
 export const toMinutes = (value) => {
   const [hour, minute] = value.split(":").map(Number);
   return hour * 60 + minute;
+};
+
+const toTimeString = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+export const buildAvailabilityRulesFromProfile = (profileInput) => {
+  const profile = sanitizeProfile(profileInput);
+  const wake = toMinutes(profile.wakeTime);
+  const sleep = toMinutes(profile.sleepTime);
+  const dayEnd = sleep > wake ? sleep : wake + 60;
+  return [1, 2, 3, 4, 5, 6, 0].map((day) => {
+    const blocks = profile.fixedCommitments
+      .filter((item) => Number(item.day) === day)
+      .map((item) => ({ start: toMinutes(item.start), end: toMinutes(item.end) }))
+      .filter((item) => item.end > item.start)
+      .sort((a, b) => a.start - b.start);
+    let cursor = wake;
+    let best = { start: wake, end: dayEnd };
+    blocks.forEach((block) => {
+      const gap = Math.max(0, block.start - cursor);
+      if (gap > best.end - best.start) best = { start: cursor, end: block.start };
+      cursor = Math.max(cursor, block.end);
+    });
+    if (dayEnd - cursor > best.end - best.start) best = { start: cursor, end: dayEnd };
+    if (best.end <= best.start) best = { start: Math.max(wake, dayEnd - 60), end: dayEnd };
+    const minutes = Math.max(60, best.end - best.start);
+    const maxHours = Math.max(1, Number((minutes / 60).toFixed(1)));
+    return {
+      day,
+      start: toTimeString(best.start),
+      end: toTimeString(best.end),
+      maxHours,
+      maxDeepBlocks: Math.max(1, Math.min(4, Math.ceil(maxHours / 2))),
+      hardBlock: false,
+    };
+  });
 };
 
 export const getDateForDay = (weekStart, day) => {

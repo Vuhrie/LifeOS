@@ -104,7 +104,7 @@ export const validatePlannerInput = ({ goal, minorGoals, availabilityRules }) =>
     errors.push("Goal priority must be between 1 and 5.");
   }
   if (!minorGoals.length) {
-    errors.push("Add at least one weekly minor goal.");
+    errors.push("Add at least one schedulable item from goals or habits.");
   }
   if (!availabilityRules.length) {
     errors.push("Availability rules are required.");

@@ -28,6 +28,7 @@ Life OS/
 |   |   |-- planner-engine.js
 |   |   |-- planner-page.js
 |   |   |-- planner-storage.js
+|   |   |-- planner-view.js
 |   |   |-- schedules-page.js
 |   |   |-- today-page.js
 |   |   `-- navigation.js
@@ -49,9 +50,14 @@ Life OS/
 |           |-- visual-test-desktop-v0.0.2.png
 |           |-- visual-test-desktop-schedules-v0.3.0.png
 |           |-- visual-test-desktop-planner-v0.3.0.png
+|           |-- visual-test-desktop-schedules-v0.4.0.png
+|           |-- visual-test-desktop-planner-v0.4.0.png
 |           |-- visual-test-mobile-open-v0.3.0.png
 |           |-- visual-test-mobile-planner-v0.3.0.png
-|           `-- visual-test-mobile-v0.3.0.png
+|           |-- visual-test-mobile-open-v0.4.0.png
+|           |-- visual-test-mobile-planner-v0.4.0.png
+|           |-- visual-test-mobile-v0.3.0.png
+|           `-- visual-test-mobile-v0.4.0.png
 `-- tools/
 ```
 

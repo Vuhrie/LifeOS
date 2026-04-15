@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.3.0";
+const releaseVersion = "v0.4.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -71,8 +71,18 @@ const run = async () => {
 
     await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
     const plannerTitle = await desktop.locator("#planner-title").textContent();
+    const plannerSteps = await desktop.locator(".step-pill").count();
+    const firstStepActive = await desktop.locator('.step-pill[data-step="1"]').evaluate((element) =>
+      element.classList.contains("is-active"),
+    );
     if (plannerTitle !== "Planner") {
       throw new Error(`Unexpected Planner title: ${plannerTitle}`);
+    }
+    if (plannerSteps !== 3) {
+      throw new Error(`Planner should have 3 step pills. Found: ${plannerSteps}`);
+    }
+    if (!firstStepActive) {
+      throw new Error("Planner should open on step 1.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-current.png"),
@@ -138,6 +148,10 @@ const run = async () => {
     });
 
     await mobile.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    const mobilePlannerSteps = await mobile.locator(".step-pill").count();
+    if (mobilePlannerSteps !== 3) {
+      throw new Error(`Planner mobile should have 3 step pills. Found: ${mobilePlannerSteps}`);
+    }
     await mobile.screenshot({
       path: path.join(screenshotsDir, "visual-test-mobile-planner-current.png"),
       fullPage: true,
