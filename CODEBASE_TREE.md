@@ -20,6 +20,10 @@ Life OS/
 |   |-- assets/
 |   |   `-- images/
 |   |-- scripts/
+|   |   |-- ai-bridge-parser.js
+|   |   |-- ai-bridge-prompts.js
+|   |   |-- ai-bridge-schema.js
+|   |   |-- ai-bridge-ui.js
 |   |   |-- auth-session.js
 |   |   |-- calendar-write-client.js
 |   |   |-- calendar-client.js
@@ -93,7 +97,16 @@ Life OS/
 |           |-- visual-test-mobile-v0.4.4.png
 |           |-- visual-test-mobile-open-v0.4.4.png
 |           |-- visual-test-mobile-planner-v0.4.4.png
-|           `-- visual-test-mobile-planner-step2-v0.4.4.png
+|           |-- visual-test-mobile-planner-step2-v0.4.4.png
+|           |-- visual-test-desktop-v0.5.0.png
+|           |-- visual-test-desktop-schedules-v0.5.0.png
+|           |-- visual-test-desktop-planner-v0.5.0.png
+|           |-- visual-test-desktop-planner-step2-v0.5.0.png
+|           |-- visual-test-desktop-hover-v0.5.0.png
+|           |-- visual-test-mobile-v0.5.0.png
+|           |-- visual-test-mobile-open-v0.5.0.png
+|           |-- visual-test-mobile-planner-v0.5.0.png
+|           `-- visual-test-mobile-planner-step2-v0.5.0.png
 `-- tools/
 ```
 

@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.5.0
+
+- Added a manual AI-assist bridge in Planner Step 2 for copy/paste planning with any chatbot (non-API flow).
+- Added strict AI JSON validation before import so malformed AI output is blocked before applying to state.
+- Added prompt generator, parser, and apply workflow that maps AI output into goal/profile/minor goals/tasks/availability rules.
+- Persisted AI-assist prompt/import state in planner storage so work can continue after refresh.
+- Expanded visual checks to verify AI-assist UI presence in Planner Step 2 on both desktop and mobile.
+
 ## v0.4.4
 
 - Removed the extra `OK` prefix so the connected button label now displays exactly `Google Connected`.

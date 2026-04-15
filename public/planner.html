@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v0.4.4</title>
+  <title>Planner | LifeOS v0.5.0</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v0.4.4</a>
+      <a class="brand" href="index.html">LifeOS v0.5.0</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -34,7 +34,7 @@
           <p class="drawer-eyebrow">Navigation</p>
           <div>
             <p class="drawer-brand">LifeOS</p>
-            <p class="drawer-version">v0.4.4</p>
+            <p class="drawer-version">v0.5.0</p>
           </div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu">
@@ -112,6 +112,26 @@
       </section>
 
       <section class="wizard-step" data-step-panel="2">
+        <article class="planner-card ai-assist-card" aria-labelledby="ai-assist-title">
+          <h2 id="ai-assist-title">AI Assist (Manual Import)</h2>
+          <p class="ai-assist-subtitle">Build a strict prompt, paste it into any chatbot, then paste JSON response here.</p>
+          <div class="ai-assist-actions">
+            <button class="action-button" type="button" id="ai-build-prompt">Build Prompt</button>
+            <button class="action-button" type="button" id="ai-copy-prompt">Copy Prompt</button>
+          </div>
+          <label>Prompt to send AI
+            <textarea id="ai-prompt-output" rows="8" readonly placeholder="Prompt will appear here after clicking Build Prompt."></textarea>
+          </label>
+          <label>AI JSON response
+            <textarea id="ai-import-input" rows="8" placeholder="Paste JSON or ```json fenced output here."></textarea>
+          </label>
+          <div class="ai-assist-actions">
+            <button class="action-button" type="button" id="ai-validate-import">Validate JSON</button>
+            <button class="action-button action-button--primary" type="button" id="ai-apply-import" disabled>Apply To Planner</button>
+            <button class="action-button action-button--danger" type="button" id="ai-clear-import">Clear</button>
+          </div>
+          <p class="ai-assist-status" id="ai-assist-status" data-kind="neutral">Build prompt to start AI-assisted planning safely.</p>
+        </article>
         <article class="planner-card">
           <h2>Goal Setup</h2>
           <label>Goal

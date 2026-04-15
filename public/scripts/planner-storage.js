@@ -29,10 +29,16 @@ const emptyWeekState = () => ({
   availabilityRules: defaultAvailability(),
   draft: null,
   commitLog: [],
+  aiAssist: {
+    lastPrompt: "",
+    lastImportText: "",
+    lastAppliedAt: "",
+    lastApplySummary: "",
+  },
 });
 
 const defaultState = () => ({
-  schemaVersion: 2,
+  schemaVersion: 3,
   goals: [],
   currentWeekKey: "",
   weeks: {},
@@ -72,6 +78,12 @@ const normalizeWeekState = (week) => {
       : defaultAvailability(),
     draft: normalized.draft || null,
     commitLog: Array.isArray(normalized.commitLog) ? normalized.commitLog : [],
+    aiAssist: {
+      lastPrompt: String(parse(normalized.aiAssist, {}).lastPrompt || ""),
+      lastImportText: String(parse(normalized.aiAssist, {}).lastImportText || ""),
+      lastAppliedAt: String(parse(normalized.aiAssist, {}).lastAppliedAt || ""),
+      lastApplySummary: String(parse(normalized.aiAssist, {}).lastApplySummary || ""),
+    },
   };
 };
 
@@ -118,7 +130,7 @@ export const loadPlannerState = () => {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
     const state = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       goals: Array.isArray(parsed.goals) ? parsed.goals : [],
       currentWeekKey: typeof parsed.currentWeekKey === "string" ? parsed.currentWeekKey : "",
       weeks: {},

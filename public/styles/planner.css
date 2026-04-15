@@ -159,12 +159,58 @@
 }
 
 .planner-card input,
-.planner-card select {
+.planner-card select,
+.planner-card textarea {
   border: 1px solid var(--planner-border);
   border-radius: 12px;
   padding: 9px 10px;
   background: rgba(248, 255, 255, 0.84);
   color: var(--ink);
+}
+
+.planner-card textarea {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  font-family: "Consolas", "Menlo", "Monaco", monospace;
+  font-size: 0.86rem;
+}
+
+.ai-assist-card {
+  border-style: solid;
+}
+
+.ai-assist-subtitle {
+  margin: 0 0 10px;
+  color: var(--ink-muted);
+}
+
+.ai-assist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ai-assist-status {
+  margin: 8px 0 0;
+  border: 1px solid var(--planner-border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+}
+
+.ai-assist-status[data-kind="success"] {
+  border-color: rgba(171, 239, 221, 0.86);
+}
+
+.ai-assist-status[data-kind="warning"] {
+  border-color: rgba(255, 223, 150, 0.9);
+}
+
+.ai-assist-status[data-kind="error"] {
+  border-color: rgba(255, 183, 190, 0.88);
 }
 
 .inline-fields {
@@ -324,7 +370,8 @@
   }
 
   .planner-card input:hover,
-  .planner-card select:hover {
+  .planner-card select:hover,
+  .planner-card textarea:hover {
     border-color: var(--hover-border);
     background: rgba(252, 255, 255, 0.95);
   }
@@ -341,6 +388,14 @@
   }
 
   .planner-actions {
-    justify-content: flex-start;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .planner-actions .action-button {
+    width: 100%;
+    padding-inline: 10px;
   }
 }

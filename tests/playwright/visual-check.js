@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.4.4";
+const releaseVersion = "v0.5.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -114,6 +114,15 @@ const run = async () => {
     });
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(200);
+    const aiAssistTitle = await desktop.locator("#ai-assist-title").textContent();
+    const aiPromptField = await desktop.locator("#ai-prompt-output").isVisible();
+    const aiImportField = await desktop.locator("#ai-import-input").isVisible();
+    if (aiAssistTitle !== "AI Assist (Manual Import)") {
+      throw new Error(`Unexpected AI assist title: ${aiAssistTitle}`);
+    }
+    if (!aiPromptField || !aiImportField) {
+      throw new Error("AI assist fields should be visible in planner step 2 on desktop.");
+    }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),
       fullPage: true,
@@ -212,6 +221,10 @@ const run = async () => {
     });
     await mobile.locator('.step-pill[data-step="2"]').click();
     await wait(200);
+    const mobileAiAssistVisible = await mobile.locator("#ai-assist-title").isVisible();
+    if (!mobileAiAssistVisible) {
+      throw new Error("AI assist section should be visible in planner step 2 on mobile.");
+    }
     await mobile.screenshot({
       path: path.join(screenshotsDir, "visual-test-mobile-planner-step2-current.png"),
       fullPage: true,

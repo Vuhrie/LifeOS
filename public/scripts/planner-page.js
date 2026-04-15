@@ -1,4 +1,7 @@
 import { createCalendarWriteClient } from "./calendar-write-client.js";
+import { parseAiBridgePlan, summarizeAiBridgePlan } from "./ai-bridge-parser.js";
+import { buildAiBridgePrompt } from "./ai-bridge-prompts.js";
+import { createAiBridgeUi } from "./ai-bridge-ui.js";
 import { generateDraftPlan, previewOverlapWarnings } from "./planner-engine.js";
 import {
   buildAvailabilityRulesFromProfile,
@@ -58,6 +61,14 @@ const ui = {
   draftList: $("#draft-list"),
   unscheduledList: $("#unscheduled-list"),
   warningsList: $("#warnings-list"),
+  aiBuildPrompt: $("#ai-build-prompt"),
+  aiCopyPrompt: $("#ai-copy-prompt"),
+  aiPromptOutput: $("#ai-prompt-output"),
+  aiImportInput: $("#ai-import-input"),
+  aiValidateImport: $("#ai-validate-import"),
+  aiApplyImport: $("#ai-apply-import"),
+  aiClearImport: $("#ai-clear-import"),
+  aiStatus: $("#ai-assist-status"),
 };
 
 const view = createPlannerView(ui);
@@ -125,6 +136,84 @@ const autoMinorGoals = (goal) => {
   if (leisure.enabled && leisure.frequency > 0) items.push(createMinorGoal({ weekKey, title: "Leisure / Recovery", targetHours: Number((leisure.frequency * 1.5).toFixed(1)) }));
   return items;
 };
+
+const applyGoalToUi = (goal) => {
+  if (!goal) return;
+  if (goal.title) ui.goalTitle.value = goal.title;
+  if (goal.deadline) ui.goalDeadline.value = goal.deadline;
+  ui.goalPriority.value = String(goal.priority || 3);
+  if (goal.weeklyHours > 0) ui.goalHours.value = String(goal.weeklyHours);
+};
+
+const buildPromptContext = () => ({
+  weekKey,
+  goal: {
+    title: ui.goalTitle.value.trim(),
+    deadline: ui.goalDeadline.value,
+    priority: Number(ui.goalPriority.value),
+    weeklyHours: Number(ui.goalHours.value),
+  },
+  profile: profileFromUi(),
+  minorGoals: week.minorGoals.map(({ title, targetHours }) => ({ title, targetHours })),
+  tasks: week.tasks.map(({ title, estimateMinutes, priority, energy }) => ({ title, estimateMinutes, priority, energy })),
+  availabilityRules: week.availabilityRules.map(({ day, start, end, maxHours, maxDeepBlocks }) => ({ day, start, end, maxHours, maxDeepBlocks })),
+});
+
+const applyAiPlanToState = (plan) => {
+  if (plan.goal) {
+    applyGoalToUi(plan.goal);
+    upsertGoal();
+  }
+  if (plan.profile) {
+    week.profile = {
+      ...week.profile,
+      wakeTime: plan.profile.wakeTime || week.profile.wakeTime,
+      sleepTime: plan.profile.sleepTime || week.profile.sleepTime,
+      habits: {
+        gym: { ...week.profile.habits.gym, ...(plan.profile.habits.gym || {}) },
+        leisure: { ...week.profile.habits.leisure, ...(plan.profile.habits.leisure || {}) },
+      },
+      fixedCommitments: Array.isArray(plan.profile.fixedCommitments)
+        ? plan.profile.fixedCommitments.map((item) => createFixedCommitment(item))
+        : week.profile.fixedCommitments,
+    };
+    applyProfileToUi();
+    if (!plan.availabilityRules?.length) refreshAvailabilityFromProfile();
+  }
+  if (plan.minorGoals?.length) {
+    week.minorGoals = plan.minorGoals.map((item) => createMinorGoal({ weekKey, title: item.title, targetHours: item.targetHours }));
+  }
+  if (plan.tasks?.length) {
+    week.tasks = plan.tasks.map((item) => createTask({ weekKey, title: item.title, estimateMinutes: item.estimateMinutes, priority: item.priority, energy: item.energy }));
+  }
+  if (plan.availabilityRules?.length) {
+    week.availabilityRules = plan.availabilityRules;
+  }
+  rerenderAll();
+  save();
+  return summarizeAiBridgePlan(plan);
+};
+
+const aiBridge = createAiBridgeUi({
+  output: ui.aiPromptOutput,
+  importInput: ui.aiImportInput,
+  status: ui.aiStatus,
+  buildButton: ui.aiBuildPrompt,
+  copyButton: ui.aiCopyPrompt,
+  validateButton: ui.aiValidateImport,
+  applyButton: ui.aiApplyImport,
+  clearButton: ui.aiClearImport,
+  onBuildPrompt: () => buildAiBridgePrompt(buildPromptContext()),
+  onValidateImport: (text) => parseAiBridgePlan(text),
+  onApplyImport: (plan) => applyAiPlanToState(plan),
+  onPersist: (next) => {
+    week.aiAssist = {
+      ...week.aiAssist,
+      ...next,
+    };
+    save();
+  },
+});
 
 const rerenderAll = () => {
   view.renderFixedCommitments(week.profile.fixedCommitments);
@@ -294,6 +383,7 @@ ui.commit.addEventListener("click", async () => {
   }
   applyProfileToUi();
   rerenderAll();
+  aiBridge.hydrateSavedState(week.aiAssist);
   renderGoogleAuthState(writeClient.getState());
   currentStep = view.setStep(1);
   const note = getPlanningWeekKey(new Date()) === weekKey ? "" : " Week rotated to new cycle.";

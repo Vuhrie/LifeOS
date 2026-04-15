@@ -28,6 +28,7 @@ npm run test:visual
 - Desktop restored-auth checks show `Google Connected` on `Today`, `Schedules`, and `Planner`.
 - Desktop `Planner` shows the 3-step quick planner pills and starts on `1. Life Constraints`.
 - Desktop `Planner` step 2 shows the modern habit switch controls.
+- Desktop `Planner` step 2 shows the `AI Assist (Manual Import)` card with prompt and JSON import fields.
 - Desktop `Planner` shows `Google Connected` on the connect button when a valid auth token is restored.
 - Desktop hover capture verifies visible hover affordance on interactive controls.
 - Mobile hides the desktop navigation and shows the menu button.
@@ -37,6 +38,7 @@ npm run test:visual
 - Loading either page should not trigger a Google sign-in popup until `Connect Google` is clicked.
 - Mobile `Planner` also shows all three planner step pills.
 - Mobile `Planner` step 2 shows the modern habit switch controls without overflow.
+- Mobile `Planner` step 2 shows AI-assist controls without layout overflow.
 - Versioned screenshot artifacts are generated for desktop today, desktop schedules, desktop planner, desktop planner step 2, desktop hover state, mobile closed, mobile drawer-open, mobile planner, and mobile planner step 2 states.
 - Generated screenshots are also reviewed through Codex image-based inspection.
 - Release screenshots are saved with both `current` and versioned filenames.
