@@ -2,10 +2,9 @@ const $ = (id) => document.querySelector(id);
 
 export const getPlannerUi = () => ({
   status: $("#planner-status"),
-  inputNotice: $("#planner-input-notice"),
-  inputNoticeList: $("#planner-input-notice-list"),
   lock: $("#planner-lock"),
   connect: $("#connect-google"),
+  connectDrawer: $("#connect-google-drawer"),
   commit: $("#commit-draft"),
   generate: $("#generate-draft"),
   clear: $("#clear-draft"),
@@ -47,7 +46,6 @@ export const getPlannerUi = () => ({
   addHabit: $("#add-habit"),
   habitsList: $("#habits-list"),
   draftSchedule: $("#draft-schedule"),
-  draftList: $("#draft-list"),
   unscheduledList: $("#unscheduled-list"),
   warningsList: $("#warnings-list"),
   aiBuildPrompt: $("#ai-build-prompt"),

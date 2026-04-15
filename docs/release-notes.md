@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.8.2
+
+- Moved `Connect Google` to global navigation so auth is always reachable even when planner content is locked.
+- Added drawer-level `Connect Google` as the first mobile action item across pages.
+- Removed the planner input status block and simplified the planner flow UI.
+- Upgraded draft schedule rendering to a merged calendar-style preview that combines existing Google events and planned slots with status badges.
+
 ## v0.8.1
 
 - Removed goal-only gating from draft generation so planner can run with empty goals, habits, and commitments.

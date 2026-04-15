@@ -43,12 +43,14 @@ Life OS/
 |   |   |-- planner-logic.js
 |   |   |-- planner-page.js
 |   |   |-- planner-policy.js
+|   |   |-- planner-preview-model.js
 |   |   |-- planner-storage.js
 |   |   |-- planner-sync-client.js
 |   |   |-- planner-time.js
 |   |   |-- planner-validation.js
 |   |   |-- planner-view.js
 |   |   |-- schedules-page.js
+|   |   |-- setting-page.js
 |   |   |-- today-page.js
 |   |   `-- navigation.js
 |   |-- styles/
@@ -61,6 +63,7 @@ Life OS/
 |   |   |-- planner.css
 |   |   |-- planner-ai.css
 |   |   |-- planner-cards.css
+|   |   |-- planner-draft-calendar.css
 |   |   |-- planner-responsive.css
 |   |   |-- planner-shell.css
 |   |   `-- theme.css
@@ -163,7 +166,16 @@ Life OS/
 |           |-- visual-test-mobile-v0.8.1.png
 |           |-- visual-test-mobile-open-v0.8.1.png
 |           |-- visual-test-mobile-planner-v0.8.1.png
-|           `-- visual-test-mobile-planner-step2-v0.8.1.png
+|           |-- visual-test-mobile-planner-step2-v0.8.1.png
+|           |-- visual-test-desktop-v0.8.2.png
+|           |-- visual-test-desktop-schedules-v0.8.2.png
+|           |-- visual-test-desktop-planner-v0.8.2.png
+|           |-- visual-test-desktop-planner-step2-v0.8.2.png
+|           |-- visual-test-desktop-hover-v0.8.2.png
+|           |-- visual-test-mobile-v0.8.2.png
+|           |-- visual-test-mobile-open-v0.8.2.png
+|           |-- visual-test-mobile-planner-v0.8.2.png
+|           `-- visual-test-mobile-planner-step2-v0.8.2.png
 `-- tools/
 ```
 

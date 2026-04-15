@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Today | LifeOS v0.8.1</title>
+  <title>Today | LifeOS v0.8.2</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/calendar.css">
@@ -11,12 +11,15 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v0.8.1</a>
+      <a class="brand" href="index.html">LifeOS v0.8.2</a>
       <div class="desktop-nav">
         <a class="nav-link is-active" href="index.html" aria-current="page">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
         <a class="nav-link" href="planner.html">Planner</a>
         <a class="nav-link" href="setting.html">Setting</a>
+      </div>
+      <div class="nav-actions">
+        <button class="action-button action-button--primary google-connect-button nav-connect-button" type="button" id="connect-google" data-auth-state="idle">Connect Google</button>
       </div>
       <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-drawer" aria-haspopup="dialog" aria-label="Open navigation menu">
         <span></span>
@@ -33,7 +36,7 @@
           <p class="drawer-eyebrow">Navigation</p>
           <div>
             <p class="drawer-brand">LifeOS</p>
-            <p class="drawer-version">v0.8.1</p>
+            <p class="drawer-version">v0.8.2</p>
           </div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu">
@@ -43,6 +46,7 @@
       <div class="drawer-section">
         <p class="drawer-section-title" id="drawer-title">Go To</p>
         <div class="drawer-links">
+          <button class="drawer-action-button google-connect-button" type="button" id="connect-google-drawer" data-auth-state="idle">Connect Google</button>
           <a class="drawer-link is-active" href="index.html" aria-current="page">
             <span class="drawer-link-label">Today</span>
             <span class="drawer-link-copy">Focus on the current day</span>
@@ -73,7 +77,6 @@
           <p class="calendar-subtitle">View only today's schedule from your connected Google Calendar.</p>
         </div>
         <div class="calendar-actions">
-          <button class="action-button action-button--primary" type="button" id="connect-google">Connect Google</button>
           <button class="action-button" type="button" id="refresh-events" disabled>Refresh</button>
           <button class="action-button action-button--danger" type="button" id="sign-out" disabled>Sign out</button>
         </div>

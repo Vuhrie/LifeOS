@@ -22,15 +22,18 @@ npm run test:visual
 ## Expected Checks
 
 - Desktop shows the navbar brand and centered navigation links.
+- Desktop shows `Connect Google` on the right side of the navbar.
 - Desktop `Today` page shows Google Calendar heading and control buttons.
 - Desktop `Schedules` page shows Google Calendar heading, range selector, and control buttons.
 - Desktop `Planner` page shows deterministic planner sections and action buttons.
+- Desktop `Planner` no longer shows the planner input status block.
 - Desktop `Planner` step 1 shows rolling horizon controls, unified commitment inputs, and account lock-state behavior.
 - Desktop `Planner` step 1 shows the in-page `Planner Input Status` block with missing-input guidance.
 - Desktop `Planner` commitment type switching adapts input visibility (weekly/date-range/one-off) correctly.
 - Desktop `Planner` weekly commitments default to Mon-Fri selected, while date-range defaults to all weekdays selected.
 - Desktop `Planner` date-range commitments disable non-applicable weekdays.
 - Desktop `Planner` can generate draft output without goals and shows open-hours status messaging.
+- Desktop `Planner` draft preview renders as merged calendar-style day cards, including existing Google events.
 - Desktop restored-auth checks show `Google Connected` on `Today`, `Schedules`, and `Planner`.
 - Desktop `Planner` shows the 3-step quick planner pills and starts on `1. Life Constraints`.
 - Desktop `Planner` step 2 shows the modern habit switch controls.
@@ -39,6 +42,7 @@ npm run test:visual
 - Desktop `Planner` shows `Google Connected` on the connect button when a valid auth token is restored.
 - Desktop hover capture verifies visible hover affordance on interactive controls.
 - Mobile hides the desktop navigation and shows the menu button.
+- Mobile drawer includes `Connect Google` as the first action item.
 - Mobile menu button renders as three horizontal lines.
 - The drawer opens on mobile as a branded left-side sheet.
 - The drawer lists `Today`, `Schedules`, `Planner`, and `Setting`.

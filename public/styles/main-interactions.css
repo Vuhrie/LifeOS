@@ -19,6 +19,18 @@
     background: rgba(205, 244, 255, 0.7);
     transform: var(--hover-lift);
   }
+
+  .nav-connect-button:hover,
+  .drawer-action-button:hover {
+    border-color: var(--hover-border);
+    box-shadow: var(--hover-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    transform: var(--hover-lift);
+  }
+
+  .nav-connect-button[data-auth-state="connected"]:hover,
+  .drawer-action-button[data-auth-state="connected"]:hover {
+    background: linear-gradient(155deg, #36dec1, #26bdd2);
+  }
 }
 
 body.drawer-open {
@@ -29,4 +41,3 @@ body.drawer-open .page-content {
   transform: scale(0.986);
   filter: blur(2px);
 }
-

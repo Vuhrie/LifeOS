@@ -3,6 +3,7 @@ import { renderEvents } from "./calendar-ui.js";
 import { applyGoogleConnectButtonState } from "./google-connect-button.js";
 
 const connectButton = document.querySelector("#connect-google");
+const drawerConnectButton = document.querySelector("#connect-google-drawer");
 const refreshButton = document.querySelector("#refresh-events");
 const signOutButton = document.querySelector("#sign-out");
 const statusNode = document.querySelector("#calendar-status");
@@ -26,6 +27,7 @@ const updateControls = (state) => {
   }
 
   applyGoogleConnectButtonState(connectButton, state);
+  applyGoogleConnectButtonState(drawerConnectButton, state);
   refreshButton.disabled = !state.isSignedIn || state.isLoading;
   signOutButton.disabled = !state.isSignedIn || state.isLoading;
 
@@ -77,6 +79,10 @@ connectButton.addEventListener("click", async () => {
   } catch (error) {
     calendar.setError(error.message);
   }
+});
+
+drawerConnectButton?.addEventListener("click", () => {
+  connectButton.click();
 });
 
 refreshButton.addEventListener("click", loadTodayEvents);

@@ -2,6 +2,7 @@ const drawer = document.querySelector(".drawer");
 const menuButton = document.querySelector(".menu-button");
 const closeButton = document.querySelector(".drawer-close");
 const drawerLinks = drawer ? [...drawer.querySelectorAll(".drawer-link")] : [];
+const drawerActions = drawer ? [...drawer.querySelectorAll(".drawer-action-button")] : [];
 let lastFocusedElement = null;
 
 if (drawer && menuButton && closeButton) {
@@ -44,6 +45,12 @@ if (drawer && menuButton && closeButton) {
 
   drawerLinks.forEach((link) => {
     link.addEventListener("click", () => {
+      setDrawerState(false);
+    });
+  });
+
+  drawerActions.forEach((action) => {
+    action.addEventListener("click", () => {
       setDrawerState(false);
     });
   });

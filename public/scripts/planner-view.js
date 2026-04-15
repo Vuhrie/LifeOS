@@ -1,11 +1,30 @@
 import { dayName } from "./planner-storage.js";
 
+const escapeHtml = (value) =>
+  String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
 const renderList = (target, items, map, empty = "No items yet.") => {
   target.innerHTML = items.length ? items.map(map).join("") : `<li class="list-empty">${empty}</li>`;
 };
 
-const formatTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-const dayShort = (iso) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(iso).getDay()];
+const formatTime = (value) =>
+  new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value));
+
+const formatDate = (value) =>
+  new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
+
+const draftCard = (item) => `
+  <article class="draft-event-card" data-kind="${escapeHtml(item.kind)}">
+    <p class="draft-event-time">${escapeHtml(formatTime(item.start))} - ${escapeHtml(formatTime(item.end))}</p>
+    <h3>${escapeHtml(item.title)}</h3>
+    <span class="draft-event-badge">${escapeHtml(item.badge)}</span>
+  </article>
+`;
 
 export const createPlannerView = (ui) => {
   const setStatus = (text, kind = "neutral") => {
@@ -15,8 +34,22 @@ export const createPlannerView = (ui) => {
 
   const setPlannerLock = (locked) => {
     ui.lock.hidden = !locked;
-    const controls = [ui.generate, ui.clear, ui.commit, ui.prev, ui.next, ui.aiBuildPrompt, ui.aiValidateImport, ui.aiApplyImport, ui.addCommitment, ui.addGoal, ui.addHabit];
-    controls.forEach((control) => { if (control) control.disabled = locked; });
+    const controls = [
+      ui.generate,
+      ui.clear,
+      ui.commit,
+      ui.prev,
+      ui.next,
+      ui.aiBuildPrompt,
+      ui.aiValidateImport,
+      ui.aiApplyImport,
+      ui.addCommitment,
+      ui.addGoal,
+      ui.addHabit,
+    ];
+    controls.forEach((control) => {
+      if (control) control.disabled = locked;
+    });
   };
 
   const renderCommitments = (items) => {
@@ -28,7 +61,8 @@ export const createPlannerView = (ui) => {
     renderList(
       ui.commitmentsList,
       items,
-      (item) => `<li>${item.title} | ${summary(item)} <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
+      (item) =>
+        `<li>${escapeHtml(item.title)} | ${escapeHtml(summary(item))} <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
     );
   };
 
@@ -36,7 +70,8 @@ export const createPlannerView = (ui) => {
     renderList(
       ui.goalsList,
       items,
-      (item) => `<li>${item.title} (${item.weeklyHours}h, P${item.priority}) <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`,
+      (item) =>
+        `<li>${escapeHtml(item.title)} (${item.weeklyHours}h, P${item.priority}) <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`,
     );
   };
 
@@ -44,57 +79,49 @@ export const createPlannerView = (ui) => {
     renderList(
       ui.habitsList,
       items,
-      (item) => `<li>${item.name} (${item.frequency}x, ${item.durationMinutes}m, ${item.window}) <button type="button" class="inline-remove" data-rm-habit="${item.id}">Remove</button></li>`,
+      (item) =>
+        `<li>${escapeHtml(item.name)} (${item.frequency}x, ${item.durationMinutes}m, ${escapeHtml(item.window)}) <button type="button" class="inline-remove" data-rm-habit="${item.id}">Remove</button></li>`,
     );
   };
 
-  const renderInputNotice = ({ goalsCount, habitsCount, commitmentsCount }) => {
-    const rows = [
-      goalsCount > 0
-        ? { kind: "ok", text: `Goals ready: ${goalsCount}.` }
-        : { kind: "warn", text: "No goals yet. Generation will still run with open hours." },
-      habitsCount > 0
-        ? { kind: "ok", text: `Habits/sessions ready: ${habitsCount}.` }
-        : { kind: "warn", text: "No habits/sessions yet. Generation will still run." },
-      commitmentsCount > 0
-        ? { kind: "ok", text: `Commitments ready: ${commitmentsCount}.` }
-        : { kind: "warn", text: "No commitments yet. Your schedule remains fully open." },
-    ];
-    ui.inputNoticeList.innerHTML = rows
-      .map((item) => `<li class="input-notice-item" data-kind="${item.kind}">${item.text}</li>`)
-      .join("");
-  };
-
-  const renderScheduleGrid = (slots) => {
-    if (!slots.length) {
-      ui.draftSchedule.innerHTML = `<p class="list-empty">No schedule generated yet.</p>`;
+  const renderDraftSchedule = (draft) => {
+    if (!draft?.preview?.days?.length) {
+      ui.draftSchedule.innerHTML = `<article class="event-empty"><h2>No schedule generated</h2><p>Generate a draft to preview your upcoming calendar.</p></article>`;
       return;
     }
-    const grouped = new Map();
-    slots.forEach((slot) => {
-      const key = new Date(slot.start).toDateString();
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(slot);
-    });
-    const orderedKeys = [...grouped.keys()].sort((left, right) => new Date(left) - new Date(right));
-    ui.draftSchedule.innerHTML = orderedKeys.map((key) => {
-      const daySlots = grouped.get(key).sort((left, right) => new Date(left.start) - new Date(right.start));
-      return `<section class="schedule-day"><h3>${dayShort(daySlots[0].start)} ${new Date(daySlots[0].start).toLocaleDateString()}</h3>${daySlots.map((slot) => `<article class="schedule-slot"><p>${slot.title}</p><p>${formatTime(slot.start)} - ${formatTime(slot.end)}</p></article>`).join("")}</section>`;
-    }).join("");
+    ui.draftSchedule.innerHTML = draft.preview.days
+      .map(
+        (day) => `
+        <section class="draft-day-group">
+          <h3>${escapeHtml(formatDate(day.date))}</h3>
+          <div class="draft-day-list">
+            ${day.items.map(draftCard).join("")}
+          </div>
+        </section>`,
+      )
+      .join("");
   };
 
   const renderDraft = (draft) => {
     if (!draft) {
-      renderList(ui.draftList, [], (x) => x);
       renderList(ui.unscheduledList, [], (x) => x);
       renderList(ui.warningsList, [], (x) => x);
-      renderScheduleGrid([]);
+      renderDraftSchedule(null);
       return;
     }
-    renderScheduleGrid(draft.slots || []);
-    renderList(ui.draftList, draft.slots, (slot) => `<li>${slot.title} | ${new Date(slot.start).toLocaleString()} - ${formatTime(slot.end)}</li>`);
-    renderList(ui.unscheduledList, draft.unscheduled || [], (item) => `<li>${item.title} <span class="warn">${item.reasonCode}</span></li>`, "No unscheduled items.");
-    renderList(ui.warningsList, draft.warnings || [], (item) => `<li>${item.slotTitle} overlaps with "${item.existingTitle}"</li>`, "No conflicts.");
+    renderDraftSchedule(draft);
+    renderList(
+      ui.unscheduledList,
+      draft.unscheduled || [],
+      (item) => `<li>${escapeHtml(item.title)} <span class="warn">${escapeHtml(item.reasonCode)}</span></li>`,
+      "No unscheduled items.",
+    );
+    renderList(
+      ui.warningsList,
+      draft.warnings || [],
+      (item) => `<li>${escapeHtml(item.slotTitle)} overlaps with "${escapeHtml(item.existingTitle)}"</li>`,
+      "No conflicts.",
+    );
   };
 
   const setStep = (step) => {
@@ -106,5 +133,5 @@ export const createPlannerView = (ui) => {
     return currentStep;
   };
 
-  return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderInputNotice, renderDraft, setStep };
+  return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderDraft, setStep };
 };

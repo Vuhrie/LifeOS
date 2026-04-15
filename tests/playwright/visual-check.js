@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.8.1";
+const releaseVersion = "v0.8.2";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -51,6 +51,22 @@ const run = async () => {
       fullPage: true,
     });
     const seededToken = { accessToken: "seeded-token", expiresAt: Date.now() + 3600_000 };
+    const seededStart = new Date();
+    seededStart.setDate(seededStart.getDate() + 1);
+    seededStart.setHours(9, 0, 0, 0);
+    const seededEnd = new Date(seededStart);
+    seededEnd.setHours(10, 0, 0, 0);
+    const seededEventsPayload = {
+      items: [
+        {
+          id: "existing_event_1",
+          summary: "Existing Calendar Event",
+          start: { dateTime: seededStart.toISOString() },
+          end: { dateTime: seededEnd.toISOString() },
+          description: "from_google",
+        },
+      ],
+    };
     await desktop.evaluate((token) => {
       window.localStorage.setItem("lifeos_google_calendar_auth_v1", JSON.stringify(token));
       window.localStorage.setItem("lifeos_google_calendar_write_auth_v1", JSON.stringify(token));
@@ -59,7 +75,7 @@ const run = async () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ items: [] }),
+        body: JSON.stringify(seededEventsPayload),
       });
     });
     await desktop.goto("http://127.0.0.1:4173/index.html", { waitUntil: "networkidle" });
@@ -130,9 +146,9 @@ const run = async () => {
     if (weeklySelectedCount !== 5) {
       throw new Error(`Weekly recurring should default to Mon-Fri selected. Found: ${weeklySelectedCount}`);
     }
-    const noticeText = await desktop.locator("#planner-input-notice-list").innerText();
-    if (!noticeText.includes("No goals yet") || !noticeText.includes("No habits/sessions yet")) {
-      throw new Error(`Planner notice block should show missing input hints. Found: ${noticeText}`);
+    const noticeCount = await desktop.locator("#planner-input-notice").count();
+    if (noticeCount !== 0) {
+      throw new Error("Planner input notice block should be removed.");
     }
     await desktop.selectOption("#commitment-type", "one_off");
     const dayWrapOneOffVisible = await desktop.locator("#commitment-day-wrap").isVisible();
@@ -159,6 +175,11 @@ const run = async () => {
     const noGoalStatus = await desktop.locator("#planner-status").textContent();
     if (!noGoalStatus?.includes("open hours")) {
       throw new Error(`Planner should generate without goals and show open-hours status. Found: ${noGoalStatus}`);
+    }
+    const previewCardCount = await desktop.locator(".draft-event-card").count();
+    const previewText = await desktop.locator("#draft-schedule").innerText();
+    if (previewCardCount < 1 || !previewText.includes("Existing Calendar Event")) {
+      throw new Error("Planner draft preview should include merged existing calendar event cards.");
     }
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(200);

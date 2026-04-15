@@ -3,6 +3,7 @@ import { createAiBridgeUi } from "./ai-bridge-ui.js";
 import { parseAiBridgePlan, summarizeAiBridgePlan } from "./ai-bridge-parser.js";
 import { createPlannerLogic } from "./planner-logic.js";
 import { generateDraftPlan, previewOverlapWarnings } from "./planner-engine.js";
+import { buildPlannerPreview } from "./planner-preview-model.js";
 import {
   buildAvailabilityRulesFromProfile,
   createCommitment,
@@ -45,11 +46,6 @@ export const initPlannerController = (ui) => {
     view.renderCommitments(week.profile.commitments);
     view.renderGoals(week.goals);
     view.renderHabits(week.habits);
-    view.renderInputNotice({
-      goalsCount: week.goals.length,
-      habitsCount: week.habits.length,
-      commitmentsCount: week.profile.commitments.length,
-    });
     view.renderDraft(week.draft);
   };
 
@@ -112,6 +108,7 @@ export const initPlannerController = (ui) => {
     onStateChange: async (state) => {
       lastAuthStateRef.current = state;
       applyGoogleConnectButtonState(ui.connect, state);
+      applyGoogleConnectButtonState(ui.connectDrawer, state);
       ui.commit.disabled = !state.isSignedIn || state.isLoading;
       view.setPlannerLock(!state.isSignedIn);
       if (state.error) view.setStatus(state.error, "error");
@@ -163,6 +160,9 @@ export const initPlannerController = (ui) => {
   ui.connect.addEventListener("click", async () => {
     if (lastAuthStateRef.current.isSignedIn) return view.setStatus("Google Calendar is already connected.", "success");
     try { await writeClient.connect(); view.setStatus("Google connected. Planner unlocked.", "success"); } catch (error) { writeClient.setError(error.message); }
+  });
+  ui.connectDrawer?.addEventListener("click", () => {
+    ui.connect.click();
   });
   ui.prev.addEventListener("click", () => { currentStep = view.setStep(currentStep - 1); });
   ui.next.addEventListener("click", () => { currentStep = view.setStep(currentStep + 1); });
@@ -249,11 +249,22 @@ export const initPlannerController = (ui) => {
       existingSlots: week.managedSlots,
       lockedHorizonHours: week.settings.lockedHorizonHours,
     });
+    const end = new Date(horizonStart);
+    end.setDate(end.getDate() + week.settings.horizonDays);
+    let existingEvents = [];
+    try {
+      existingEvents = await writeClient.fetchExistingEvents({ startIso: horizonStart.toISOString(), endIso: end.toISOString() });
+    } catch {}
+    draft.preview = buildPlannerPreview({
+      draftSlots: draft.slots,
+      existingEvents,
+      horizonStart,
+      horizonDays: week.settings.horizonDays,
+    });
     week.draft = draft;
     week.managedSlots = draft.slots.map((slot) => ({ ...slot, lifeosManaged: true, planRunId: `run_${Date.now().toString(36)}` }));
     if (draft.validation.ok) {
-      const end = new Date(horizonStart); end.setDate(end.getDate() + week.settings.horizonDays);
-      try { draft.warnings = previewOverlapWarnings(draft.slots, await writeClient.fetchExistingEvents({ startIso: horizonStart.toISOString(), endIso: end.toISOString() })); } catch {}
+      draft.warnings = previewOverlapWarnings(draft.slots, existingEvents);
     }
     save();
     view.renderDraft(draft);
