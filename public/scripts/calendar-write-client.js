@@ -7,7 +7,6 @@ import {
 
 const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
 const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
-const TOKEN_KEY = "lifeos_google_calendar_write_auth_v1";
 const CONFIG = window.LIFEOS_CALENDAR_CONFIG ?? {};
 
 const waitForGoogleIdentity = async (timeoutMs = 8000) => {
@@ -21,22 +20,9 @@ const waitForGoogleIdentity = async (timeoutMs = 8000) => {
   return false;
 };
 
-const loadWriteSession = (mode) => {
-  try {
-    const raw = (mode === "session" ? window.sessionStorage : window.localStorage).getItem(TOKEN_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-const saveWriteSession = (mode, payload) => {
-  (mode === "session" ? window.sessionStorage : window.localStorage).setItem(TOKEN_KEY, JSON.stringify(payload));
-};
-
 const clearWriteSession = () => {
-  window.localStorage.removeItem(TOKEN_KEY);
-  window.sessionStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem("lifeos_google_calendar_write_auth_v1");
+  window.sessionStorage.removeItem("lifeos_google_calendar_write_auth_v1");
   clearPersistedSession();
 };
 
@@ -77,7 +63,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   const tokenValid = () => accessToken && expiresAt > Date.now() + persistence.refreshSkewSeconds * 1000;
 
   const restore = () => {
-    const saved = loadWriteSession(persistence.mode);
+    const saved = loadPersistedSession(persistence.mode);
     if (!saved || typeof saved.accessToken !== "string" || typeof saved.expiresAt !== "number") {
       return false;
     }
@@ -128,7 +114,11 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
         accessToken = response.access_token;
         const expiresIn = Number(response.expires_in) || persistence.durationSeconds;
         expiresAt = Date.now() + expiresIn * 1000;
-        saveWriteSession(persistence.mode, { accessToken, expiresAt });
+        savePersistedSession(persistence.mode, { accessToken, expiresAt });
+        (persistence.mode === "session" ? window.sessionStorage : window.localStorage).setItem(
+          "lifeos_google_calendar_write_auth_v1",
+          JSON.stringify({ accessToken, expiresAt }),
+        );
         state.isSignedIn = true;
         emit();
         resolve(accessToken);

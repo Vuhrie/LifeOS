@@ -16,6 +16,7 @@ import {
   toMinutes,
 } from "./planner-storage.js";
 import { createPlannerView } from "./planner-view.js";
+import { applyGoogleConnectButtonState } from "./google-connect-button.js";
 
 const $ = (id) => document.querySelector(id);
 const ui = {
@@ -133,29 +134,7 @@ const rerenderAll = () => {
   view.renderDraft(week.draft);
 };
 
-const renderGoogleAuthState = (state) => {
-  if (!state.isConfigured) {
-    ui.connect.textContent = "Google Not Configured";
-    ui.connect.dataset.authState = "disabled";
-    ui.connect.disabled = true;
-    return;
-  }
-  if (state.isLoading) {
-    ui.connect.textContent = "Connecting...";
-    ui.connect.dataset.authState = "loading";
-    ui.connect.disabled = true;
-    return;
-  }
-  if (state.isSignedIn) {
-    ui.connect.textContent = "Google Connected";
-    ui.connect.dataset.authState = "connected";
-    ui.connect.disabled = false;
-    return;
-  }
-  ui.connect.textContent = "Connect Google";
-  ui.connect.dataset.authState = state.error ? "error" : "idle";
-  ui.connect.disabled = false;
-};
+const renderGoogleAuthState = (state) => applyGoogleConnectButtonState(ui.connect, state);
 
 const writeClient = createCalendarWriteClient({
   onStateChange: (state) => {

@@ -92,6 +92,29 @@
   color: #8b3d4c;
 }
 
+.google-connect-button {
+  min-width: 170px;
+}
+
+.google-connect-button[data-auth-state="connected"] {
+  background: linear-gradient(155deg, #2ed8b4, #1ab0c3);
+  border-color: rgba(173, 255, 242, 0.9);
+  color: #f5ffff;
+  box-shadow: inset 0 1px 0 rgba(228, 255, 252, 0.9), 0 10px 20px rgba(20, 140, 138, 0.24);
+}
+
+.google-connect-button[data-auth-state="connected"]::before {
+  content: "✓ ";
+}
+
+.google-connect-button[data-auth-state="loading"] {
+  opacity: 0.9;
+}
+
+.google-connect-button[data-auth-state="error"] {
+  border-color: rgba(255, 188, 198, 0.9);
+}
+
 .calendar-status {
   border-radius: 15px;
   padding: 12px 14px;

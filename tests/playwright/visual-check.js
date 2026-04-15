@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.4.1";
+const releaseVersion = "v0.4.2";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -50,15 +50,35 @@ const run = async () => {
       path: path.join(screenshotsDir, `visual-test-desktop-${releaseVersion}.png`),
       fullPage: true,
     });
+    const seededToken = { accessToken: "seeded-token", expiresAt: Date.now() + 3600_000 };
+    await desktop.evaluate((token) => {
+      window.localStorage.setItem("lifeos_google_calendar_auth_v1", JSON.stringify(token));
+    }, seededToken);
+    await desktop.route("https://www.googleapis.com/calendar/v3/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [] }),
+      });
+    });
+    await desktop.goto("http://127.0.0.1:4173/index.html", { waitUntil: "networkidle" });
+    const connectedTodayText = await desktop.locator("#connect-google").textContent();
+    if (!connectedTodayText?.includes("Google Connected")) {
+      throw new Error(`Today connect button should show connected state. Found: ${connectedTodayText}`);
+    }
 
     await desktop.goto("http://127.0.0.1:4173/schedules.html", { waitUntil: "networkidle" });
     const schedulesTitle = await desktop.locator("#schedules-title").textContent();
     const schedulesStatus = await desktop.locator("#calendar-status").textContent();
+    const connectedSchedulesText = await desktop.locator("#connect-google").textContent();
     if (schedulesTitle !== "Schedules") {
       throw new Error(`Unexpected Schedules title: ${schedulesTitle}`);
     }
-    if (!schedulesStatus?.includes("Connect your Google account")) {
-      throw new Error(`Unexpected Schedules status on load: ${schedulesStatus}`);
+    if (!connectedSchedulesText?.includes("Google Connected")) {
+      throw new Error(`Schedules connect button should show connected state. Found: ${connectedSchedulesText}`);
+    }
+    if (!schedulesStatus?.includes("Showing events") && !schedulesStatus?.includes("No events")) {
+      throw new Error(`Unexpected Schedules status with restored session: ${schedulesStatus}`);
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-schedules-current.png"),
@@ -102,16 +122,14 @@ const run = async () => {
       path: path.join(screenshotsDir, `visual-test-desktop-planner-step2-${releaseVersion}.png`),
       fullPage: true,
     });
-    const seededToken = { accessToken: "seeded-token", expiresAt: Date.now() + 3600_000 };
-    await desktop.evaluate((token) => {
-      window.localStorage.setItem("lifeos_google_calendar_write_auth_v1", JSON.stringify(token));
-    }, seededToken);
     await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
     const connectButtonText = await desktop.locator("#connect-google").textContent();
     if (!connectButtonText?.includes("Google Connected")) {
       throw new Error(`Planner connect button should show connected state. Found: ${connectButtonText}`);
     }
+    await desktop.unroute("https://www.googleapis.com/calendar/v3/**");
     await desktop.evaluate(() => {
+      window.localStorage.removeItem("lifeos_google_calendar_auth_v1");
       window.localStorage.removeItem("lifeos_google_calendar_write_auth_v1");
     });
 

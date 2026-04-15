@@ -25,6 +25,7 @@ Life OS/
 |   |   |-- calendar-client.js
 |   |   |-- calendar-ui.js
 |   |   |-- config.js
+|   |   |-- google-connect-button.js
 |   |   |-- planner-engine.js
 |   |   |-- planner-page.js
 |   |   |-- planner-storage.js
@@ -57,6 +58,10 @@ Life OS/
 |           |-- visual-test-desktop-schedules-v0.4.1.png
 |           |-- visual-test-desktop-planner-v0.4.1.png
 |           |-- visual-test-desktop-planner-step2-v0.4.1.png
+|           |-- visual-test-desktop-v0.4.2.png
+|           |-- visual-test-desktop-schedules-v0.4.2.png
+|           |-- visual-test-desktop-planner-v0.4.2.png
+|           |-- visual-test-desktop-planner-step2-v0.4.2.png
 |           |-- visual-test-mobile-open-v0.3.0.png
 |           |-- visual-test-mobile-planner-v0.3.0.png
 |           |-- visual-test-mobile-open-v0.4.0.png
@@ -66,7 +71,11 @@ Life OS/
 |           |-- visual-test-mobile-v0.4.1.png
 |           |-- visual-test-mobile-open-v0.4.1.png
 |           |-- visual-test-mobile-planner-v0.4.1.png
-|           `-- visual-test-mobile-planner-step2-v0.4.1.png
+|           |-- visual-test-mobile-planner-step2-v0.4.1.png
+|           |-- visual-test-mobile-v0.4.2.png
+|           |-- visual-test-mobile-open-v0.4.2.png
+|           |-- visual-test-mobile-planner-v0.4.2.png
+|           `-- visual-test-mobile-planner-step2-v0.4.2.png
 `-- tools/
 ```
 

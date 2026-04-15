@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.2
+
+- Unified Google connect-button state rendering across `Today`, `Schedules`, and `Planner`.
+- Shared persisted Google session restore across read and write calendar flows, including legacy write-token migration.
+- Updated `Today` and `Schedules` connect behavior to avoid re-prompting when already signed in.
+- Added release visual assertions that all three pages show `Google Connected` after restored auth session.
+
 ## v0.4.1
 
 - Updated planner Google auth controls so `Connect Google` visibly changes to `Google Connected` after sign-in.

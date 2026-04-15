@@ -1,5 +1,6 @@
 import { createCalendarClient } from "./calendar-client.js";
 import { renderEvents } from "./calendar-ui.js";
+import { applyGoogleConnectButtonState } from "./google-connect-button.js";
 
 const connectButton = document.querySelector("#connect-google");
 const refreshButton = document.querySelector("#refresh-events");
@@ -26,7 +27,7 @@ const updateControls = (state) => {
     return;
   }
 
-  connectButton.disabled = state.isLoading;
+  applyGoogleConnectButtonState(connectButton, state);
   refreshButton.disabled = !state.isSignedIn || state.isLoading;
   signOutButton.disabled = !state.isSignedIn || state.isLoading;
   rangeSelect.disabled = !state.isSignedIn || state.isLoading;
@@ -70,6 +71,10 @@ const loadUpcomingEvents = async () => {
 };
 
 connectButton.addEventListener("click", async () => {
+  if (calendar.getState().isSignedIn) {
+    await loadUpcomingEvents();
+    return;
+  }
   try {
     await calendar.connect();
     await loadUpcomingEvents();

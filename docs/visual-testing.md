@@ -25,6 +25,7 @@ npm run test:visual
 - Desktop `Today` page shows Google Calendar heading and control buttons.
 - Desktop `Schedules` page shows Google Calendar heading, range selector, and control buttons.
 - Desktop `Planner` page shows deterministic planner sections and action buttons.
+- Desktop restored-auth checks show `Google Connected` on `Today`, `Schedules`, and `Planner`.
 - Desktop `Planner` shows the 3-step quick planner pills and starts on `1. Life Constraints`.
 - Desktop `Planner` step 2 shows the modern habit switch controls.
 - Desktop `Planner` shows `Google Connected` on the connect button when a valid auth token is restored.
