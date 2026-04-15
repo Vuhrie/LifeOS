@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.4.4
+
+- Removed the extra `OK` prefix so the connected button label now displays exactly `Google Connected`.
+- Kept connected-state styling while simplifying wording across calendar and planner surfaces.
+
 ## v0.4.3
 
 - Added intentional hover affordances for interactive UI elements on pointer-based devices (desktop/laptop) only.

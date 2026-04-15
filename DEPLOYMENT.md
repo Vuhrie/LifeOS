@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.4.3`
+- Current version: `v0.4.4`
 - Current production entry file: `public/index.html`
 - Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/calendar.css`, `public/styles/planner.css`, `public/styles/planner-interactions.css`
 - Supporting pages: `public/schedules.html`, `public/planner.html`, `public/setting.html`
@@ -47,12 +47,13 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.4.1`
 - `release/v0.4.2`
 - `release/v0.4.3`
+- `release/v0.4.4`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.4.3`.
+- The navbar shows `LifeOS v0.4.4`.
 - The desktop navbar centers the links `Today`, `Schedules`, `Planner`, and `Setting`.
 - The mobile menu button opens a left-side navigation sheet with the same navigation items.
 - `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.

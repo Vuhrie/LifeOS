@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.4.3";
+const releaseVersion = "v0.4.4";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
