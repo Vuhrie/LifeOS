@@ -129,3 +129,38 @@
   color: var(--ink-muted);
 }
 
+.schedule-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.schedule-day {
+  border: 1px solid var(--planner-border);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.schedule-day h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.schedule-slot {
+  border: 1px solid rgba(176, 230, 245, 0.9);
+  border-radius: 10px;
+  background: rgba(222, 248, 255, 0.72);
+  padding: 7px;
+  margin-bottom: 7px;
+}
+
+.schedule-slot p {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.schedule-slot p + p {
+  color: var(--ink-muted);
+}

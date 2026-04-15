@@ -127,7 +127,16 @@ Life OS/
 |           |-- visual-test-mobile-v0.6.0.png
 |           |-- visual-test-mobile-open-v0.6.0.png
 |           |-- visual-test-mobile-planner-v0.6.0.png
-|           `-- visual-test-mobile-planner-step2-v0.6.0.png
+|           |-- visual-test-mobile-planner-step2-v0.6.0.png
+|           |-- visual-test-desktop-v0.7.0.png
+|           |-- visual-test-desktop-schedules-v0.7.0.png
+|           |-- visual-test-desktop-planner-v0.7.0.png
+|           |-- visual-test-desktop-planner-step2-v0.7.0.png
+|           |-- visual-test-desktop-hover-v0.7.0.png
+|           |-- visual-test-mobile-v0.7.0.png
+|           |-- visual-test-mobile-open-v0.7.0.png
+|           |-- visual-test-mobile-planner-v0.7.0.png
+|           `-- visual-test-mobile-planner-step2-v0.7.0.png
 `-- tools/
 ```
 

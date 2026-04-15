@@ -25,11 +25,12 @@ npm run test:visual
 - Desktop `Today` page shows Google Calendar heading and control buttons.
 - Desktop `Schedules` page shows Google Calendar heading, range selector, and control buttons.
 - Desktop `Planner` page shows deterministic planner sections and action buttons.
-- Desktop `Planner` step 1 shows rolling horizon controls and static date-range commitment form.
+- Desktop `Planner` step 1 shows rolling horizon controls, unified commitment inputs, and account lock-state behavior.
 - Desktop restored-auth checks show `Google Connected` on `Today`, `Schedules`, and `Planner`.
 - Desktop `Planner` shows the 3-step quick planner pills and starts on `1. Life Constraints`.
 - Desktop `Planner` step 2 shows the modern habit switch controls.
-- Desktop `Planner` step 2 shows the `AI Assist (Manual Import)` card with prompt and JSON import fields.
+- Desktop `Planner` step 2 shows the `AI Assist (Manual Patch Import)` card with prompt and JSON import fields.
+- Desktop `Planner` step 2 shows goals list creation and custom habits/session creation.
 - Desktop `Planner` shows `Google Connected` on the connect button when a valid auth token is restored.
 - Desktop hover capture verifies visible hover affordance on interactive controls.
 - Mobile hides the desktop navigation and shows the menu button.
@@ -38,8 +39,8 @@ npm run test:visual
 - The drawer lists `Today`, `Schedules`, `Planner`, and `Setting`.
 - Loading either page should not trigger a Google sign-in popup until `Connect Google` is clicked.
 - Mobile `Planner` also shows all three planner step pills.
-- Mobile `Planner` step 1 shows rolling horizon controls without layout breakage.
-- Mobile `Planner` step 2 shows the modern habit switch controls without overflow.
+- Mobile `Planner` step 1 shows rolling horizon and unified commitment controls without layout breakage.
+- Mobile `Planner` step 2 shows goals + habits/session controls without overflow.
 - Mobile `Planner` step 2 shows AI-assist controls without layout overflow.
 - Versioned screenshot artifacts are generated for desktop today, desktop schedules, desktop planner, desktop planner step 2, desktop hover state, mobile closed, mobile drawer-open, mobile planner, and mobile planner step 2 states.
 - Generated screenshots are also reviewed through Codex image-based inspection.

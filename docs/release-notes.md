@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.7.0
+
+- Unified planner commitment modeling into one configurable system (`weekly_recurring`, `date_range_recurring`, `one_off`) with contextual controls.
+- Added multi-goal creation and custom habits/session creation in `What I Want`.
+- Upgraded draft output to include a schedule-style day/time board, with text lists as secondary detail.
+- Added sign-in-required planner gating with clear lock-state UI and account-scoped planner storage keys.
+- Updated AI patch operations and prompt context to target goals, habits, commitments, and policy-safe updates.
+
 ## v0.6.0
 
 - Upgraded Planner deterministic engine to rolling-horizon scheduling (default 7 days) with lock-window preservation for near-term slots.

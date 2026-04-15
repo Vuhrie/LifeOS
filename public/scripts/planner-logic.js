@@ -1,12 +1,11 @@
 import { buildAiBridgePrompt } from "./ai-bridge-prompts.js";
 import { buildPlanningWindows } from "./planner-policy.js";
-import { createMinorGoal, createStaticCommitment, createTask } from "./planner-storage.js";
+import { createCommitment, createGoal, createHabit, createTask } from "./planner-storage.js";
 
 export const createPlannerLogic = ({
   ui,
   week,
   weekKey,
-  upsertGoal,
   save,
   rerenderAll,
   refreshAvailabilityFromProfile,
@@ -14,13 +13,19 @@ export const createPlannerLogic = ({
   writeClient,
   lastAuthStateRef,
 }) => {
-  const autoMinorGoals = (goal) => {
-    const items = [createMinorGoal({ weekKey, title: goal.title, targetHours: goal.weeklyHours })];
-    const { gym, leisure } = week.profile.habits;
-    if (gym.enabled && gym.frequency > 0) items.push(createMinorGoal({ weekKey, title: "Gym Session", targetHours: gym.frequency }));
-    if (leisure.enabled && leisure.frequency > 0) items.push(createMinorGoal({ weekKey, title: "Leisure / Recovery", targetHours: Number((leisure.frequency * 1.5).toFixed(1)) }));
-    return items;
-  };
+  const habitsAsTasks = () =>
+    week.habits.flatMap((habit) => {
+      const count = Math.max(0, Number(habit.frequency || 0));
+      const duration = Math.max(15, Number(habit.durationMinutes || 60));
+      return Array.from({ length: count }).map((_, index) =>
+        createTask({
+          weekKey,
+          title: `${habit.name} Session ${index + 1}`,
+          estimateMinutes: duration,
+          priority: 3,
+          energy: habit.window === "night" ? "light" : "deep",
+        }));
+    });
 
   const buildPromptContext = async () => {
     const now = new Date();
@@ -38,11 +43,11 @@ export const createPlannerLogic = ({
       reservedSlots: week.managedSlots,
     });
     return buildAiBridgePrompt({
-      goal: { title: ui.goalTitle.value.trim(), deadline: ui.goalDeadline.value, priority: Number(ui.goalPriority.value), weeklyHours: Number(ui.goalHours.value) },
+      goal: null,
       profile: week.profile,
       settings: week.settings,
-      minorGoals: week.minorGoals.map(({ title, targetHours }) => ({ title, targetHours })),
-      tasks: week.tasks.map(({ title, estimateMinutes, priority, energy }) => ({ title, estimateMinutes, priority, energy })),
+      minorGoals: [],
+      tasks: week.tasks,
       availabilityRules: week.availabilityRules,
       managedSlots: week.managedSlots,
       scheduleContext: {
@@ -54,28 +59,26 @@ export const createPlannerLogic = ({
         capacityByWindow: capacity.windows.map((item) => ({ start: item.start.toISOString(), end: item.end.toISOString(), maxMinutes: item.maxMinutes })),
       },
       policy: { lockHorizonHours: week.settings.lockedHorizonHours, preserveManagedSlots: true, minimizeChurn: true },
+      current: {
+        goals: week.goals,
+        habits: week.habits,
+        commitments: week.profile.commitments,
+      },
     });
   };
 
   const applyAiOperations = (plan, summaryFn) => {
     plan.operations.forEach((operation) => {
-      if (operation.op === "setGoal") {
-        ui.goalTitle.value = operation.value.title;
-        ui.goalDeadline.value = operation.value.deadline;
-        ui.goalPriority.value = String(operation.value.priority);
-        ui.goalHours.value = String(operation.value.weeklyHours);
-        upsertGoal();
-      }
       if (operation.op === "setProfile") {
         const value = operation.value || {};
         if (value.wakeTime) week.profile.wakeTime = value.wakeTime;
         if (value.sleepTime) week.profile.sleepTime = value.sleepTime;
-        if (value.habits) week.profile.habits = { ...week.profile.habits, ...value.habits };
         if (value.necessities) week.profile.necessities = { ...week.profile.necessities, ...value.necessities };
       }
       if (operation.op === "setHorizon") week.settings = { ...week.settings, ...operation.value };
-      if (operation.op === "replaceStaticCommitments") week.profile.staticCommitments = operation.items.map((item) => createStaticCommitment(item));
-      if (operation.op === "replaceMinorGoals") week.minorGoals = operation.items.map((item) => createMinorGoal({ weekKey, ...item }));
+      if (operation.op === "replaceGoals") week.goals = operation.items.map((item) => createGoal({ title: item.title, deadlineIso: `${item.deadline}T23:59:59`, priority: item.priority, weeklyHours: item.weeklyHours }));
+      if (operation.op === "replaceHabits") week.habits = operation.items.map((item) => createHabit(item));
+      if (operation.op === "replaceCommitments") week.profile.commitments = operation.items.map((item) => createCommitment(item));
       if (operation.op === "replaceTasks") week.tasks = operation.items.map((item) => createTask({ weekKey, ...item }));
       if (operation.op === "replaceAvailabilityRules") week.availabilityRules = operation.items;
     });
@@ -86,6 +89,6 @@ export const createPlannerLogic = ({
     return summaryFn(plan);
   };
 
-  return { autoMinorGoals, buildPromptContext, applyAiOperations };
+  return { habitsAsTasks, buildPromptContext, applyAiOperations };
 };
 

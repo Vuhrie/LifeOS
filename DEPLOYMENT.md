@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.6.0`
+- Current version: `v0.7.0`
 - Current production entry file: `public/index.html`
 - Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/main-shell.css`, `public/styles/main-drawer.css`, `public/styles/main-interactions.css`, `public/styles/calendar.css`, `public/styles/planner.css`, `public/styles/planner-shell.css`, `public/styles/planner-cards.css`, `public/styles/planner-ai.css`, `public/styles/planner-responsive.css`, `public/styles/planner-interactions.css`
 - Supporting pages: `public/schedules.html`, `public/planner.html`, `public/setting.html`
@@ -50,20 +50,22 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.4.4`
 - `release/v0.5.0`
 - `release/v0.6.0`
+- `release/v0.7.0`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.6.0`.
+- The navbar shows `LifeOS v0.7.0`.
 - The desktop navbar centers the links `Today`, `Schedules`, `Planner`, and `Setting`.
 - The mobile menu button opens a left-side navigation sheet with the same navigation items.
 - `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.
 - `Schedules` shows the Google Calendar panel with selectable upcoming ranges.
 - `Planner` supports a 3-step quick planning flow with deterministic draft generation and explicit commit to Google Calendar.
-- `Planner` step 1 includes rolling-horizon controls, protected necessity durations, and static date-range commitments.
-- `Planner` Step 2 includes manual AI-assist prompt/export/import workflow with JSON validation before apply.
-- AI-assist import accepts operation-patch payloads and applies only validated policy-safe updates.
+- `Planner` step 1 includes unified commitments, protected necessity durations, and rolling-horizon controls.
+- `Planner` step 2 supports multiple goals, custom habits/sessions, and manual AI patch import.
+- `Planner` requires Google sign-in before planning actions and uses account-scoped planner state.
+- `Planner` draft output includes a schedule-style board view with supporting unscheduled/conflict lists.
 - `Today`, `Schedules`, and `Planner` all reflect signed-in state as `Google Connected`.
 - Desktop hover states clearly indicate interactive elements without affecting non-interactive cards/text.
 - Google sign-in popup opens only when the user explicitly clicks `Connect Google`.

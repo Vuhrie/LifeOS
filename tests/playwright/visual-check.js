@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.6.0";
+const releaseVersion = "v0.7.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -53,6 +53,7 @@ const run = async () => {
     const seededToken = { accessToken: "seeded-token", expiresAt: Date.now() + 3600_000 };
     await desktop.evaluate((token) => {
       window.localStorage.setItem("lifeos_google_calendar_auth_v1", JSON.stringify(token));
+      window.localStorage.setItem("lifeos_google_calendar_write_auth_v1", JSON.stringify(token));
     }, seededToken);
     await desktop.route("https://www.googleapis.com/calendar/v3/**", async (route) => {
       await route.fulfill({
@@ -89,7 +90,7 @@ const run = async () => {
       fullPage: true,
     });
 
-    await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "domcontentloaded" });
     const plannerTitle = await desktop.locator("#planner-title").textContent();
     const plannerSteps = await desktop.locator(".step-pill").count();
     const firstStepActive = await desktop.locator('.step-pill[data-step="1"]').evaluate((element) =>
@@ -105,9 +106,10 @@ const run = async () => {
       throw new Error("Planner should open on step 1.");
     }
     const horizonVisible = await desktop.locator("#horizon-days").isVisible();
-    const staticVisible = await desktop.locator("#add-static").isVisible();
-    if (!horizonVisible || !staticVisible) {
-      throw new Error("Planner step 1 should include horizon + static commitment controls.");
+    const commitmentsVisible = await desktop.locator("#add-commitment").isVisible();
+    const lockCount = await desktop.locator("#planner-lock").count();
+    if (!horizonVisible || !commitmentsVisible || lockCount !== 1) {
+      throw new Error("Planner step 1 should include horizon + unified commitments + lock overlay element.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-current.png"),
@@ -122,7 +124,7 @@ const run = async () => {
     const aiAssistTitle = await desktop.locator("#ai-assist-title").textContent();
     const aiPromptField = await desktop.locator("#ai-prompt-output").isVisible();
     const aiImportField = await desktop.locator("#ai-import-input").isVisible();
-    if (aiAssistTitle !== "AI Assist (Manual Import)") {
+    if (aiAssistTitle !== "AI Assist (Manual Patch Import)") {
       throw new Error(`Unexpected AI assist title: ${aiAssistTitle}`);
     }
     if (!aiPromptField || !aiImportField) {
@@ -136,7 +138,7 @@ const run = async () => {
       path: path.join(screenshotsDir, `visual-test-desktop-planner-step2-${releaseVersion}.png`),
       fullPage: true,
     });
-    await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "domcontentloaded" });
     const connectButtonText = await desktop.locator("#connect-google").textContent();
     if (!connectButtonText?.includes("Google Connected")) {
       throw new Error(`Planner connect button should show connected state. Found: ${connectButtonText}`);
@@ -211,7 +213,11 @@ const run = async () => {
       fullPage: true,
     });
 
-    await mobile.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "networkidle" });
+    await mobile.evaluate((token) => {
+      window.localStorage.setItem("lifeos_google_calendar_auth_v1", JSON.stringify(token));
+      window.localStorage.setItem("lifeos_google_calendar_write_auth_v1", JSON.stringify(token));
+    }, seededToken);
+    await mobile.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "domcontentloaded" });
     const mobilePlannerSteps = await mobile.locator(".step-pill").count();
     if (mobilePlannerSteps !== 3) {
       throw new Error(`Planner mobile should have 3 step pills. Found: ${mobilePlannerSteps}`);

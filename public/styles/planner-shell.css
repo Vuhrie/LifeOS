@@ -9,12 +9,38 @@
 }
 
 .planner-shell {
+  position: relative;
   border: 1px solid var(--planner-border);
   border-radius: 30px;
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.5), rgba(182, 234, 249, 0.38));
   box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(16px);
   padding: 24px;
+}
+
+.planner-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  border-radius: 30px;
+  background: rgba(7, 46, 68, 0.45);
+  color: #f1fcff;
+  text-align: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+
+.planner-lock[hidden] {
+  display: none !important;
+}
+
+.planner-lock p {
+  margin: 0;
+  max-width: 52ch;
 }
 
 .planner-head {
@@ -125,4 +151,3 @@
 .wizard-footer { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; }
 .muted { color: var(--ink-muted); }
 .warn { margin-left: 8px; color: #93465b; font-weight: 700; }
-

@@ -52,28 +52,25 @@ const necessityBlocks = ({ profile, date }) => {
   return blocks.filter((block) => block.end > block.start);
 };
 
-const staticBlocks = ({ profile, date }) => {
-  const rules = Array.isArray(profile.staticCommitments) ? profile.staticCommitments : [];
-  return rules
+const commitmentBlocks = ({ profile, date }) =>
+  (Array.isArray(profile.commitments) ? profile.commitments : [])
     .filter((item) => {
-      const startDate = parseDate(item.startDate);
-      const endDate = parseDate(item.endDate);
-      if (!inDateRange(date, startDate, endDate)) return false;
-      const weekday = date.getDay();
-      return Array.isArray(item.days) && item.days.includes(weekday);
+      if (!item || !item.mode) return false;
+      if (item.mode === "weekly_recurring") return Array.isArray(item.days) && item.days.includes(date.getDay());
+      if (item.mode === "date_range_recurring") {
+        const startDate = parseDate(item.startDate);
+        const endDate = parseDate(item.endDate);
+        if (!inDateRange(date, startDate, endDate)) return false;
+        return Array.isArray(item.days) && item.days.includes(date.getDay());
+      }
+      if (item.mode === "one_off") {
+        const oneOffDate = parseDate(item.date);
+        if (!oneOffDate) return false;
+        return oneOffDate.getTime() === new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+      }
+      return false;
     })
-    .map((item) => {
-      const startMinute = toMinutes(item.start);
-      const endMinute = toMinutes(item.end);
-      return toBlock(date, startMinute, endMinute, "static", item.title);
-    })
-    .filter((block) => block.end > block.start);
-};
-
-const fixedBlocks = ({ profile, date }) =>
-  (Array.isArray(profile.fixedCommitments) ? profile.fixedCommitments : [])
-    .filter((item) => Number(item.day) === date.getDay())
-    .map((item) => toBlock(date, toMinutes(item.start), toMinutes(item.end), "fixed", item.title || "Fixed commitment"))
+    .map((item) => toBlock(date, toMinutes(item.start), toMinutes(item.end), "commitment", item.title || "Commitment"))
     .filter((block) => block.end > block.start);
 
 const subtractWindows = (windows, blocks) => {
@@ -134,8 +131,7 @@ export const buildPlanningWindows = ({
     };
 
     const blocks = [
-      ...staticBlocks({ profile, date }),
-      ...fixedBlocks({ profile, date }),
+      ...commitmentBlocks({ profile, date }),
       ...necessityBlocks({ profile, date }),
       ...reservedSlots
         .filter((slot) => new Date(slot.start).toDateString() === date.toDateString())
@@ -163,4 +159,3 @@ export const canKeepExistingSlot = ({ slot, hardBlocks, lockedUntil, horizonStar
 };
 
 export const hasOverlap = overlaps;
-

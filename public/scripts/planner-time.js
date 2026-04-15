@@ -60,10 +60,13 @@ export const buildAvailabilityRulesFromProfile = (profileInput) => {
   const wake = toMinutes(normalizeTime(profile.wakeTime, "07:00"));
   const sleep = toMinutes(normalizeTime(profile.sleepTime, "22:00"));
   const dayEnd = sleep > wake ? sleep : wake + 60;
-  const fixedCommitments = Array.isArray(profile.fixedCommitments) ? profile.fixedCommitments : [];
+  const commitments = Array.isArray(profile.commitments) ? profile.commitments : [];
   return [1, 2, 3, 4, 5, 6, 0].map((day) => {
-    const blocks = fixedCommitments
-      .filter((item) => Number(item.day) === day)
+    const blocks = commitments
+      .filter((item) => {
+        if (!item || item.mode === "one_off") return false;
+        return Array.isArray(item.days) && item.days.includes(day);
+      })
       .map((item) => ({ start: toMinutes(item.start), end: toMinutes(item.end) }))
       .filter((item) => item.end > item.start)
       .sort((a, b) => a.start - b.start);
@@ -88,4 +91,3 @@ export const buildAvailabilityRulesFromProfile = (profileInput) => {
     };
   });
 };
-

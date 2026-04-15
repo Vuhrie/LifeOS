@@ -3,11 +3,11 @@ import { AI_BRIDGE_VERSION } from "./ai-bridge-schema.js";
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ALLOWED_OPS = new Set([
-  "setGoal",
   "setProfile",
   "setHorizon",
-  "replaceStaticCommitments",
-  "replaceMinorGoals",
+  "replaceGoals",
+  "replaceHabits",
+  "replaceCommitments",
   "replaceTasks",
   "replaceAvailabilityRules",
 ]);
@@ -26,16 +26,6 @@ const extractJson = (raw) => {
   return start >= 0 && end > start ? text.slice(start, end + 1) : "";
 };
 
-const parseGoal = (value, errors) => {
-  const title = String(value?.title || "").trim();
-  const deadline = String(value?.deadline || "").trim();
-  const priority = clamp(Math.round(toNumber(value?.priority, 3)), 1, 5);
-  const weeklyHours = clamp(toNumber(value?.weeklyHours, 8), 1, 80);
-  if (!title) errors.push("setGoal.value.title is required.");
-  if (deadline && !DATE_RE.test(deadline)) errors.push("setGoal.value.deadline must be YYYY-MM-DD.");
-  return { title, deadline, priority, weeklyHours };
-};
-
 const parseProfile = (value) => ({
   wakeTime: value?.wakeTime ? normTime(value.wakeTime, "07:00") : null,
   sleepTime: value?.sleepTime ? normTime(value.sleepTime, "22:00") : null,
@@ -43,18 +33,44 @@ const parseProfile = (value) => ({
   necessities: value?.necessities && typeof value.necessities === "object" ? value.necessities : null,
 });
 
-const parseStaticCommitments = (items, errors) =>
+const parseGoals = (items, errors) =>
   (Array.isArray(items) ? items : []).map((item, index) => {
+    const title = String(item?.title || "").trim();
+    const deadline = String(item?.deadline || "").trim();
+    const priority = clamp(Math.round(toNumber(item?.priority, 3)), 1, 5);
+    const weeklyHours = clamp(toNumber(item?.weeklyHours, 8), 1, 80);
+    if (!title) errors.push(`replaceGoals.items[${index}] requires title.`);
+    if (deadline && !DATE_RE.test(deadline)) errors.push(`replaceGoals.items[${index}] deadline must be YYYY-MM-DD.`);
+    return { title, deadline, priority, weeklyHours };
+  });
+
+const parseHabits = (items) =>
+  (Array.isArray(items) ? items : [])
+    .map((item) => ({
+      name: String(item?.name || "").trim(),
+      frequency: clamp(Math.round(toNumber(item?.frequency, 3)), 0, 21),
+      durationMinutes: clamp(Math.round(toNumber(item?.durationMinutes, 60)), 15, 240),
+      window: ["morning", "afternoon", "evening", "night", "any"].includes(item?.window) ? item.window : "any",
+    }))
+    .filter((item) => item.name);
+
+const parseCommitments = (items, errors) =>
+  (Array.isArray(items) ? items : []).map((item, index) => {
+    const mode = ["weekly_recurring", "date_range_recurring", "one_off"].includes(item?.mode) ? item.mode : "weekly_recurring";
     const start = normTime(item?.start, "");
     const end = normTime(item?.end, "");
     const startDate = String(item?.startDate || "");
     const endDate = String(item?.endDate || "");
-    if (!start || !end || end <= start) errors.push(`replaceStaticCommitments.items[${index}] has invalid time range.`);
-    if (!DATE_RE.test(startDate) || !DATE_RE.test(endDate)) errors.push(`replaceStaticCommitments.items[${index}] requires YYYY-MM-DD startDate/endDate.`);
+    const date = String(item?.date || "");
+    if (!start || !end || end <= start) errors.push(`replaceCommitments.items[${index}] has invalid time range.`);
+    if (mode === "date_range_recurring" && (!DATE_RE.test(startDate) || !DATE_RE.test(endDate))) errors.push(`replaceCommitments.items[${index}] requires startDate/endDate.`);
+    if (mode === "one_off" && !DATE_RE.test(date)) errors.push(`replaceCommitments.items[${index}] requires date.`);
     return {
+      mode,
       title: String(item?.title || "Static commitment").trim() || "Static commitment",
       startDate,
       endDate,
+      date,
       days: Array.isArray(item?.days) ? item.days.map((day) => Number(day)).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6) : [],
       start,
       end,
@@ -68,14 +84,6 @@ const parseTasks = (items) =>
       estimateMinutes: clamp(Math.round(toNumber(item?.estimateMinutes, 90)), 30, 480),
       priority: clamp(Math.round(toNumber(item?.priority, 3)), 1, 5),
       energy: item?.energy === "light" ? "light" : "deep",
-    }))
-    .filter((item) => item.title);
-
-const parseMinorGoals = (items) =>
-  (Array.isArray(items) ? items : [])
-    .map((item) => ({
-      title: String(item?.title || "").trim(),
-      targetHours: clamp(toNumber(item?.targetHours, 2), 1, 40),
     }))
     .filter((item) => item.title);
 
@@ -121,8 +129,6 @@ export const parseAiBridgePlan = (raw) => {
         return null;
       }
       switch (op) {
-        case "setGoal":
-          return { op, value: parseGoal(operation.value || {}, errors) };
         case "setProfile":
           return { op, value: parseProfile(operation.value || {}) };
         case "setHorizon":
@@ -133,10 +139,12 @@ export const parseAiBridgePlan = (raw) => {
               lockedHorizonHours: clamp(Math.round(toNumber(operation.value?.lockedHorizonHours, 12)), 0, 48),
             },
           };
-        case "replaceStaticCommitments":
-          return { op, items: parseStaticCommitments(operation.items, errors) };
-        case "replaceMinorGoals":
-          return { op, items: parseMinorGoals(operation.items) };
+        case "replaceGoals":
+          return { op, items: parseGoals(operation.items, errors) };
+        case "replaceHabits":
+          return { op, items: parseHabits(operation.items) };
+        case "replaceCommitments":
+          return { op, items: parseCommitments(operation.items, errors) };
         case "replaceTasks":
           return { op, items: parseTasks(operation.items) };
         case "replaceAvailabilityRules":
@@ -161,4 +169,3 @@ export const parseAiBridgePlan = (raw) => {
 };
 
 export const summarizeAiBridgePlan = (plan) => `${plan.operations.length} operations`;
-

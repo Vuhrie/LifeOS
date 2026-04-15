@@ -1,8 +1,11 @@
 import { dayName } from "./planner-storage.js";
 
-const renderList = (target, items, map) => {
-  target.innerHTML = items.length ? items.map(map).join("") : `<li class="list-empty">No items yet.</li>`;
+const renderList = (target, items, map, empty = "No items yet.") => {
+  target.innerHTML = items.length ? items.map(map).join("") : `<li class="list-empty">${empty}</li>`;
 };
+
+const formatTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const dayShort = (iso) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(iso).getDay()];
 
 export const createPlannerView = (ui) => {
   const setStatus = (text, kind = "neutral") => {
@@ -10,53 +13,52 @@ export const createPlannerView = (ui) => {
     ui.status.textContent = text;
   };
 
-  const renderFixedCommitments = (items) => {
+  const setPlannerLock = (locked) => {
+    ui.lock.hidden = !locked;
+    const controls = [ui.generate, ui.clear, ui.commit, ui.prev, ui.next, ui.aiBuildPrompt, ui.aiValidateImport, ui.aiApplyImport, ui.addCommitment, ui.addGoal, ui.addHabit];
+    controls.forEach((control) => { if (control) control.disabled = locked; });
+  };
+
+  const renderCommitments = (items) => {
     renderList(
-      ui.fixedList,
+      ui.commitmentsList,
       items,
-      (item) =>
-        `<li>${dayName(item.day)} ${item.start}-${item.end} <button type="button" class="inline-remove" data-rm-fixed="${item.id}">Remove</button></li>`,
+      (item) => `<li>${item.title} | ${item.mode} | ${item.start}-${item.end} <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
     );
   };
 
-  const renderStaticCommitments = (items) => {
+  const renderGoals = (items) => {
     renderList(
-      ui.staticList,
+      ui.goalsList,
       items,
-      (item) =>
-        `<li>${item.title} | ${item.startDate} to ${item.endDate} | ${item.start}-${item.end} <button type="button" class="inline-remove" data-rm-static="${item.id}">Remove</button></li>`,
+      (item) => `<li>${item.title} (${item.weeklyHours}h, P${item.priority}) <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`,
     );
   };
 
-  const renderMinorGoals = (items) => {
+  const renderHabits = (items) => {
     renderList(
-      ui.minorList,
+      ui.habitsList,
       items,
-      (item) => `<li>${item.title} (${item.targetHours}h) <button type="button" class="inline-remove" data-rm-minor="${item.id}">Remove</button></li>`,
+      (item) => `<li>${item.name} (${item.frequency}x, ${item.durationMinutes}m, ${item.window}) <button type="button" class="inline-remove" data-rm-habit="${item.id}">Remove</button></li>`,
     );
   };
 
-  const renderTasks = (items) => {
-    renderList(
-      ui.taskList,
-      items,
-      (item) => `<li>${item.title} (${item.estimateMinutes}m, ${item.energy}) <button type="button" class="inline-remove" data-rm-task="${item.id}">Remove</button></li>`,
-    );
-  };
-
-  const renderAvailability = (rules) => {
-    ui.availability.innerHTML = rules
-      .map(
-        (rule) => `
-      <div class="availability-row" data-day="${rule.day}">
-        <p>${dayName(rule.day)}</p>
-        <label>Start <input type="time" data-field="start" value="${rule.start}"></label>
-        <label>End <input type="time" data-field="end" value="${rule.end}"></label>
-        <label>Max Hours <input type="number" min="0" max="16" step="0.5" data-field="maxHours" value="${rule.maxHours}"></label>
-        <label>Deep Blocks <input type="number" min="0" max="8" step="1" data-field="maxDeepBlocks" value="${rule.maxDeepBlocks}"></label>
-      </div>`,
-      )
-      .join("");
+  const renderScheduleGrid = (slots) => {
+    if (!slots.length) {
+      ui.draftSchedule.innerHTML = `<p class="list-empty">No schedule generated yet.</p>`;
+      return;
+    }
+    const grouped = new Map();
+    slots.forEach((slot) => {
+      const key = new Date(slot.start).toDateString();
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(slot);
+    });
+    const orderedKeys = [...grouped.keys()].sort((left, right) => new Date(left) - new Date(right));
+    ui.draftSchedule.innerHTML = orderedKeys.map((key) => {
+      const daySlots = grouped.get(key).sort((left, right) => new Date(left.start) - new Date(right.start));
+      return `<section class="schedule-day"><h3>${dayShort(daySlots[0].start)} ${new Date(daySlots[0].start).toLocaleDateString()}</h3>${daySlots.map((slot) => `<article class="schedule-slot"><p>${slot.title}</p><p>${formatTime(slot.start)} - ${formatTime(slot.end)}</p></article>`).join("")}</section>`;
+    }).join("");
   };
 
   const renderDraft = (draft) => {
@@ -64,20 +66,13 @@ export const createPlannerView = (ui) => {
       renderList(ui.draftList, [], (x) => x);
       renderList(ui.unscheduledList, [], (x) => x);
       renderList(ui.warningsList, [], (x) => x);
+      renderScheduleGrid([]);
       return;
     }
-    renderList(
-      ui.draftList,
-      draft.slots,
-      (slot) =>
-        `<li>${slot.title} | ${new Date(slot.start).toLocaleString()} - ${new Date(slot.end).toLocaleTimeString()} <span class="muted">score ${slot.score}${slot.preserved ? " | kept" : ""}</span></li>`,
-    );
-    renderList(
-      ui.unscheduledList,
-      draft.unscheduled,
-      (item) => `<li>${item.title} <span class="warn">${item.reasonCode}</span></li>`,
-    );
-    renderList(ui.warningsList, draft.warnings, (w) => `<li>${w.slotTitle} overlaps with "${w.existingTitle}"</li>`);
+    renderScheduleGrid(draft.slots || []);
+    renderList(ui.draftList, draft.slots, (slot) => `<li>${slot.title} | ${new Date(slot.start).toLocaleString()} - ${formatTime(slot.end)}</li>`);
+    renderList(ui.unscheduledList, draft.unscheduled || [], (item) => `<li>${item.title} <span class="warn">${item.reasonCode}</span></li>`, "No unscheduled items.");
+    renderList(ui.warningsList, draft.warnings || [], (item) => `<li>${item.slotTitle} overlaps with "${item.existingTitle}"</li>`, "No conflicts.");
   };
 
   const setStep = (step) => {
@@ -89,14 +84,6 @@ export const createPlannerView = (ui) => {
     return currentStep;
   };
 
-  return {
-    renderFixedCommitments,
-    renderStaticCommitments,
-    renderMinorGoals,
-    renderTasks,
-    renderAvailability,
-    renderDraft,
-    setStatus,
-    setStep,
-  };
+  return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderDraft, setStep };
 };
+
