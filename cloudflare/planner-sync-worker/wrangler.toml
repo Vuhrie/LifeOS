@@ -5,4 +5,4 @@ compatibility_date = "2026-04-15"
 [[d1_databases]]
 binding = "PLANNER_DB"
 database_name = "lifeos_planner_db"
-database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"
+database_id = "81bca430-d9a3-408e-8685-0858e70d79ad"

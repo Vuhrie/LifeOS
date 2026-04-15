@@ -7,5 +7,5 @@ window.LIFEOS_CALENDAR_CONFIG = {
 };
 
 window.LIFEOS_PLANNER_SYNC_CONFIG = {
-  apiBaseUrl: "/api/planner",
+  apiBaseUrl: "https://lifeos-planner-sync.derpdiepie8523.workers.dev/api/planner",
 };
