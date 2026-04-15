@@ -62,6 +62,11 @@ Life OS/
 |           |-- visual-test-desktop-schedules-v0.4.2.png
 |           |-- visual-test-desktop-planner-v0.4.2.png
 |           |-- visual-test-desktop-planner-step2-v0.4.2.png
+|           |-- visual-test-desktop-v0.4.3.png
+|           |-- visual-test-desktop-schedules-v0.4.3.png
+|           |-- visual-test-desktop-planner-v0.4.3.png
+|           |-- visual-test-desktop-planner-step2-v0.4.3.png
+|           |-- visual-test-desktop-hover-v0.4.3.png
 |           |-- visual-test-mobile-open-v0.3.0.png
 |           |-- visual-test-mobile-planner-v0.3.0.png
 |           |-- visual-test-mobile-open-v0.4.0.png
@@ -75,7 +80,11 @@ Life OS/
 |           |-- visual-test-mobile-v0.4.2.png
 |           |-- visual-test-mobile-open-v0.4.2.png
 |           |-- visual-test-mobile-planner-v0.4.2.png
-|           `-- visual-test-mobile-planner-step2-v0.4.2.png
+|           |-- visual-test-mobile-planner-step2-v0.4.2.png
+|           |-- visual-test-mobile-v0.4.3.png
+|           |-- visual-test-mobile-open-v0.4.3.png
+|           |-- visual-test-mobile-planner-v0.4.3.png
+|           `-- visual-test-mobile-planner-step2-v0.4.3.png
 `-- tools/
 ```
 

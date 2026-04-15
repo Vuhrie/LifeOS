@@ -1,23 +1,23 @@
-#connect-google {
+.google-connect-button {
   min-width: 170px;
 }
 
-#connect-google[data-auth-state="connected"] {
+.google-connect-button[data-auth-state="connected"] {
   background: linear-gradient(155deg, #2ed8b4, #1ab0c3);
   border-color: rgba(173, 255, 242, 0.9);
   color: #f5ffff;
   box-shadow: inset 0 1px 0 rgba(228, 255, 252, 0.9), 0 10px 20px rgba(20, 140, 138, 0.24);
 }
 
-#connect-google[data-auth-state="connected"]::before {
-  content: "✓ ";
+.google-connect-button[data-auth-state="connected"]::before {
+  content: "OK ";
 }
 
-#connect-google[data-auth-state="loading"] {
+.google-connect-button[data-auth-state="loading"] {
   opacity: 0.9;
 }
 
-#connect-google[data-auth-state="error"] {
+.google-connect-button[data-auth-state="error"] {
   border-color: rgba(255, 188, 198, 0.9);
 }
 
@@ -39,6 +39,7 @@
   color: var(--ink);
   padding: 10px 12px;
   cursor: pointer;
+  transition: border-color var(--hover-duration) ease, background var(--hover-duration) ease, box-shadow var(--hover-duration) ease, transform var(--hover-duration) ease;
 }
 
 .habit-switch-copy {
@@ -98,6 +99,23 @@
 .habit-switch input:focus-visible + .habit-switch-control {
   outline: 2px solid rgba(14, 162, 224, 0.9);
   outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .habit-switch:hover {
+    border-color: var(--hover-border);
+    background: var(--hover-bg);
+    box-shadow: var(--hover-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    transform: var(--hover-lift);
+  }
+
+  .habit-switch:hover .habit-switch-control {
+    border-color: var(--hover-border);
+  }
+
+  .google-connect-button[data-auth-state="connected"]:hover {
+    background: linear-gradient(155deg, #36dec1, #26bdd2);
+  }
 }
 
 @media (max-width: 900px) {

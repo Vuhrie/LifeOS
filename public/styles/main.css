@@ -45,7 +45,7 @@ body.drawer-open .site-header {
 .drawer-link {
   color: var(--ink-muted);
   text-decoration: none;
-  transition: color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  transition: color var(--hover-duration) ease, background-color var(--hover-duration) ease, box-shadow var(--hover-duration) ease, transform var(--hover-duration) ease, border-color var(--hover-duration) ease;
 }
 
 .nav-link {
@@ -55,9 +55,11 @@ body.drawer-open .site-header {
 }
 
 .nav-link:hover,
-.nav-link:focus-visible,
-.drawer-link:hover,
 .drawer-link:focus-visible {
+  color: var(--ink);
+}
+
+.nav-link:focus-visible {
   color: var(--ink);
 }
 
@@ -98,9 +100,11 @@ body.drawer-open .site-header {
 }
 
 .menu-button:hover,
-.menu-button:focus-visible,
-.drawer-close:hover,
 .drawer-close:focus-visible {
+  background: rgba(205, 244, 255, 0.7);
+}
+
+.menu-button:focus-visible {
   background: rgba(205, 244, 255, 0.7);
 }
 
@@ -219,6 +223,29 @@ body.drawer-open .site-header {
   border-radius: 18px;
   background: var(--glass-heavy);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:hover {
+    background: var(--hover-bg);
+    border-color: var(--hover-border);
+    box-shadow: var(--hover-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: var(--hover-lift);
+  }
+
+  .drawer-link:hover {
+    color: var(--ink);
+    border-color: var(--hover-border);
+    background: linear-gradient(160deg, rgba(246, 254, 255, 0.94), rgba(203, 245, 255, 0.7));
+    box-shadow: var(--hover-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: var(--hover-lift);
+  }
+
+  .menu-button:hover,
+  .drawer-close:hover {
+    background: rgba(205, 244, 255, 0.7);
+    transform: var(--hover-lift);
+  }
 }
 
 .drawer-link-label {

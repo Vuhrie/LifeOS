@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.3
+
+- Added intentional hover affordances for interactive UI elements on pointer-based devices (desktop/laptop) only.
+- Introduced shared hover tokens in theme styles for consistent border, background, shadow, and lift behavior.
+- Improved hover feedback across navbar links, drawer links, action buttons, step pills, and form controls where appropriate.
+- Added desktop hover screenshot artifact coverage in the release visual test flow.
+
 ## v0.4.2
 
 - Unified Google connect-button state rendering across `Today`, `Schedules`, and `Planner`.

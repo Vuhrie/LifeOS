@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.4.2";
+const releaseVersion = "v0.4.3";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -127,6 +127,16 @@ const run = async () => {
     if (!connectButtonText?.includes("Google Connected")) {
       throw new Error(`Planner connect button should show connected state. Found: ${connectButtonText}`);
     }
+    await desktop.hover("#connect-google");
+    await wait(120);
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, "visual-test-desktop-hover-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-hover-${releaseVersion}.png`),
+      fullPage: true,
+    });
     await desktop.unroute("https://www.googleapis.com/calendar/v3/**");
     await desktop.evaluate(() => {
       window.localStorage.removeItem("lifeos_google_calendar_auth_v1");

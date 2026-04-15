@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v0.4.2`
+- Current version: `v0.4.3`
 - Current production entry file: `public/index.html`
 - Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/calendar.css`, `public/styles/planner.css`, `public/styles/planner-interactions.css`
 - Supporting pages: `public/schedules.html`, `public/planner.html`, `public/setting.html`
@@ -46,18 +46,20 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `release/v0.4.0`
 - `release/v0.4.1`
 - `release/v0.4.2`
+- `release/v0.4.3`
 - `release/v1.0.0`
 
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v0.4.2`.
+- The navbar shows `LifeOS v0.4.3`.
 - The desktop navbar centers the links `Today`, `Schedules`, `Planner`, and `Setting`.
 - The mobile menu button opens a left-side navigation sheet with the same navigation items.
 - `Today` shows the Google Calendar panel and today-focused empty/auth states before sign-in.
 - `Schedules` shows the Google Calendar panel with selectable upcoming ranges.
 - `Planner` supports a 3-step quick planning flow with deterministic draft generation and explicit commit to Google Calendar.
 - `Today`, `Schedules`, and `Planner` all reflect signed-in state as `Google Connected`.
+- Desktop hover states clearly indicate interactive elements without affecting non-interactive cards/text.
 - Google sign-in popup opens only when the user explicitly clicks `Connect Google`.
 - Cloudflare Pages is configured to deploy from the `public` output directory.
 - The pushed `main` branch matches the intended production version.
