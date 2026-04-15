@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.8.1
+
+- Removed goal-only gating from draft generation so planner can run with empty goals, habits, and commitments.
+- Added an in-page `Planner Input Status` notification block to explain missing setup while keeping generation available.
+- Updated planner generation messaging to report open-hour drafts when no schedulable items are defined yet.
+- Set weekday defaults by commitment type: weekly recurring defaults to Mon-Fri, date-range recurring defaults to all days.
+
 ## v0.8.0
 
 - Reworked planner commitments UI with type-adaptive fields: one-off now hides weekdays, weekly keeps full weekday selection, and date-range enables weekday selection with range applicability rules.

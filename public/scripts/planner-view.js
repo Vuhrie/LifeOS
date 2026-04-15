@@ -48,6 +48,23 @@ export const createPlannerView = (ui) => {
     );
   };
 
+  const renderInputNotice = ({ goalsCount, habitsCount, commitmentsCount }) => {
+    const rows = [
+      goalsCount > 0
+        ? { kind: "ok", text: `Goals ready: ${goalsCount}.` }
+        : { kind: "warn", text: "No goals yet. Generation will still run with open hours." },
+      habitsCount > 0
+        ? { kind: "ok", text: `Habits/sessions ready: ${habitsCount}.` }
+        : { kind: "warn", text: "No habits/sessions yet. Generation will still run." },
+      commitmentsCount > 0
+        ? { kind: "ok", text: `Commitments ready: ${commitmentsCount}.` }
+        : { kind: "warn", text: "No commitments yet. Your schedule remains fully open." },
+    ];
+    ui.inputNoticeList.innerHTML = rows
+      .map((item) => `<li class="input-notice-item" data-kind="${item.kind}">${item.text}</li>`)
+      .join("");
+  };
+
   const renderScheduleGrid = (slots) => {
     if (!slots.length) {
       ui.draftSchedule.innerHTML = `<p class="list-empty">No schedule generated yet.</p>`;
@@ -89,5 +106,5 @@ export const createPlannerView = (ui) => {
     return currentStep;
   };
 
-  return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderDraft, setStep };
+  return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderInputNotice, renderDraft, setStep };
 };

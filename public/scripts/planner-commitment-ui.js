@@ -18,13 +18,15 @@ const getDaysInRange = (startDate, endDate) => {
   return days;
 };
 
-const resetDays = (buttons) => {
+const setSelectedDays = (buttons, selectedDays) => {
+  const selected = new Set(selectedDays);
   buttons.forEach((button) => {
-    const isWeekday = ["1", "2", "3", "4", "5"].includes(button.dataset.day || "");
+    const day = Number(button.dataset.day);
+    const isSelected = selected.has(day);
     button.disabled = false;
     button.classList.remove("is-disabled");
-    button.classList.toggle("is-selected", isWeekday);
-    button.setAttribute("aria-pressed", String(isWeekday));
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
     button.title = "";
   });
 };
@@ -77,6 +79,16 @@ export const createCommitmentTypeUi = (ui) => {
     }
     const startDate = parseDateOnly(ui.commitmentStartDate.value);
     const endDate = parseDateOnly(ui.commitmentEndDate.value);
+    if (!startDate || !endDate) {
+      applicableDays = new Set([0, 1, 2, 3, 4, 5, 6]);
+      dayButtons.forEach((button) => {
+        button.disabled = false;
+        button.classList.remove("is-disabled");
+        button.title = "";
+      });
+      syncApplicabilityHint();
+      return;
+    }
     applicableDays = getDaysInRange(startDate, endDate);
     dayButtons.forEach((button) => {
       const day = Number(button.dataset.day);
@@ -99,11 +111,15 @@ export const createCommitmentTypeUi = (ui) => {
     if (isOneOff) {
       ui.commitmentStartDate.value = "";
       ui.commitmentEndDate.value = "";
-      resetDays(dayButtons);
+      setSelectedDays(dayButtons, [1, 2, 3, 4, 5]);
     }
     if (mode === "weekly_recurring") {
       ui.commitmentDay.value = "";
-      resetDays(dayButtons);
+      setSelectedDays(dayButtons, [1, 2, 3, 4, 5]);
+    }
+    if (mode === "date_range_recurring") {
+      ui.commitmentDay.value = "";
+      setSelectedDays(dayButtons, [0, 1, 2, 3, 4, 5, 6]);
     }
     updateApplicableDays();
   };

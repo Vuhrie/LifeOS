@@ -2,6 +2,8 @@ const $ = (id) => document.querySelector(id);
 
 export const getPlannerUi = () => ({
   status: $("#planner-status"),
+  inputNotice: $("#planner-input-notice"),
+  inputNoticeList: $("#planner-input-notice-list"),
   lock: $("#planner-lock"),
   connect: $("#connect-google"),
   commit: $("#commit-draft"),

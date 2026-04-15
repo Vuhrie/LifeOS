@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.8.0";
+const releaseVersion = "v0.8.1";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -123,8 +123,16 @@ const run = async () => {
     const dayWrapInitialHidden = await desktop.locator("#commitment-day-wrap").isHidden();
     const dateRangeInitialHidden = await desktop.locator("#commitment-date-range-row").isHidden();
     const weekdaysInitialVisible = await desktop.locator("#commitment-weekdays").isVisible();
+    const weeklySelectedCount = await desktop.locator(".day-chip.is-selected").count();
     if (!dayWrapInitialHidden || !dateRangeInitialHidden || !weekdaysInitialVisible) {
       throw new Error("Weekly recurring mode should show weekdays only.");
+    }
+    if (weeklySelectedCount !== 5) {
+      throw new Error(`Weekly recurring should default to Mon-Fri selected. Found: ${weeklySelectedCount}`);
+    }
+    const noticeText = await desktop.locator("#planner-input-notice-list").innerText();
+    if (!noticeText.includes("No goals yet") || !noticeText.includes("No habits/sessions yet")) {
+      throw new Error(`Planner notice block should show missing input hints. Found: ${noticeText}`);
     }
     await desktop.selectOption("#commitment-type", "one_off");
     const dayWrapOneOffVisible = await desktop.locator("#commitment-day-wrap").isVisible();
@@ -133,6 +141,10 @@ const run = async () => {
       throw new Error("One-off mode should show date field and hide weekdays.");
     }
     await desktop.selectOption("#commitment-type", "date_range_recurring");
+    const dateRangeSelectedCount = await desktop.locator(".day-chip.is-selected").count();
+    if (dateRangeSelectedCount !== 7) {
+      throw new Error(`Date-range recurring should default all weekdays selected. Found: ${dateRangeSelectedCount}`);
+    }
     await desktop.fill("#commitment-start-date", "2026-04-14");
     await desktop.fill("#commitment-end-date", "2026-04-14");
     await wait(100);
@@ -141,6 +153,13 @@ const run = async () => {
       throw new Error(`Date-range applicability should disable non-applicable weekdays. Found disabled count: ${disabledDayCount}`);
     }
     await desktop.selectOption("#commitment-type", "weekly_recurring");
+    await desktop.locator('.step-pill[data-step="3"]').click();
+    await desktop.locator("#generate-draft").click();
+    await wait(200);
+    const noGoalStatus = await desktop.locator("#planner-status").textContent();
+    if (!noGoalStatus?.includes("open hours")) {
+      throw new Error(`Planner should generate without goals and show open-hours status. Found: ${noGoalStatus}`);
+    }
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(200);
     const aiAssistTitle = await desktop.locator("#ai-assist-title").textContent();

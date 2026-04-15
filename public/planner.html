@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v0.8.0</title>
+  <title>Planner | LifeOS v0.8.1</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v0.8.0</a>
+      <a class="brand" href="index.html">LifeOS v0.8.1</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -28,7 +28,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v0.8.0</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v0.8.1</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -63,6 +63,10 @@
       </header>
 
       <section class="planner-status" id="planner-status" aria-live="polite">Connect Google to unlock planning.</section>
+      <section class="planner-card planner-input-notice" id="planner-input-notice" aria-live="polite">
+        <h2>Planner Input Status</h2>
+        <ul class="input-notice-list" id="planner-input-notice-list"></ul>
+      </section>
       <nav class="planner-stepper" aria-label="Planner steps">
         <button type="button" class="step-pill is-active" data-step="1">1. Constraints</button>
         <button type="button" class="step-pill" data-step="2">2. What I Want</button>

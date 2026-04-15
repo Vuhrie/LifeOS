@@ -45,6 +45,11 @@ export const initPlannerController = (ui) => {
     view.renderCommitments(week.profile.commitments);
     view.renderGoals(week.goals);
     view.renderHabits(week.habits);
+    view.renderInputNotice({
+      goalsCount: week.goals.length,
+      habitsCount: week.habits.length,
+      commitmentsCount: week.profile.commitments.length,
+    });
     view.renderDraft(week.draft);
   };
 
@@ -200,7 +205,7 @@ export const initPlannerController = (ui) => {
     week.goals.push(createGoal({ title, deadlineIso: `${deadline}T23:59:59`, priority, weeklyHours }));
     ui.goalTitle.value = "";
     save();
-    view.renderGoals(week.goals);
+    rerenderAll();
   });
 
   ui.addHabit.addEventListener("click", () => {
@@ -212,7 +217,7 @@ export const initPlannerController = (ui) => {
     week.habits.push(createHabit({ name, frequency, durationMinutes, window }));
     ui.habitName.value = "";
     save();
-    view.renderHabits(week.habits);
+    rerenderAll();
   });
 
   document.addEventListener("click", (event) => {
@@ -229,13 +234,14 @@ export const initPlannerController = (ui) => {
 
   ui.generate.addEventListener("click", async () => {
     if (!lastAuthStateRef.current.isSignedIn) return view.setStatus("Connect Google first to plan.", "warning");
-    const goal = week.goals[0];
-    if (!goal) return view.setStatus("Add at least one goal before generating.", "warning");
+    const goal = week.goals[0] || null;
+    const minorGoals = week.goals.map((item) => ({ id: item.id, title: item.title, targetHours: item.weeklyHours }));
+    const tasks = [...week.tasks, ...logic.habitsAsTasks()];
     const horizonStart = new Date(); horizonStart.setHours(0, 0, 0, 0);
     const draft = generateDraftPlan({
       goal,
-      minorGoals: week.goals.map((item) => ({ id: item.id, title: item.title, targetHours: item.weeklyHours })),
-      tasks: [...week.tasks, ...logic.habitsAsTasks()],
+      minorGoals,
+      tasks,
       availabilityRules: week.availabilityRules,
       horizonStart,
       horizonDays: week.settings.horizonDays,
@@ -252,6 +258,11 @@ export const initPlannerController = (ui) => {
     save();
     view.renderDraft(draft);
     if (!draft.validation.ok) return view.setStatus(draft.validation.errors.join(" "), "warning");
+    if (!minorGoals.length && !tasks.length) {
+      view.setStatus("Schedule generated with open hours. Add goals or habits when you are ready.", "neutral");
+      currentStep = view.setStep(3);
+      return;
+    }
     view.setStatus(`Schedule generated (${draft.slots.length} slots).`, "success");
     currentStep = view.setStep(3);
   });

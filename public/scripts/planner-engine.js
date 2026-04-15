@@ -78,20 +78,19 @@ const scoreCandidate = ({ unit, start, dayPlan, dayRule }) => {
 
 export const validatePlannerInput = ({ goal, minorGoals, availabilityRules }) => {
   const errors = [];
-  if (!goal.title || !goal.title.trim()) {
-    errors.push("Goal title is required.");
-  }
-  if (!goal.deadlineIso) {
-    errors.push("Goal deadline is required.");
-  }
-  if (!(Number(goal.weeklyHours) > 0)) {
-    errors.push("Weekly hours must be greater than zero.");
-  }
-  if (!(Number(goal.priority) >= 1 && Number(goal.priority) <= 5)) {
-    errors.push("Goal priority must be between 1 and 5.");
-  }
-  if (!minorGoals.length) {
-    errors.push("Add at least one schedulable item from goals or habits.");
+  if (goal && typeof goal === "object") {
+    if (!goal.title || !goal.title.trim()) {
+      errors.push("Goal title is required.");
+    }
+    if (!goal.deadlineIso) {
+      errors.push("Goal deadline is required.");
+    }
+    if (!(Number(goal.weeklyHours) > 0)) {
+      errors.push("Weekly hours must be greater than zero.");
+    }
+    if (!(Number(goal.priority) >= 1 && Number(goal.priority) <= 5)) {
+      errors.push("Goal priority must be between 1 and 5.");
+    }
   }
   if (!availabilityRules.length) {
     errors.push("Availability rules are required.");
@@ -144,6 +143,12 @@ export const generateDraftPlan = ({
   const horizonEnd = new Date(horizonStart);
   horizonEnd.setDate(horizonStart.getDate() + horizonDays);
   const lockedSlots = lockExistingSlots({ existingSlots, lockedUntil });
+  const anchorGoal = goal || {
+    title: "General Planning",
+    deadlineIso: horizonEnd.toISOString(),
+    priority: 3,
+    weeklyHours: 0,
+  };
   const { windows, hardBlocks } = buildPlanningWindows({
     horizonStart,
     horizonDays,
@@ -151,7 +156,7 @@ export const generateDraftPlan = ({
     availabilityRules,
     reservedSlots: lockedSlots,
   });
-  const units = buildUnits({ goal, minorGoals, tasks });
+  const units = buildUnits({ goal: anchorGoal, minorGoals, tasks });
   const { keep, consumed } = tryKeepExistingSlots({
     existingSlots,
     hardBlocks,
