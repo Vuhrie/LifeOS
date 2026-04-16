@@ -27,6 +27,7 @@ const buildAiDraftFromRollingPlan = (plan) => {
       start: toDateFromDayTime(day.date, item.start),
       end: toDateFromDayTime(day.date, item.end),
       title: item.title,
+      rawType: item.type,
       sourceId: item.sourceId || "",
       kind: item.type === "commitment" ? "commitment" : "planned",
       badge: item.type === "commitment" ? "Commitment" : item.type === "habit" ? "Habit" : item.type === "necessity" ? "Necessity" : "Planned",
@@ -39,13 +40,14 @@ const buildAiDraftFromRollingPlan = (plan) => {
         id: item.id,
         sourceId: item.sourceId || item.id,
         title: item.title,
-        type: "task",
+        type: item.rawType === "habit" ? "habit" : "task",
         energy: "deep",
         durationMinutes: Math.max(15, Math.round((item.end - item.start) / 60000)),
         start: item.start,
         end: item.end,
         score: 0,
         preserved: false,
+        persistedFromAiApply: true,
       });
     });
   });
@@ -254,6 +256,7 @@ export const createPlannerLogic = ({
     week.managedSlots = (week.draft?.slots || []).map((slot) => ({
       ...slot,
       lifeosManaged: true,
+      persistedFromAiApply: true,
       planRunId: `run_${Date.now().toString(36)}`,
     }));
   };

@@ -5,9 +5,15 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.3";
+const releaseVersion = "v1.0.4";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const isoDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const run = async () => {
   const server = spawn("python", ["-m", "http.server", "4173"], {
@@ -244,6 +250,46 @@ const run = async () => {
     if (!builtPrompt.includes("\"habitRequirements\"")) {
       throw new Error("AI prompt context should include habitRequirements.");
     }
+    const rollingStart = new Date();
+    rollingStart.setHours(0, 0, 0, 0);
+    rollingStart.setDate(rollingStart.getDate() + 1);
+    const rollingPlan = Array.from({ length: 7 }).map((_, offset) => {
+      const date = new Date(rollingStart);
+      date.setDate(rollingStart.getDate() + offset);
+      return {
+        date: isoDate(date),
+        items: offset === 0
+          ? [{ type: "habit", title: "Regression Gym Habit", start: "08:15", end: "09:15" }]
+          : [],
+      };
+    });
+    const appliedPlan = {
+      version: "3.0",
+      minorGoals: [],
+      tasks: [],
+      rollingPlan,
+    };
+    await desktop.fill("#ai-import-input", JSON.stringify(appliedPlan, null, 2));
+    await desktop.locator("#ai-validate-import").click();
+    await wait(120);
+    await desktop.locator("#ai-apply-import").click();
+    await wait(180);
+    await desktop.locator('.step-pill[data-step="3"]').click();
+    await wait(150);
+    const aiAppliedDraftText = await desktop.locator("#draft-schedule").innerText();
+    if (!aiAppliedDraftText.includes("Regression Gym Habit")) {
+      throw new Error("Applied AI rolling plan should render habit item in draft.");
+    }
+    await desktop.locator("#clear-draft").click();
+    await wait(120);
+    await desktop.locator("#generate-draft").click();
+    await wait(220);
+    const regeneratedDraftText = await desktop.locator("#draft-schedule").innerText();
+    if (!regeneratedDraftText.includes("Regression Gym Habit")) {
+      throw new Error("Generate Draft should retain previously applied AI JSON schedule items.");
+    }
+    await desktop.locator('.step-pill[data-step="2"]').click();
+    await wait(120);
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),
       fullPage: true,

@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.4
+
+- Persisted applied AI JSON schedule slots across `Clear Draft` followed by `Generate Schedule`, so approved AI placements remain part of future generated drafts.
+- Updated planner engine slot-retention logic to preserve AI-applied managed slots even when they are not tied to deterministic task unit IDs.
+- Added regression coverage for `apply AI JSON -> clear draft -> regenerate` to ensure habit placements (e.g., gym) are retained.
+
 ## v1.0.3
 
 - Fixed planner draft reappearance bug by filtering hidden Google events using both `ignoredGoogleEventIds` and `dismissedGoogleCommitmentIds`.

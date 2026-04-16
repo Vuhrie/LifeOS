@@ -133,12 +133,15 @@ const tryKeepExistingSlots = ({ existingSlots, hardBlocks, lockedUntil, horizonS
   const sorted = [...existingSlots].sort((left, right) => new Date(left.start) - new Date(right.start));
   sorted.forEach((slot) => {
     if (!canKeepExistingSlot({ slot, hardBlocks, lockedUntil, horizonStart, horizonEnd })) return;
-    if (!units.find((unit) => unit.id === slot.id) || consumed.has(slot.id)) return;
+    const isPersistedAiApply = slot.persistedFromAiApply === true;
+    const matchingUnit = units.find((unit) => unit.id === slot.id);
+    if (!isPersistedAiApply && !matchingUnit) return;
+    if (consumed.has(slot.id)) return;
     const slotStart = new Date(slot.start);
     const dayKey = slotStart.toDateString();
     const habitKey = habitKeyFromSlot(slot);
     if (habitKey && keptHabitDayKeys.has(`${habitKey}|${dayKey}`)) return;
-    consumed.add(slot.id);
+    if (matchingUnit) consumed.add(slot.id);
     if (habitKey) keptHabitDayKeys.add(`${habitKey}|${dayKey}`);
     keep.push({
       ...slot,
