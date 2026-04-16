@@ -18,24 +18,60 @@ const toIsoDate = (date) => {
 
 const toDateFromDayTime = (dateText, timeText) => new Date(`${dateText}T${timeText}:00`);
 
-const buildAiDraftFromRollingPlan = (plan) => {
+const toHHMM = (dateLike) => {
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return "";
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${hour}:${minute}`;
+};
+
+const necessityDefinitionsFromProfile = (profile) => {
+  const definitions = profile?.necessities || {};
+  const labels = { breakfast: "Breakfast", dinner: "Dinner", shower: "Shower" };
+  return Object.entries(labels).map(([key, title]) => {
+    const value = definitions[key] || {};
+    return {
+      id: key,
+      title,
+      enabled: Boolean(value.enabled),
+      durationMinutes: Math.max(5, Number(value.durationMinutes || 0)),
+    };
+  });
+};
+
+const buildAiDraftFromRollingPlan = (plan, profile) => {
+  const rhythmStart = profile?.wakeTime || "06:00";
+  const rhythmEnd = profile?.sleepTime || "22:00";
   const slots = [];
   const days = (plan.rollingPlan || []).map((day) => ({
     date: new Date(`${day.date}T00:00:00`),
-    items: (day.items || []).map((item, index) => ({
-      id: `${day.date}_${index}_${item.type}`,
-      start: toDateFromDayTime(day.date, item.start),
-      end: toDateFromDayTime(day.date, item.end),
-      title: item.title,
-      rawType: item.type,
-      sourceId: item.sourceId || "",
-      kind: item.type === "commitment" ? "commitment" : "planned",
-      badge: item.type === "commitment" ? "Commitment" : item.type === "habit" ? "Habit" : item.type === "necessity" ? "Necessity" : "Planned",
-    })),
+    items: [
+      {
+        id: `${day.date}_rhythm`,
+        start: toDateFromDayTime(day.date, rhythmStart),
+        end: toDateFromDayTime(day.date, rhythmEnd),
+        title: "Daily Rhythm",
+        rawType: "daily_rhythm",
+        sourceId: "",
+        kind: "rhythm",
+        badge: "Daily Rhythm",
+      },
+      ...(day.items || []).map((item, index) => ({
+        id: `${day.date}_${index}_${item.type}`,
+        start: toDateFromDayTime(day.date, item.start),
+        end: toDateFromDayTime(day.date, item.end),
+        title: item.title,
+        rawType: item.type,
+        sourceId: item.sourceId || "",
+        kind: item.type === "commitment" ? "commitment" : "planned",
+        badge: item.type === "commitment" ? "Commitment" : item.type === "habit" ? "Habit" : item.type === "necessity" ? "Necessity" : "Planned",
+      })),
+    ],
   }));
   days.forEach((day) => {
     day.items.forEach((item) => {
-      if (item.kind === "commitment") return;
+      if (item.kind === "commitment" || item.rawType === "daily_rhythm") return;
       slots.push({
         id: item.id,
         sourceId: item.sourceId || item.id,
@@ -122,6 +158,7 @@ export const createPlannerLogic = ({
       frequencyIsHardCap: true,
       preferNonConsecutiveDays: true,
     }));
+    const necessityDefinitions = necessityDefinitionsFromProfile(week.profile);
     const dismissedGoogleIds = new Set(
       (week.dismissedGoogleCommitmentIds || []).map((item) => String(item || "")).filter(Boolean),
     );
@@ -154,6 +191,7 @@ export const createPlannerLogic = ({
       definedElements: {
         dailyRhythm: { wakeTime: week.profile.wakeTime, sleepTime: week.profile.sleepTime },
         necessities: week.profile.necessities,
+        necessityDefinitions,
         commitments: promptCommitments,
         habits: week.habits,
         habitRequirements,
@@ -175,6 +213,20 @@ export const createPlannerLogic = ({
           start: item.start.toISOString(),
           end: item.end.toISOString(),
           source: item.source,
+          durationMinutes: Math.round((item.end - item.start) / 60000),
+          startTime: toHHMM(item.start),
+          endTime: toHHMM(item.end),
+        })),
+        necessityDurationByType: necessityDefinitions.map((item) => ({
+          id: item.id,
+          title: item.title,
+          enabled: item.enabled,
+          durationMinutes: item.durationMinutes,
+        })),
+        dailyRhythmByDay: rollingDays.map((item) => ({
+          date: item.date,
+          wakeTime: week.profile.wakeTime,
+          sleepTime: week.profile.sleepTime,
         })),
         capacityByWindow: capacity.windows.map((item) => ({
           start: item.start.toISOString(),
@@ -252,7 +304,7 @@ export const createPlannerLogic = ({
 
     week.minorGoals = nextMinorGoals;
     week.tasks = nextTasks;
-    week.draft = buildAiDraftFromRollingPlan(validation.plan);
+    week.draft = buildAiDraftFromRollingPlan(validation.plan, week.profile);
     week.managedSlots = (week.draft?.slots || []).map((slot) => ({
       ...slot,
       lifeosManaged: true,

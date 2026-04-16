@@ -71,12 +71,36 @@ const expandCommitments = ({ commitments = [], horizonStart, horizonDays }) => {
   return items;
 };
 
+const expandDailyRhythm = ({ profile = {}, horizonStart, horizonDays }) => {
+  const wakeMinute = toMinutes(profile.wakeTime, 6 * 60);
+  const sleepMinute = toMinutes(profile.sleepTime, 22 * 60);
+  const dayEndMinute = sleepMinute > wakeMinute ? sleepMinute : Math.min(24 * 60, wakeMinute + 60);
+  const items = [];
+  for (let offset = 0; offset < horizonDays; offset += 1) {
+    const date = new Date(horizonStart);
+    date.setDate(horizonStart.getDate() + offset);
+    const start = atMinute(date, wakeMinute);
+    const end = atMinute(date, dayEndMinute);
+    if (end <= start) continue;
+    items.push({
+      id: `daily_rhythm_${date.toISOString().slice(0, 10)}`,
+      start,
+      end,
+      title: "Daily Rhythm",
+      kind: "rhythm",
+      badge: "Daily Rhythm",
+    });
+  }
+  return items;
+};
+
 export const buildPlannerPreview = ({
   draftSlots = [],
   existingEvents = [],
   horizonStart,
   horizonDays,
   commitments = [],
+  profile = {},
 }) => {
   const previewStart = new Date(horizonStart);
   previewStart.setHours(0, 0, 0, 0);
@@ -125,13 +149,19 @@ export const buildPlannerPreview = ({
     horizonStart: previewStart,
     horizonDays,
   });
+  const rhythmItems = expandDailyRhythm({
+    profile,
+    horizonStart: previewStart,
+    horizonDays,
+  });
 
   const plannedWithConflicts = plannedItems.map((item) => {
     const conflict = existingItems.some((existing) => overlaps(item.start, item.end, existing.start, existing.end));
     return conflict ? { ...item, hasConflict: true, badge: "Conflict" } : item;
   });
 
-  const merged = [...existingItems, ...commitmentItems, ...plannedWithConflicts].sort((left, right) => left.start - right.start);
+  const merged = [...rhythmItems, ...existingItems, ...commitmentItems, ...plannedWithConflicts]
+    .sort((left, right) => left.start - right.start);
   const grouped = new Map();
   for (let offset = 0; offset < horizonDays; offset += 1) {
     const date = new Date(previewStart);
@@ -153,6 +183,7 @@ export const buildPlannerPreview = ({
     range: { start: previewStart.toISOString(), end: previewEnd.toISOString() },
     days,
     summary: {
+      rhythm: rhythmItems.length,
       existing: existingItems.length,
       commitments: commitmentItems.length,
       planned: plannedWithConflicts.length,

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.5";
+const releaseVersion = "v1.0.6";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -207,6 +207,9 @@ const run = async () => {
     if (previewText.includes("Regression Gym Habit")) {
       throw new Error("Deterministic draft should not auto-place habit sessions without AI plan import.");
     }
+    if (!previewText.includes("Daily Rhythm")) {
+      throw new Error("Generated draft should render daily rhythm blocks.");
+    }
     if (previewDayCount !== 7) {
       throw new Error(`Planner draft should render the full 7-day horizon. Found: ${previewDayCount}`);
     }
@@ -237,6 +240,12 @@ const run = async () => {
     }
     if (!builtPrompt.includes("\"rollingPlan\"")) {
       throw new Error("AI prompt should include rollingPlan JSON shape.");
+    }
+    if (!builtPrompt.includes("\"necessityDefinitions\"") || !builtPrompt.includes("\"necessityDurationByType\"")) {
+      throw new Error("AI prompt should include necessity definitions and duration context.");
+    }
+    if (!builtPrompt.includes("\"dailyRhythmByDay\"")) {
+      throw new Error("AI prompt should include per-day daily rhythm context.");
     }
     if (builtPrompt.includes("Existing Calendar Event")) {
       throw new Error("Removed imported events should not reappear in AI prompt context.");

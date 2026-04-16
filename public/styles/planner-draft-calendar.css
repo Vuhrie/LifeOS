@@ -105,3 +105,8 @@
   color: #355566;
   background: rgba(215, 237, 247, 0.95);
 }
+
+.draft-event-card[data-kind="rhythm"] .draft-event-badge {
+  color: #3e5f8a;
+  background: rgba(224, 236, 255, 0.92);
+}

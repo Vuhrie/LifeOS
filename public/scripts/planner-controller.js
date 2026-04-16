@@ -212,6 +212,7 @@ export const initPlannerController = (ui) => {
       horizonStart,
       horizonDays,
       commitments: week.profile.commitments,
+      profile: week.profile,
     });
     week.draft.warnings = previewOverlapWarnings(week.draft.slots || [], editedImported);
   };
@@ -583,9 +584,15 @@ export const initPlannerController = (ui) => {
       horizonStart,
       horizonDays,
       commitments: week.profile.commitments,
+      profile: week.profile,
     });
     week.draft = draft;
-    week.managedSlots = draft.slots.map((slot) => ({ ...slot, lifeosManaged: true, planRunId: `run_${Date.now().toString(36)}` }));
+    week.managedSlots = draft.slots.map((slot) => ({
+      ...slot,
+      lifeosManaged: true,
+      persistedFromAiApply: Boolean(slot.persistedFromAiApply),
+      planRunId: `run_${Date.now().toString(36)}`,
+    }));
     if (draft.validation.ok) {
       draft.warnings = previewOverlapWarnings(draft.slots, editedExistingEvents);
     }

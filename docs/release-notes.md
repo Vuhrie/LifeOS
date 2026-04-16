@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.6
+
+- Added daily-rhythm blocks to generated draft schedule previews so each rolling day visibly shows the wake/sleep window.
+- Expanded AI prompt context with explicit necessity duration payloads and per-day daily-rhythm context to improve AI placement decisions.
+- Preserved `persistedFromAiApply` flags when regenerating managed slots, preventing AI-applied non-commitment items from being dropped on later regenerations.
+- Expanded visual regression checks to assert daily-rhythm rendering and necessity-duration prompt coverage.
+
 ## v1.0.5
 
 - Fixed regenerate persistence for applied AI JSON items so non-habit entries (for example necessities and tasks) stay in the regenerated draft.
