@@ -30,6 +30,9 @@ const parseCalendarEvent = (event) => ({
   start: event.start?.dateTime || event.start?.date || "",
   end: event.end?.dateTime || event.end?.date || "",
   description: event.description || "",
+  isLifeOsManaged: String(event?.extendedProperties?.private?.lifeosManaged || "").toLowerCase() === "true"
+    || String(event.description || "").includes("lifeos_slot_id:")
+    || String(event.description || "").includes("lifeos_commit_id:"),
 });
 
 const toIso = (value) => {

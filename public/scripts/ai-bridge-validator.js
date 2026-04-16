@@ -59,6 +59,9 @@ const resolveMinorGoalId = (item, minorByTitle) => {
   return byTitle?.id || "";
 };
 
+const habitDefinitionMap = (habits) =>
+  new Map((habits || []).map((item) => [String(item.name || "").toLowerCase(), item]));
+
 const plannedHabitCountByWeek = ({ rollingPlan, habits }) => {
   const habitByName = new Map((habits || []).map((item) => [String(item.name || "").toLowerCase(), item]));
   const counter = new Map();
@@ -148,6 +151,7 @@ export const validateAiRollingPlan = ({ plan, week }) => {
     const commitmentList = commitmentsByDate.get(day.date) || [];
     const slots = [];
     const habitDailyCounter = new Map();
+    const habitsByName = habitDefinitionMap(week.habits || []);
     day.items.forEach((item) => {
       const start = toMinutes(item.start);
       const end = toMinutes(item.end);
@@ -163,6 +167,14 @@ export const validateAiRollingPlan = ({ plan, week }) => {
       if (item.type === "habit") {
         const key = String(item.title || "").toLowerCase();
         habitDailyCounter.set(key, (habitDailyCounter.get(key) || 0) + 1);
+        const habit = habitsByName.get(key);
+        if (habit) {
+          const expected = Math.max(15, Number(habit.durationMinutes || 0));
+          const actual = end - start;
+          if (expected > 0 && actual !== expected) {
+            errors.push(`${day.date}: habit "${item.title}" duration must be ${expected} minutes, got ${actual}.`);
+          }
+        }
       }
       if (item.type === "commitment" && item.sourceId && dismissedGoogleIds.has(String(item.sourceId))) {
         errors.push(`${day.date}: "${item.title}" references a dismissed Google event and must not be reintroduced.`);

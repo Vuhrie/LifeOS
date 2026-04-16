@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.9
+
+- Stopped re-importing LifeOS-managed Google Calendar events as planner commitments, preventing old managed gym blocks from being treated as locked commitments.
+- Filtered LifeOS-managed calendar events out of AI prompt context so old schedule artifacts no longer override current habit definitions.
+- Strengthened AI prompt rules: habit duration is fixed by habit definition and must not be shortened/extended.
+- Enforced exact habit duration matching in rolling-plan validation (`start/end` duration must equal habit `durationMinutes`).
+
 ## v1.0.8
 
 - Moved `Commit To Calendar` to Step 3 (`Rolling 7-Day Plan`) so commit can only run from the final planning stage.

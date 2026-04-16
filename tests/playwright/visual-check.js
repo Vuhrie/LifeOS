@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.8";
+const releaseVersion = "v1.0.9";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -275,6 +275,9 @@ const run = async () => {
     }
     if (!builtPrompt.includes("\"habitRequirements\"")) {
       throw new Error("AI prompt context should include habitRequirements.");
+    }
+    if (!builtPrompt.includes("Habit duration is fixed by habit definition durationMinutes")) {
+      throw new Error("AI prompt should state that habit duration is fixed by definition.");
     }
     const rollingStart = new Date();
     rollingStart.setHours(0, 0, 0, 0);

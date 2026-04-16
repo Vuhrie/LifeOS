@@ -92,6 +92,11 @@ const applyImportedEventEdits = (events, edits) =>
     return patch ? { ...event, ...patch } : event;
   });
 
+const isLifeOsManagedCalendarEvent = (event) =>
+  Boolean(event?.isLifeOsManaged)
+  || String(event?.description || "").includes("lifeos_slot_id:")
+  || String(event?.description || "").includes("lifeos_commit_id:");
+
 const formatDateLabel = (value) =>
   new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
 
@@ -263,6 +268,22 @@ export const initPlannerController = (ui) => {
       if (!silent) view.setStatus(`Google import failed: ${error.message}`, "error");
       return;
     }
+    const lifeOsManagedEventIds = new Set(
+      (events || [])
+        .filter((event) => isLifeOsManagedCalendarEvent(event))
+        .map((event) => String(event.id || ""))
+        .filter(Boolean),
+    );
+    let cleanedManagedCommitments = false;
+    if (lifeOsManagedEventIds.size) {
+      const before = week.profile.commitments.length;
+      week.profile.commitments = (week.profile.commitments || []).filter((item) => {
+        if (String(item?.source || "") !== "google_imported") return true;
+        const eventId = String(item?.googleEventId || "");
+        return !eventId || !lifeOsManagedEventIds.has(eventId);
+      });
+      cleanedManagedCommitments = week.profile.commitments.length !== before;
+    }
     const existingIds = new Set(
       (week.profile.commitments || [])
         .map((item) => String(item.googleEventId || ""))
@@ -280,7 +301,7 @@ export const initPlannerController = (ui) => {
     const newCommitments = [];
     events.forEach((event) => {
       const eventId = String(event.id || "");
-      if (!eventId || existingIds.has(eventId) || dismissedIds.has(eventId)) return;
+      if (!eventId || existingIds.has(eventId) || dismissedIds.has(eventId) || lifeOsManagedEventIds.has(eventId)) return;
       const start = event.start || "";
       const end = event.end || event.start || "";
       newCommitments.push(createCommitment({
@@ -297,7 +318,10 @@ export const initPlannerController = (ui) => {
       week.dismissedGoogleCommitmentIds = [...dismissedIds];
     }
     if (!newCommitments.length) {
-      if (changedDismissed) save();
+      if (changedDismissed || cleanedManagedCommitments) {
+        save();
+        rerenderAll();
+      }
       if (!silent) view.setStatus("Google commitments already synced.", "neutral");
       return;
     }

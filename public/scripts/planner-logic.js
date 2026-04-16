@@ -124,6 +124,11 @@ const resolveMinorGoalId = (task, minorGoals) => {
   return match?.id || "";
 };
 
+const isLifeOsManagedCalendarEvent = (event) =>
+  Boolean(event?.isLifeOsManaged)
+  || String(event?.description || "").includes("lifeos_slot_id:")
+  || String(event?.description || "").includes("lifeos_commit_id:");
+
 export const createPlannerLogic = ({
   week,
   weekKey,
@@ -176,7 +181,9 @@ export const createPlannerLogic = ({
     const events = (eventsRaw || []).filter((event) => {
       const eventId = String(event?.id || "");
       if (!eventId) return true;
-      return !dismissedGoogleIds.has(eventId) && !ignoredGoogleIds.has(eventId);
+      return !dismissedGoogleIds.has(eventId)
+        && !ignoredGoogleIds.has(eventId)
+        && !isLifeOsManagedCalendarEvent(event);
     });
     const promptCommitments = (week.profile.commitments || []).filter((item) => {
       if (String(item.source || "") !== "google_imported") return true;
