@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.9.1";
+const releaseVersion = "v0.9.2";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -215,8 +215,11 @@ const run = async () => {
     await desktop.locator("#ai-build-prompt").click();
     await wait(200);
     const builtPrompt = await desktop.locator("#ai-prompt-output").inputValue();
-    if (!builtPrompt.includes("Explain your reasoning in detail inside the notes field.")) {
-      throw new Error("AI prompt should require detailed reasoning notes.");
+    if (!builtPrompt.includes("Reasoning must be outside the JSON in a clearly organized section.")) {
+      throw new Error("AI prompt should require organized reasoning outside JSON.");
+    }
+    if (!builtPrompt.includes("Put the JSON patch last in a fenced ```json block")) {
+      throw new Error("AI prompt should require fenced JSON after reasoning.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),
@@ -353,4 +356,5 @@ run().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
 

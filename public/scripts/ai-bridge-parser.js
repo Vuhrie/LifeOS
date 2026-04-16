@@ -119,7 +119,6 @@ export const parseAiBridgePlan = (raw) => {
   const version = String(parsed.version || AI_BRIDGE_VERSION);
   if (version !== AI_BRIDGE_VERSION) warnings.push(`Expected version ${AI_BRIDGE_VERSION}, got ${version}.`);
   const notes = typeof parsed.notes === "string" ? parsed.notes.trim() : "";
-  if (!notes) warnings.push("Detailed reasoning notes are recommended in notes.");
   const operations = Array.isArray(parsed.operations) ? parsed.operations : [];
   if (!operations.length) return { ok: false, errors: ["operations[] is required."], warnings, plan: null };
 
@@ -170,9 +169,4 @@ export const parseAiBridgePlan = (raw) => {
   };
 };
 
-export const summarizeAiBridgePlan = (plan) => {
-  const notes = String(plan.notes || "").trim();
-  return notes
-    ? `${plan.operations.length} operations with reasoning notes`
-    : `${plan.operations.length} operations without reasoning notes`;
-};
+export const summarizeAiBridgePlan = (plan) => `${plan.operations.length} operations`;

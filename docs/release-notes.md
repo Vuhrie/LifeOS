@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.9.2
+
+- Updated the AI prompt builder so detailed reasoning is requested outside the JSON patch.
+- Added a structured response format with reasoning first and a fenced JSON patch last.
+- Removed the soft import warning that expected reasoning inside the JSON `notes` field.
+- Kept JSON import compatible with fenced JSON responses after reasoning text.
+
 ## v0.9.1
 
 - Updated the AI prompt builder to require detailed reasoning inside the JSON `notes` field.
