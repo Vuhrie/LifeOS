@@ -62,21 +62,27 @@ const resolveMinorGoalId = (item, minorByTitle) => {
 const plannedHabitCountByWeek = ({ rollingPlan, habits }) => {
   const habitByName = new Map((habits || []).map((item) => [String(item.name || "").toLowerCase(), item]));
   const counter = new Map();
+  const daysPerWeek = new Map();
+  const unknownHabitItems = [];
   rollingPlan.forEach((day) => {
     const date = dateFromIso(day.date);
     if (!date) return;
     const weekStart = new Date(date);
     weekStart.setDate(date.getDate() - ((date.getDay() + 6) % 7));
     const weekKey = isoDate(weekStart);
+    daysPerWeek.set(weekKey, (daysPerWeek.get(weekKey) || 0) + 1);
     day.items.forEach((item) => {
       if (item.type !== "habit") return;
       const habit = habitByName.get(String(item.title || "").toLowerCase());
-      if (!habit) return;
+      if (!habit) {
+        unknownHabitItems.push({ date: day.date, title: String(item.title || "") });
+        return;
+      }
       const key = `${habit.id}|${weekKey}`;
       counter.set(key, (counter.get(key) || 0) + 1);
     });
   });
-  return counter;
+  return { counter, daysPerWeek, unknownHabitItems };
 };
 
 export const validateAiRollingPlan = ({ plan, week }) => {
@@ -170,15 +176,44 @@ export const validateAiRollingPlan = ({ plan, week }) => {
     });
   });
 
-  const habitCounter = plannedHabitCountByWeek({
+  const habitSummary = plannedHabitCountByWeek({
     rollingPlan: days,
     habits: week.habits || [],
   });
+  habitSummary.unknownHabitItems.forEach((item) => {
+    errors.push(`${item.date}: habit "${item.title}" is not defined in planner habits.`);
+  });
   (week.habits || []).forEach((habit) => {
-    const hasAnyWeek = [...habitCounter.keys()].some((key) => key.startsWith(`${habit.id}|`));
-    if (!hasAnyWeek && Number(habit.frequency || 0) > 0) {
-      warnings.push(`Habit "${habit.name}" was not scheduled in rolling plan output.`);
+    const frequency = Math.max(0, Number(habit.frequency || 0));
+    const habitKeys = [...habitSummary.counter.keys()].filter((key) => key.startsWith(`${habit.id}|`));
+    if (!habitKeys.length && frequency > 0) warnings.push(`Habit "${habit.name}" was not scheduled in rolling plan output.`);
+    const weekRuns = [];
+    days.forEach((day) => {
+      const dayDate = dateFromIso(day.date);
+      if (!dayDate) return;
+      const hasHabit = (day.items || []).some(
+        (item) => item.type === "habit" && String(item.title || "").toLowerCase() === String(habit.name || "").toLowerCase(),
+      );
+      weekRuns.push({ date: day.date, hasHabit });
+    });
+    for (let i = 2; i < weekRuns.length; i += 1) {
+      if (weekRuns[i - 2].hasHabit && weekRuns[i - 1].hasHabit && weekRuns[i].hasHabit) {
+        warnings.push(`Habit "${habit.name}" is scheduled three consecutive days (${weekRuns[i - 2].date} to ${weekRuns[i].date}).`);
+      }
     }
+    habitKeys.forEach((key) => {
+      const weekKey = key.split("|")[1] || "";
+      const count = habitSummary.counter.get(key) || 0;
+      const daysInWeekPortion = habitSummary.daysPerWeek.get(weekKey) || 0;
+      const partialWeekCap = Math.ceil((frequency * daysInWeekPortion) / 7);
+      const hardCap = Math.min(frequency, Math.max(0, partialWeekCap));
+      if (frequency === 0 && count > 0) {
+        errors.push(`Habit "${habit.name}" has frequency 0 but was scheduled ${count} times in week ${weekKey}.`);
+      }
+      if (frequency > 0 && count > hardCap) {
+        errors.push(`Habit "${habit.name}" exceeds allowed placements in week ${weekKey}: ${count} scheduled, cap ${hardCap}.`);
+      }
+    });
   });
 
   return {

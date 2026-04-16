@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.3
+
+- Fixed planner draft reappearance bug by filtering hidden Google events using both `ignoredGoogleEventIds` and `dismissedGoogleCommitmentIds`.
+- Updated deterministic draft generation to stop auto-injecting habit sessions, preventing forced back-to-back gym placement without AI planning.
+- Expanded AI prompt context with explicit `habitRequirements` and rolling-day week metadata for Monday-Sunday frequency reasoning.
+- Strengthened prompt rules for hard weekly caps and proportional partial-week caps.
+- Tightened AI rolling-plan validation with unknown-habit detection, strict weekly habit-cap enforcement, and consecutive-day warnings.
+
 ## v1.0.2
 
 - Fixed AI prompt-context leakage so removed/dismissed Google events are filtered out of `existingCalendarEvents` before prompt build.

@@ -72,6 +72,20 @@ const tomorrowStart = () => {
 const filterIgnoredEvents = (events, ignoredIds) =>
   (events || []).filter((event) => !ignoredIds.includes(String(event.id || "")));
 
+const hiddenGoogleEventIds = (week) =>
+  new Set([
+    ...(Array.isArray(week?.ignoredGoogleEventIds) ? week.ignoredGoogleEventIds : []),
+    ...(Array.isArray(week?.dismissedGoogleCommitmentIds) ? week.dismissedGoogleCommitmentIds : []),
+  ].map((item) => String(item || "")).filter(Boolean));
+
+const filterHiddenGoogleEvents = (events, week) => {
+  const hiddenIds = hiddenGoogleEventIds(week);
+  return filterIgnoredEvents(
+    events,
+    [...hiddenIds],
+  );
+};
+
 const applyImportedEventEdits = (events, edits) =>
   (events || []).map((event) => {
     const patch = edits?.[String(event.id || "")];
@@ -189,7 +203,7 @@ export const initPlannerController = (ui) => {
     const horizonStart = new Date(week.draft.horizonStartIso || Date.now());
     horizonStart.setHours(0, 0, 0, 0);
     const horizonDays = Number(week.draft.horizonDays || week.settings.horizonDays || 7);
-    const visibleImported = filterIgnoredEvents(week.draft.importedEvents || [], week.ignoredGoogleEventIds);
+    const visibleImported = filterHiddenGoogleEvents(week.draft.importedEvents || [], week);
     const editedImported = applyImportedEventEdits(visibleImported, week.importedEventEdits);
     latestImportedEventsById = new Map(editedImported.map((item) => [String(item.id), item]));
     week.draft.preview = buildPlannerPreview({
@@ -537,7 +551,7 @@ export const initPlannerController = (ui) => {
       title: item.title,
       targetHours: 2,
     }));
-    const tasks = [...week.tasks, ...logic.habitsAsTasks()];
+    const tasks = [...week.tasks];
     const horizonStart = tomorrowStart();
     const horizonDays = 7;
     const draft = generateDraftPlan({
@@ -557,7 +571,7 @@ export const initPlannerController = (ui) => {
     try {
       existingEvents = await writeClient.fetchExistingEvents({ startIso: horizonStart.toISOString(), endIso: end.toISOString() });
     } catch {}
-    const visibleExistingEvents = filterIgnoredEvents(existingEvents, week.ignoredGoogleEventIds);
+    const visibleExistingEvents = filterHiddenGoogleEvents(existingEvents, week);
     const editedExistingEvents = applyImportedEventEdits(visibleExistingEvents, week.importedEventEdits);
     latestImportedEventsById = new Map(editedExistingEvents.map((item) => [String(item.id), item]));
     draft.importedEvents = visibleExistingEvents;

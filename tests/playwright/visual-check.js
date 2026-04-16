@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.2";
+const releaseVersion = "v1.0.3";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -174,6 +174,14 @@ const run = async () => {
       throw new Error(`Date-range applicability should disable non-applicable weekdays. Found disabled count: ${disabledDayCount}`);
     }
     await desktop.selectOption("#commitment-type", "weekly_recurring");
+    await desktop.locator('.step-pill[data-step="2"]').click();
+    await wait(100);
+    await desktop.fill("#habit-name", "Regression Gym Habit");
+    await desktop.fill("#habit-frequency", "3");
+    await desktop.fill("#habit-duration", "60");
+    await desktop.selectOption("#habit-window", "morning");
+    await desktop.locator("#add-habit").click();
+    await wait(100);
     await desktop.locator('.step-pill[data-step="3"]').click();
     await desktop.locator("#generate-draft").click();
     await wait(200);
@@ -185,22 +193,16 @@ const run = async () => {
     if (!noGoalStatus?.includes("open hours")) {
       throw new Error(`Planner should generate without goals and show open-hours status. Found: ${noGoalStatus}`);
     }
-    const previewCardCount = await desktop.locator(".draft-event-card").count();
     const previewText = await desktop.locator("#draft-schedule").innerText();
     const previewDayCount = await desktop.locator(".draft-day-group").count();
-    const importedEditCount = await desktop.locator("[data-edit-imported]").count();
-    const importedRemoveCount = await desktop.locator("[data-rm-imported]").count();
-    if (previewCardCount < 1 || !previewText.includes("Existing Calendar Event")) {
-      throw new Error("Planner draft preview should include merged existing calendar event cards.");
+    if (previewText.includes("Existing Calendar Event")) {
+      throw new Error("Removed imported commitment/event should not remain in draft preview.");
+    }
+    if (previewText.includes("Regression Gym Habit")) {
+      throw new Error("Deterministic draft should not auto-place habit sessions without AI plan import.");
     }
     if (previewDayCount !== 7) {
       throw new Error(`Planner draft should render the full 7-day horizon. Found: ${previewDayCount}`);
-    }
-    if (importedRemoveCount < 1) {
-      throw new Error("Planner draft should allow removing imported events.");
-    }
-    if (importedEditCount < 1) {
-      throw new Error("Planner draft should allow editing imported events.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-draft-current.png"),
@@ -232,6 +234,15 @@ const run = async () => {
     }
     if (builtPrompt.includes("Existing Calendar Event")) {
       throw new Error("Removed imported events should not reappear in AI prompt context.");
+    }
+    if (!builtPrompt.includes("frequencyPerWeek is a hard cap per Monday-Sunday week")) {
+      throw new Error("AI prompt should enforce Monday-Sunday hard cap for habits.");
+    }
+    if (!builtPrompt.includes("proportional cap")) {
+      throw new Error("AI prompt should include proportional partial-week habit cap guidance.");
+    }
+    if (!builtPrompt.includes("\"habitRequirements\"")) {
+      throw new Error("AI prompt context should include habitRequirements.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),

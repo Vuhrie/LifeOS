@@ -91,29 +91,35 @@ export const createPlannerLogic = ({
   writeClient,
   lastAuthStateRef,
 }) => {
-  const habitsAsTasks = () =>
-    week.habits.flatMap((habit) => {
-      const count = Math.max(0, Number(habit.frequency || 0));
-      const duration = Math.max(15, Number(habit.durationMinutes || 60));
-      return Array.from({ length: count }).map((_, index) =>
-        createTask({
-          weekKey,
-          title: `${habit.name}`,
-          estimateMinutes: duration,
-          priority: 3,
-          energy: habit.window === "night" ? "light" : "deep",
-          habitId: habit.id,
-          preferredWindow: habit.window,
-          source: "deterministic",
-        }));
-    });
-
   const buildPromptContext = async () => {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     start.setDate(start.getDate() + 1);
     const end = new Date(start);
     end.setDate(start.getDate() + 7);
+    const rollingDays = Array.from({ length: 7 }).map((_, offset) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + offset);
+      const mondayOffset = (date.getDay() + 6) % 7;
+      const mondayStart = new Date(date);
+      mondayStart.setDate(date.getDate() - mondayOffset);
+      return {
+        date: toIsoDate(date),
+        weekday: date.toLocaleDateString("en-US", { weekday: "long" }),
+        mondaySundayWeekStart: toIsoDate(mondayStart),
+      };
+    });
+    const habitRequirements = (week.habits || []).map((habit) => ({
+      id: String(habit.id || ""),
+      name: String(habit.name || ""),
+      frequencyPerWeek: Math.max(0, Number(habit.frequency || 0)),
+      durationMinutes: Math.max(15, Number(habit.durationMinutes || 60)),
+      preferredWindow: String(habit.window || "anytime"),
+      weekModel: "monday_to_sunday",
+      maxPerDay: 1,
+      frequencyIsHardCap: true,
+      preferNonConsecutiveDays: true,
+    }));
     const dismissedGoogleIds = new Set(
       (week.dismissedGoogleCommitmentIds || []).map((item) => String(item || "")).filter(Boolean),
     );
@@ -148,6 +154,7 @@ export const createPlannerLogic = ({
         necessities: week.profile.necessities,
         commitments: promptCommitments,
         habits: week.habits,
+        habitRequirements,
         majorGoals: week.goals,
       },
       aiManaged: {
@@ -160,6 +167,7 @@ export const createPlannerLogic = ({
         rollingStart: start.toISOString(),
         rollingEnd: end.toISOString(),
         existingCalendarEvents: events,
+        rollingDays,
         hardBlocks: capacity.hardBlocks.map((item) => ({
           title: item.title,
           start: item.start.toISOString(),
@@ -177,6 +185,8 @@ export const createPlannerLogic = ({
         rollingExcludesToday: true,
         habitsUseMondaySundayWeek: true,
         habitMaxPerDayDefault: 1,
+        habitFrequencyHardCap: true,
+        habitPreferNonConsecutiveDays: true,
         dismissedGoogleEventIds: [...dismissedGoogleIds],
         aiMayModify: ["minorGoals", "tasks", "habitExecutionTiming", "necessityExecutionTiming"],
         aiMayNotModify: ["majorGoals", "commitments", "dailyRhythm", "necessityDefinitions", "habitDefinitions"],
@@ -261,5 +271,5 @@ export const createPlannerLogic = ({
     return summaryFn(plan);
   };
 
-  return { habitsAsTasks, buildPromptContext, applyAiOperations };
+  return { buildPromptContext, applyAiOperations };
 };
