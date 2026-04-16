@@ -477,8 +477,7 @@ export const initPlannerController = (ui) => {
         `From draft: ${seed?.title || proposal.seedId}`,
         `Title: ${proposal.title}`,
         `Deadline: ${proposal.deadline}`,
-        `Priority: ${proposal.priority}`,
-        `Weekly Hours: ${proposal.weeklyHours}`,
+        `Importance: ${proposal.importance}`,
         `Done Condition: ${proposal.doneCondition}`,
         `Reason: ${proposal.rationale}`,
         "",
@@ -489,8 +488,7 @@ export const initPlannerController = (ui) => {
         week.goals.push(createGoal({
           title: proposal.title,
           deadlineIso: `${proposal.deadline}T23:59:59`,
-          priority: proposal.priority,
-          weeklyHours: proposal.weeklyHours,
+          importance: proposal.importance,
           deadlineSource: "ai_assessed",
           source: "ai_assisted",
           doneCondition: proposal.doneCondition,
@@ -617,14 +615,12 @@ export const initPlannerController = (ui) => {
     }
     const title = ui.goalTitle.value.trim();
     const deadline = dateOnly(ui.goalDeadline.value);
-    const priority = Number(ui.goalPriority.value);
-    const weeklyHours = Math.max(1, Number(ui.goalHours.value) || 8);
+    const importance = Number(ui.goalImportance.value);
     if (!title) return view.setStatus("Major goal title is required.", "warning");
     week.goals.push(createGoal({
       title,
       deadlineIso: deadline ? `${deadline}T23:59:59` : "",
-      priority,
-      weeklyHours,
+      importance,
       deadlineSource: deadline ? "manual" : "ai_assessed_pending",
       source: "manual",
     }));

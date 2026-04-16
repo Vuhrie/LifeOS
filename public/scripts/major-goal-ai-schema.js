@@ -8,15 +8,13 @@ export const MAJOR_GOAL_AI_TEMPLATE = `\`\`\`json
   "known": {
     "title": "Preparation for SIT Information Security",
     "targetDate": "",
-    "priority": null,
-    "weeklyHours": null,
+    "importance": null,
     "doneCondition": "",
     "rationale": ""
   },
   "missing": [
     "targetDate",
-    "priority",
-    "weeklyHours",
+    "importance",
     "doneCondition"
   ],
   "questions": [
@@ -34,8 +32,7 @@ export const MAJOR_GOAL_AI_TEMPLATE = `\`\`\`json
       "seedId": "seed_1",
       "title": "Pass CEH certification exam",
       "deadline": "2026-06-30",
-      "priority": 4,
-      "weeklyHours": 10,
+      "importance": 4,
       "doneCondition": "Pass CEH exam with valid result.",
       "rationale": "Turns a vague cybersecurity goal into a measurable target."
     }

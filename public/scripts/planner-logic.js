@@ -285,8 +285,7 @@ export const createPlannerLogic = ({
           createGoal({
             title: item.title,
             deadlineIso: item.deadline ? `${item.deadline}T23:59:59` : "",
-            priority: item.priority,
-            weeklyHours: item.weeklyHours,
+            importance: item.importance ?? item.priority,
           }));
       }
       if (operation.op === "replaceHabits") week.habits = operation.items.map((item) => createHabit(item));

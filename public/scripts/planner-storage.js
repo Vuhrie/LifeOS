@@ -43,7 +43,7 @@ const defaultWeekState = () => ({
   majorGoalAiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
-const defaultState = () => ({ schemaVersion: 10, currentWeekKey: "", weeks: {}, history: [] });
+const defaultState = () => ({ schemaVersion: 11, currentWeekKey: "", weeks: {}, history: [] });
 
 const normalizeNeed = (value, fallbackDuration) => {
   const item = parse(value, {});
@@ -124,8 +124,8 @@ const normalizeWeekState = (week) => {
       id: String(item?.id || uid("goal")),
       title: String(item?.title || "").trim(),
       deadlineIso: String(item?.deadlineIso || ""),
-      priority: Math.max(1, Math.min(5, Number(item?.priority || 3))),
-      weeklyHours: Math.max(1, Math.min(80, Number(item?.weeklyHours || 8))),
+      importance: Math.max(1, Math.min(5, Number(item?.importance ?? item?.priority ?? 3))),
+      priority: Math.max(1, Math.min(5, Number(item?.importance ?? item?.priority ?? 3))),
       status: String(item?.status || "active"),
       deadlineSource: String(item?.deadlineSource || "manual"),
       doneCondition: String(item?.doneCondition || ""),
@@ -169,8 +169,12 @@ const normalizeWeekState = (week) => {
         targetGoalTitle: String(item?.targetGoalTitle || ""),
         title: String(item?.title || "").trim(),
         deadline: String(item?.deadline || ""),
-        priority: Number.isFinite(Number(item?.priority)) ? Math.max(1, Math.min(5, Number(item.priority))) : null,
-        weeklyHours: Number.isFinite(Number(item?.weeklyHours)) ? Math.max(1, Math.min(80, Number(item.weeklyHours))) : null,
+        importance: Number.isFinite(Number(item?.importance ?? item?.priority))
+          ? Math.max(1, Math.min(5, Number(item?.importance ?? item?.priority)))
+          : null,
+        priority: Number.isFinite(Number(item?.importance ?? item?.priority))
+          ? Math.max(1, Math.min(5, Number(item?.importance ?? item?.priority)))
+          : null,
         rationale: String(item?.rationale || ""),
       }))
       .filter((item) => item.title || item.action === "modify")
@@ -245,7 +249,7 @@ export const loadPlannerState = (accountKey = "anon") => {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
-    const state = { schemaVersion: 10, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
+    const state = { schemaVersion: 11, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
     Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => { state.weeks[key] = normalizeWeekState(value); });
     return state;
   } catch {
@@ -283,8 +287,7 @@ export const rotateWeekIfNeeded = (state, now = new Date()) => {
 export const createGoal = ({
   title,
   deadlineIso = "",
-  priority = 3,
-  weeklyHours = 8,
+  importance = 3,
   deadlineSource = "manual",
   source = "manual",
   doneCondition = "",
@@ -292,8 +295,9 @@ export const createGoal = ({
   id: uid("goal"),
   title,
   deadlineIso,
-  priority,
-  weeklyHours,
+  importance,
+  // Keep priority mirrored for deterministic scoring paths that still read it.
+  priority: importance,
   status: "active",
   deadlineSource,
   source,

@@ -34,6 +34,15 @@ const draftCard = (item) => `
 `;
 
 export const createPlannerView = (ui) => {
+  const importanceLabel = (value) => {
+    const level = Number(value || 3);
+    if (level >= 5) return "Critical";
+    if (level === 4) return "High";
+    if (level === 3) return "Normal";
+    if (level === 2) return "Low";
+    return "Optional";
+  };
+
   const setStatus = (text, kind = "neutral") => {
     ui.status.dataset.kind = kind;
     ui.status.textContent = text;
@@ -89,7 +98,7 @@ export const createPlannerView = (ui) => {
     const seedItems = Array.isArray(aiGoalSeeds) ? aiGoalSeeds : [];
     const rows = [
       ...goalItems.map((item) =>
-        `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, P${item.priority}, ${item.weeklyHours}h/week) <span class="draft-event-badge">${escapeHtml(item.source === "ai_assisted" ? "AI Assisted" : "Manual")}</span> <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`),
+        `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, ${escapeHtml(importanceLabel(item.importance ?? item.priority))} importance) <span class="draft-event-badge">${escapeHtml(item.source === "ai_assisted" ? "AI Assisted" : "Manual")}</span> <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`),
       ...seedItems.map((item) =>
         `<li>${escapeHtml(item.title)} (AI draft${item.targetDate ? `, target ${escapeHtml(item.targetDate)}` : ""}) <span class="draft-event-badge">AI Draft</span> <button type="button" class="inline-remove" data-rm-ai-goal-seed="${item.id}">Remove</button></li>`),
     ];
@@ -238,7 +247,7 @@ export const createPlannerView = (ui) => {
 
   const renderPriorityMajorGoalOptions = (goals, selectedId = "") => {
     if (!ui.aiPriorityMajorGoal) return;
-    const options = [`<option value="">No priority override</option>`]
+    const options = [`<option value="">No focus override</option>`]
       .concat((goals || []).map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.title)}</option>`));
     ui.aiPriorityMajorGoal.innerHTML = options.join("");
   };

@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.15
+
+- Removed `weeklyHours` as a required major-goal field in manual and AI-assisted flows.
+- Updated major-goal semantics to use `importance` (1-5), with compatibility fallback from legacy `priority`.
+- Updated major-goal AI schema/prompt/parser to require `importance` and ignore legacy `weeklyHours` with warnings.
+- Updated planner draft validation so major goals no longer require weekly-hours input.
+- Updated rolling schedule prompt instructions so workload is inferred from minor goals, tasks, deadlines, progress, and capacity.
+
 ## v1.0.14
 
 - Updated AI-assisted major-goal prompt flow to support conversational clarification rounds with a `Working Major Goal Draft`.

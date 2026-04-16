@@ -20,23 +20,21 @@ const parseProposal = (proposal, index, errors) => {
   const deadline = safeText(proposal?.deadline);
   const doneCondition = safeText(proposal?.doneCondition);
   const rationale = safeText(proposal?.rationale);
-  const priorityRaw = Number(proposal?.priority);
-  const weeklyHoursRaw = Number(proposal?.weeklyHours);
-  const priority = Number.isFinite(priorityRaw) ? clamp(Math.round(priorityRaw), 1, 5) : NaN;
-  const weeklyHours = Number.isFinite(weeklyHoursRaw) ? clamp(Math.round(weeklyHoursRaw), 1, 80) : NaN;
+  const importanceRaw = Number(proposal?.importance ?? proposal?.priority);
+  const importance = Number.isFinite(importanceRaw) ? clamp(Math.round(importanceRaw), 1, 5) : NaN;
   if (!seedId) errors.push(`proposals[${index}].seedId is required.`);
   if (!title) errors.push(`proposals[${index}].title is required.`);
   if (!deadline || !DATE_RE.test(deadline)) errors.push(`proposals[${index}].deadline must be YYYY-MM-DD.`);
-  if (!Number.isFinite(priorityRaw)) errors.push(`proposals[${index}].priority is required.`);
-  if (!Number.isFinite(weeklyHoursRaw)) errors.push(`proposals[${index}].weeklyHours is required.`);
+  if (!Number.isFinite(importanceRaw)) errors.push(`proposals[${index}].importance is required.`);
   if (!doneCondition) errors.push(`proposals[${index}].doneCondition is required.`);
   if (!rationale) errors.push(`proposals[${index}].rationale is required.`);
   return {
     seedId,
     title,
     deadline,
-    priority: Number.isFinite(priority) ? priority : 3,
-    weeklyHours: Number.isFinite(weeklyHours) ? weeklyHours : 8,
+    importance: Number.isFinite(importance) ? importance : 3,
+    // Mirror importance for legacy paths that still read priority.
+    priority: Number.isFinite(importance) ? importance : 3,
     doneCondition,
     rationale,
   };
@@ -61,6 +59,9 @@ export const parseMajorGoalAiPlan = (raw, { validSeedIds = [] } = {}) => {
   if (version !== MAJOR_GOAL_AI_VERSION) {
     warnings.push(`Expected version ${MAJOR_GOAL_AI_VERSION}, got ${version || "missing"}.`);
   }
+  if (json.includes('"weeklyHours"')) {
+    warnings.push("weeklyHours is no longer used for major goals and was ignored.");
+  }
 
   const status = safeText(parsed.status);
   if (status !== "in_progress" && status !== "proposals_ready" && status !== "needs_clarification") {
@@ -74,8 +75,9 @@ export const parseMajorGoalAiPlan = (raw, { validSeedIds = [] } = {}) => {
     const known = {
       title: safeText(knownRaw.title),
       targetDate: safeText(knownRaw.targetDate),
-      priority: Number.isFinite(Number(knownRaw.priority)) ? clamp(Math.round(Number(knownRaw.priority)), 1, 5) : null,
-      weeklyHours: Number.isFinite(Number(knownRaw.weeklyHours)) ? clamp(Math.round(Number(knownRaw.weeklyHours)), 1, 80) : null,
+      importance: Number.isFinite(Number(knownRaw.importance ?? knownRaw.priority))
+        ? clamp(Math.round(Number(knownRaw.importance ?? knownRaw.priority)), 1, 5)
+        : null,
       doneCondition: safeText(knownRaw.doneCondition),
       rationale: safeText(knownRaw.rationale),
     };

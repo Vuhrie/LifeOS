@@ -48,7 +48,7 @@ const buildUnits = ({ goal, minorGoals, tasks }) => {
         sourceId: item.id,
         title: item.title,
         type: "minor_goal",
-        priority: goal.priority,
+        priority: Number(goal.importance ?? goal.priority ?? 3),
         mustDo: 1,
         energy: "deep",
         deadlineIso: goal.deadlineIso,
@@ -108,11 +108,9 @@ export const validatePlannerInput = ({ goal, minorGoals, availabilityRules }) =>
     if (!goal.deadlineIso) {
       errors.push("Goal deadline is required.");
     }
-    if (!(Number(goal.weeklyHours) > 0)) {
-      errors.push("Weekly hours must be greater than zero.");
-    }
-    if (!(Number(goal.priority) >= 1 && Number(goal.priority) <= 5)) {
-      errors.push("Goal priority must be between 1 and 5.");
+    const importance = Number(goal.importance ?? goal.priority);
+    if (!(importance >= 1 && importance <= 5)) {
+      errors.push("Goal importance must be between 1 and 5.");
     }
   }
   if (!availabilityRules.length) {
@@ -181,8 +179,8 @@ export const generateDraftPlan = ({
   const anchorGoal = goal || {
     title: "General Planning",
     deadlineIso: horizonEnd.toISOString(),
+    importance: 3,
     priority: 3,
-    weeklyHours: 0,
   };
   const { windows, hardBlocks } = buildPlanningWindows({
     horizonStart,

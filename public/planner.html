@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v1.0.14</title>
+  <title>Planner | LifeOS v1.0.15</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v1.0.14</a>
+      <a class="brand" href="index.html">LifeOS v1.0.15</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -31,7 +31,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.14</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.15</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -165,10 +165,9 @@
               <label>Deadline<input id="goal-deadline" type="date"></label>
             </div>
             <div class="inline-fields">
-              <label>Priority
-                <select id="goal-priority"><option value="5">5 - Critical</option><option value="4">4 - High</option><option value="3" selected>3 - Normal</option><option value="2">2 - Low</option><option value="1">1 - Optional</option></select>
+              <label>Importance
+                <select id="goal-importance"><option value="5">5 - Critical</option><option value="4">4 - High</option><option value="3" selected>3 - Normal</option><option value="2">2 - Low</option><option value="1">1 - Optional</option></select>
               </label>
-              <label>Weekly Hours<input id="goal-weekly-hours" type="number" min="1" max="80" step="1" value="8"></label>
             </div>
             <button class="action-button" type="button" id="add-goal">Add Major Goal</button>
           </div>
@@ -219,7 +218,7 @@
             <label>Task progress signals<textarea id="ai-task-progress-notes" rows="3" placeholder="Completed/skipped/blocked details to guide AI replanning."></textarea></label>
           </div>
           <div class="inline-fields">
-            <label>Priority Major Goal
+            <label>Focus Major Goal
               <select id="ai-priority-major-goal"></select>
             </label>
           </div>

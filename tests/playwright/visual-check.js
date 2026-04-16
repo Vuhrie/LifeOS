@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.14";
+const releaseVersion = "v1.0.15";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -209,6 +209,10 @@ const run = async () => {
     if (!manualGoalFieldsVisible) {
       throw new Error("Manual major-goal fields should be visible after selecting Manual mode.");
     }
+    const weeklyHoursInputCount = await desktop.locator("#goal-weekly-hours").count();
+    if (weeklyHoursInputCount !== 0) {
+      throw new Error("Major goals should not require a weekly-hours input.");
+    }
     await desktop.locator('[data-major-goal-mode="ai_assisted"]').click();
     await wait(100);
     const aiGoalFieldsVisible = await desktop.locator("#major-goal-ai-fields").isVisible();
@@ -236,6 +240,15 @@ const run = async () => {
     }
     if (!majorGoalPrompt.includes('"status":"in_progress"')) {
       throw new Error("Major-goal AI prompt should include in_progress working draft status.");
+    }
+    if (!majorGoalPrompt.includes("importance")) {
+      throw new Error("Major-goal AI prompt should use importance.");
+    }
+    if (majorGoalPrompt.includes('"weeklyHours":')) {
+      throw new Error("Major-goal AI prompt should not include weeklyHours fields.");
+    }
+    if (majorGoalPrompt.includes("each proposal must include seedId, title, deadline, priority, weeklyHours")) {
+      throw new Error("Major-goal AI prompt should not require weeklyHours.");
     }
     if (majorGoalPrompt.includes("\"rollingPlan\"")) {
       throw new Error("Major-goal AI prompt should not include rollingPlan output.");
@@ -337,6 +350,9 @@ const run = async () => {
     }
     if (!builtPrompt.includes("existingCalendarEvents are informational context only")) {
       throw new Error("AI prompt should clarify existing calendar events are informational only.");
+    }
+    if (!builtPrompt.includes("Major goals contain outcome, deadline, and importance only")) {
+      throw new Error("AI prompt should clarify major goals are importance-based without weekly-hour targets.");
     }
     const rollingStart = new Date();
     rollingStart.setHours(0, 0, 0, 0);
