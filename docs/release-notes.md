@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.5
+
+- Fixed regenerate persistence for applied AI JSON items so non-habit entries (for example necessities and tasks) stay in the regenerated draft.
+- Updated managed-slot retention logic to keep user-approved AI-applied slots across `Clear Draft` followed by `Generate Schedule`.
+- Expanded visual regression to assert that applied AI habit, necessity, and task items remain visible after clear/regenerate.
+
 ## v1.0.4
 
 - Persisted applied AI JSON schedule slots across `Clear Draft` followed by `Generate Schedule`, so approved AI placements remain part of future generated drafts.

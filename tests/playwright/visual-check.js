@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.4";
+const releaseVersion = "v1.0.5";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -259,7 +259,11 @@ const run = async () => {
       return {
         date: isoDate(date),
         items: offset === 0
-          ? [{ type: "habit", title: "Regression Gym Habit", start: "08:15", end: "09:15" }]
+          ? [
+            { type: "necessity", title: "AI Morning Prep", start: "06:30", end: "07:15" },
+            { type: "habit", title: "Regression Gym Habit", start: "08:15", end: "09:15" },
+            { type: "task", title: "Regression Focus Task", start: "19:00", end: "19:45" },
+          ]
           : [],
       };
     });
@@ -280,6 +284,9 @@ const run = async () => {
     if (!aiAppliedDraftText.includes("Regression Gym Habit")) {
       throw new Error("Applied AI rolling plan should render habit item in draft.");
     }
+    if (!aiAppliedDraftText.includes("AI Morning Prep") || !aiAppliedDraftText.includes("Regression Focus Task")) {
+      throw new Error("Applied AI rolling plan should render non-habit items in draft.");
+    }
     await desktop.locator("#clear-draft").click();
     await wait(120);
     await desktop.locator("#generate-draft").click();
@@ -287,6 +294,9 @@ const run = async () => {
     const regeneratedDraftText = await desktop.locator("#draft-schedule").innerText();
     if (!regeneratedDraftText.includes("Regression Gym Habit")) {
       throw new Error("Generate Draft should retain previously applied AI JSON schedule items.");
+    }
+    if (!regeneratedDraftText.includes("AI Morning Prep") || !regeneratedDraftText.includes("Regression Focus Task")) {
+      throw new Error("Generate Draft should retain applied AI necessity/task items.");
     }
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(120);
