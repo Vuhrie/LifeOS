@@ -31,6 +31,8 @@ export const buildAiBridgePrompt = (context) => {
     "- For days use 1=Mon ... 0=Sun.",
     "- Keep outputs realistic given hard blocks, necessity blocks, and policy.",
     "- Prefer small changes that improve current plan quality and minimize churn.",
+    "- Explain your reasoning in detail inside the notes field.",
+    "- In notes, cover why each operation is needed, which constraints were considered, how the schedule context affected decisions, and any tradeoffs or unscheduled limitations.",
     "",
     "Return this JSON shape:",
     AI_BRIDGE_MINIMAL_TEMPLATE,

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.9.0";
+const releaseVersion = "v0.9.1";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -212,6 +212,12 @@ const run = async () => {
     if (!aiPromptField || !aiImportField) {
       throw new Error("AI assist fields should be visible in planner step 2 on desktop.");
     }
+    await desktop.locator("#ai-build-prompt").click();
+    await wait(200);
+    const builtPrompt = await desktop.locator("#ai-prompt-output").inputValue();
+    if (!builtPrompt.includes("Explain your reasoning in detail inside the notes field.")) {
+      throw new Error("AI prompt should require detailed reasoning notes.");
+    }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),
       fullPage: true,
@@ -347,3 +353,4 @@ run().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+

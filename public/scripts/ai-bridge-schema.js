@@ -17,5 +17,5 @@ export const AI_BRIDGE_MINIMAL_TEMPLATE = `{
     { "op": "replaceHabits", "items": [{ "name": "Gym", "frequency": 3, "durationMinutes": 60, "window": "morning" }] },
     { "op": "replaceTasks", "items": [{ "title": "Review lecture notes", "estimateMinutes": 90, "priority": 3, "energy": "light" }] }
   ],
-  "notes": "Optional reasoning text."
+  "notes": "Detailed reasoning: explain why each operation was chosen, which constraints were respected, how existing schedule context affected the choice, and any tradeoffs or unscheduled limitations."
 }`;

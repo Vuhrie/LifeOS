@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.9.1
+
+- Updated the AI prompt builder to require detailed reasoning inside the JSON `notes` field.
+- Added prompt guidance for explaining operation choices, respected constraints, schedule-context effects, tradeoffs, and unscheduled limitations.
+- Added a soft validation warning when imported AI JSON omits reasoning notes.
+- Updated AI import summaries to indicate whether reasoning notes were included.
+
 ## v0.9.0
 
 - Made planner draft schedule render the full rolling horizon day-by-day, including empty-day placeholders.
