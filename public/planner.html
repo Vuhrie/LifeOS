@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v0.9.2</title>
+  <title>Planner | LifeOS v1.0.0</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v0.9.2</a>
+      <a class="brand" href="index.html">LifeOS v1.0.0</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -31,7 +31,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v0.9.2</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.0</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -58,7 +58,7 @@
         <div>
           <p class="planner-eyebrow">Quick Plan</p>
           <h1 id="planner-title">Planner</h1>
-          <p class="planner-subtitle">AI proposes changes. Deterministic policy enforces what is allowed.</p>
+          <p class="planner-subtitle">Defined elements stay stable. AI manages minor goals, tasks, and 7-day arrangement.</p>
         </div>
         <div class="planner-actions">
           <button class="action-button" type="button" id="commit-draft">Commit To Calendar</button>
@@ -67,9 +67,9 @@
 
       <section class="planner-status" id="planner-status" aria-live="polite">Connect Google to unlock planning.</section>
       <nav class="planner-stepper" aria-label="Planner steps">
-        <button type="button" class="step-pill is-active" data-step="1">1. Constraints</button>
-        <button type="button" class="step-pill" data-step="2">2. What I Want</button>
-        <button type="button" class="step-pill" data-step="3">3. Draft Schedule</button>
+        <button type="button" class="step-pill is-active" data-step="1">1. Defined Elements</button>
+        <button type="button" class="step-pill" data-step="2">2. AI Planning Brief</button>
+        <button type="button" class="step-pill" data-step="3">3. Rolling 7-Day Plan</button>
       </nav>
 
       <section class="wizard-step is-active" data-step-panel="1">
@@ -141,7 +141,7 @@
             <button class="action-button" type="button" id="ai-copy-prompt">Copy Prompt</button>
           </div>
           <label>Prompt<textarea id="ai-prompt-output" rows="8" readonly></textarea></label>
-          <label>AI JSON response<textarea id="ai-import-input" rows="8" placeholder="Paste JSON or ```json fenced output."></textarea></label>
+          <label>AI response (reasoning + JSON)<textarea id="ai-import-input" rows="8" placeholder="Paste the full AI response. LifeOS will extract the final ```json block."></textarea></label>
           <div class="ai-assist-actions">
             <button class="action-button" type="button" id="ai-validate-import">Validate JSON</button>
             <button class="action-button action-button--primary" type="button" id="ai-apply-import" disabled>Apply Patch</button>
@@ -151,7 +151,7 @@
         </article>
 
         <article class="planner-card">
-          <h2>Goals</h2>
+          <h2>Major Goals</h2>
           <div class="inline-fields">
             <label>Title<input id="goal-title" type="text" maxlength="160"></label>
             <label>Deadline<input id="goal-deadline" type="date"></label>
@@ -162,7 +162,7 @@
             </label>
             <label>Weekly Hours<input id="goal-weekly-hours" type="number" min="1" max="80" step="1" value="8"></label>
           </div>
-          <button class="action-button" type="button" id="add-goal">Add Goal</button>
+          <button class="action-button" type="button" id="add-goal">Add Major Goal</button>
           <ul class="list-block" id="goals-list"></ul>
         </article>
 
@@ -180,6 +180,33 @@
           </div>
           <button class="action-button" type="button" id="add-habit">Add Habit</button>
           <ul class="list-block" id="habits-list"></ul>
+        </article>
+
+        <article class="planner-card">
+          <h2>Planning Attachments</h2>
+          <p class="planner-subtitle">Attach context to defined elements before building the AI prompt.</p>
+          <div class="inline-fields">
+            <label>What changed since last plan?<textarea id="ai-changed-since" rows="3" placeholder="What changed today that should affect planning?"></textarea></label>
+            <label>Task progress signals<textarea id="ai-task-progress-notes" rows="3" placeholder="Completed/skipped/blocked details to guide AI replanning."></textarea></label>
+          </div>
+          <div class="inline-fields">
+            <label>Priority Major Goal
+              <select id="ai-priority-major-goal"></select>
+            </label>
+          </div>
+          <label>Extra user preference notes<textarea id="ai-brief-notes" rows="3" placeholder="Energy, time preference, intensity limits, or arrangement requests."></textarea></label>
+        </article>
+
+        <article class="planner-card">
+          <h2>AI-Managed Minor Goals</h2>
+          <p class="planner-subtitle">Minor goals are created and modified by AI chatbot output.</p>
+          <ul class="list-block" id="minor-goals-list"></ul>
+        </article>
+
+        <article class="planner-card">
+          <h2>AI-Managed Tasks</h2>
+          <p class="planner-subtitle">Mark completion and progress, then attach to AI prompt for the next run.</p>
+          <ul class="list-block" id="tasks-list"></ul>
         </article>
       </section>
 

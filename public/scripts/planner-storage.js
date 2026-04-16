@@ -19,8 +19,15 @@ const defaultWeekState = () => ({
   profile: defaultProfile(),
   settings: { horizonDays: 7, lockedHorizonHours: 12 },
   goals: [],
+  minorGoals: [],
   habits: [],
   tasks: [],
+  aiPlannerInputs: {
+    notes: "",
+    changedSinceLastRun: "",
+    taskProgressNotes: "",
+    priorityMajorGoalId: "",
+  },
   availabilityRules: [],
   draft: null,
   commitLog: [],
@@ -31,7 +38,7 @@ const defaultWeekState = () => ({
   aiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
-const defaultState = () => ({ schemaVersion: 8, currentWeekKey: "", weeks: {}, history: [] });
+const defaultState = () => ({ schemaVersion: 9, currentWeekKey: "", weeks: {}, history: [] });
 
 const normalizeNeed = (value, fallbackDuration) => {
   const item = parse(value, {});
@@ -92,6 +99,7 @@ const normalizeProfile = (profile) => {
         date: String(item.date || ""),
         isLocked: item.isLocked !== false,
         source: String(item.source || "manual"),
+        googleEventId: String(item.googleEventId || ""),
       })),
     necessities: {
       breakfast: normalizeNeed(parse(next.necessities, {}).breakfast, 30),
@@ -103,15 +111,66 @@ const normalizeProfile = (profile) => {
 
 const normalizeWeekState = (week) => {
   const next = parse(week, defaultWeekState());
+  const profile = normalizeProfile(next.profile);
+  const goals = Array.isArray(next.goals)
+    ? next.goals.map((item) => ({
+      id: String(item?.id || uid("goal")),
+      title: String(item?.title || "").trim(),
+      deadlineIso: String(item?.deadlineIso || ""),
+      priority: Math.max(1, Math.min(5, Number(item?.priority || 3))),
+      weeklyHours: Math.max(1, Math.min(80, Number(item?.weeklyHours || 8))),
+      status: String(item?.status || "active"),
+      deadlineSource: String(item?.deadlineSource || "manual"),
+      createdAt: String(item?.createdAt || new Date().toISOString()),
+      source: String(item?.source || "manual"),
+    })).filter((item) => item.title)
+    : [];
+  const minorGoals = Array.isArray(next.minorGoals)
+    ? next.minorGoals.map((item) => ({
+      id: String(item?.id || uid("mgoal")),
+      majorGoalId: String(item?.majorGoalId || ""),
+      title: String(item?.title || "").trim(),
+      deadlineIso: String(item?.deadlineIso || ""),
+      status: String(item?.status || "active"),
+      notes: String(item?.notes || ""),
+      source: String(item?.source || "ai"),
+      createdAt: String(item?.createdAt || new Date().toISOString()),
+      updatedAt: String(item?.updatedAt || new Date().toISOString()),
+    })).filter((item) => item.title)
+    : [];
+  const tasks = Array.isArray(next.tasks)
+    ? next.tasks.map((item) => ({
+      id: String(item?.id || uid("task")),
+      weekKey: String(item?.weekKey || ""),
+      title: String(item?.title || "").trim(),
+      estimateMinutes: Math.max(15, Math.min(480, Number(item?.estimateMinutes || 60))),
+      priority: Math.max(1, Math.min(5, Number(item?.priority || 3))),
+      energy: item?.energy === "light" ? "light" : "deep",
+      habitId: String(item?.habitId || ""),
+      preferredWindow: String(item?.preferredWindow || ""),
+      majorGoalId: String(item?.majorGoalId || ""),
+      minorGoalId: String(item?.minorGoalId || ""),
+      status: String(item?.status || "active"),
+      source: String(item?.source || "ai"),
+      updatedAt: String(item?.updatedAt || new Date().toISOString()),
+    })).filter((item) => item.title)
+    : [];
   return {
-    profile: normalizeProfile(next.profile),
+    profile,
     settings: {
       horizonDays: Math.max(1, Math.min(14, Number(parse(next.settings, {}).horizonDays || 7))),
       lockedHorizonHours: Math.max(0, Math.min(48, Number(parse(next.settings, {}).lockedHorizonHours || 12))),
     },
-    goals: Array.isArray(next.goals) ? next.goals : [],
+    goals,
+    minorGoals,
     habits: Array.isArray(next.habits) ? next.habits : [],
-    tasks: Array.isArray(next.tasks) ? next.tasks : [],
+    tasks,
+    aiPlannerInputs: {
+      notes: String(parse(next.aiPlannerInputs, {}).notes || ""),
+      changedSinceLastRun: String(parse(next.aiPlannerInputs, {}).changedSinceLastRun || ""),
+      taskProgressNotes: String(parse(next.aiPlannerInputs, {}).taskProgressNotes || ""),
+      priorityMajorGoalId: String(parse(next.aiPlannerInputs, {}).priorityMajorGoalId || ""),
+    },
     availabilityRules: Array.isArray(next.availabilityRules) ? next.availabilityRules : [],
     draft: next.draft || null,
     commitLog: Array.isArray(next.commitLog) ? next.commitLog : [],
@@ -138,7 +197,7 @@ export const loadPlannerState = (accountKey = "anon") => {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
-    const state = { schemaVersion: 8, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
+    const state = { schemaVersion: 9, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
     Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => { state.weeks[key] = normalizeWeekState(value); });
     return state;
   } catch {
@@ -173,7 +232,22 @@ export const rotateWeekIfNeeded = (state, now = new Date()) => {
   return nextWeekKey;
 };
 
-export const createGoal = ({ title, deadlineIso, priority, weeklyHours }) => ({ id: uid("goal"), title, deadlineIso, priority, weeklyHours, status: "active", createdAt: new Date().toISOString() });
+export const createGoal = ({
+  title,
+  deadlineIso = "",
+  priority = 3,
+  weeklyHours = 8,
+  deadlineSource = "manual",
+}) => ({
+  id: uid("goal"),
+  title,
+  deadlineIso,
+  priority,
+  weeklyHours,
+  status: "active",
+  deadlineSource,
+  createdAt: new Date().toISOString(),
+});
 export const createHabit = ({ name, frequency, durationMinutes, window }) => ({ id: uid("habit"), name, frequency, durationMinutes, window, status: "active" });
 export const createTask = ({
   weekKey,
@@ -183,6 +257,10 @@ export const createTask = ({
   energy,
   habitId = "",
   preferredWindow = "",
+  majorGoalId = "",
+  minorGoalId = "",
+  status = "active",
+  source = "ai",
 }) => ({
   id: uid("task"),
   weekKey,
@@ -192,9 +270,54 @@ export const createTask = ({
   energy,
   habitId: String(habitId || ""),
   preferredWindow: String(preferredWindow || ""),
-  status: "active",
+  majorGoalId: String(majorGoalId || ""),
+  minorGoalId: String(minorGoalId || ""),
+  status: String(status || "active"),
+  source: String(source || "ai"),
+  updatedAt: new Date().toISOString(),
 });
-export const createMinorGoal = ({ weekKey, title, targetHours }) => ({ id: uid("mgoal"), weekKey, title, targetHours, status: "active" });
-export const createCommitment = ({ mode, title, start, end, days, startDate, endDate, date }) => ({ id: uid("commit"), mode, title, start, end, days: days || [], startDate: startDate || "", endDate: endDate || "", date: date || "", isLocked: true, source: "manual" });
+export const createMinorGoal = ({
+  majorGoalId,
+  title,
+  deadlineIso = "",
+  status = "active",
+  notes = "",
+  source = "ai",
+}) => ({
+  id: uid("mgoal"),
+  majorGoalId: String(majorGoalId || ""),
+  title,
+  deadlineIso,
+  status,
+  notes,
+  source,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+export const createCommitment = ({
+  mode,
+  title,
+  start,
+  end,
+  days,
+  startDate,
+  endDate,
+  date,
+  source = "manual",
+  googleEventId = "",
+}) => ({
+  id: uid("commit"),
+  mode,
+  title,
+  start,
+  end,
+  days: days || [],
+  startDate: startDate || "",
+  endDate: endDate || "",
+  date: date || "",
+  isLocked: true,
+  source: String(source || "manual"),
+  googleEventId: String(googleEventId || ""),
+});
 
 export { buildAvailabilityRulesFromProfile, dayName, getDateForDay, getPlanningWeekKey, getWeekKey, getWeekStartFromKey, normalizeTime, toMinutes } from "./planner-time.js";

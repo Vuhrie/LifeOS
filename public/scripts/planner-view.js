@@ -53,6 +53,10 @@ export const createPlannerView = (ui) => {
       ui.addCommitment,
       ui.addGoal,
       ui.addHabit,
+      ui.aiChangedSince,
+      ui.aiTaskProgressNotes,
+      ui.aiBriefNotes,
+      ui.aiPriorityMajorGoal,
     ];
     controls.forEach((control) => {
       if (control) control.disabled = locked;
@@ -69,7 +73,7 @@ export const createPlannerView = (ui) => {
       ui.commitmentsList,
       items,
       (item) =>
-        `<li>${escapeHtml(item.title)} | ${escapeHtml(summary(item))} <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
+        `<li>${escapeHtml(item.title)} | ${escapeHtml(summary(item))} <span class="draft-event-badge">${escapeHtml(item.source === "google_imported" ? "Imported" : "Manual")}</span> <button type="button" class="action-button draft-edit-imported" data-edit-commitment="${item.id}">Edit</button> <button type="button" class="inline-remove" data-rm-commitment="${item.id}">Remove</button></li>`,
     );
   };
 
@@ -78,7 +82,7 @@ export const createPlannerView = (ui) => {
       ui.goalsList,
       items,
       (item) =>
-        `<li>${escapeHtml(item.title)} (${item.weeklyHours}h, P${item.priority}) <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`,
+        `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, P${item.priority}) <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`,
     );
   };
 
@@ -88,6 +92,37 @@ export const createPlannerView = (ui) => {
       items,
       (item) =>
         `<li>${escapeHtml(item.name)} (${item.frequency}x, ${item.durationMinutes}m, ${escapeHtml(item.window)}) <button type="button" class="inline-remove" data-rm-habit="${item.id}">Remove</button></li>`,
+    );
+  };
+
+  const renderMinorGoals = (items, majorGoals) => {
+    const majorById = new Map((majorGoals || []).map((item) => [item.id, item.title]));
+    renderList(
+      ui.minorGoalsList,
+      items,
+      (item) =>
+        `<li>${escapeHtml(item.title)} | ${escapeHtml(majorById.get(item.majorGoalId) || "Unlinked Major Goal")} | ${escapeHtml((item.deadlineIso || "").slice(0, 10) || "No deadline")} | ${escapeHtml(item.status || "active")}</li>`,
+      "No AI-managed minor goals yet.",
+    );
+  };
+
+  const renderTasks = (items, minorGoals) => {
+    const minorById = new Map((minorGoals || []).map((item) => [item.id, item.title]));
+    renderList(
+      ui.tasksList,
+      items,
+      (item) => `
+        <li>
+          ${escapeHtml(item.title)} | ${escapeHtml(minorById.get(item.minorGoalId) || "Unlinked Minor Goal")} |
+          <select data-task-status="${escapeHtml(item.id)}">
+            <option value="not_started" ${item.status === "not_started" ? "selected" : ""}>Not Started</option>
+            <option value="scheduled" ${item.status === "scheduled" ? "selected" : ""}>Scheduled</option>
+            <option value="done" ${item.status === "done" ? "selected" : ""}>Done</option>
+            <option value="skipped" ${item.status === "skipped" ? "selected" : ""}>Skipped</option>
+            <option value="blocked" ${item.status === "blocked" ? "selected" : ""}>Blocked</option>
+          </select>
+        </li>`,
+      "No AI-managed tasks yet.",
     );
   };
 
@@ -140,5 +175,23 @@ export const createPlannerView = (ui) => {
     return currentStep;
   };
 
-  return { setStatus, setPlannerLock, renderCommitments, renderGoals, renderHabits, renderDraft, setStep };
+  const renderPriorityMajorGoalOptions = (goals, selectedId = "") => {
+    if (!ui.aiPriorityMajorGoal) return;
+    const options = [`<option value="">No priority override</option>`]
+      .concat((goals || []).map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.title)}</option>`));
+    ui.aiPriorityMajorGoal.innerHTML = options.join("");
+  };
+
+  return {
+    setStatus,
+    setPlannerLock,
+    renderCommitments,
+    renderGoals,
+    renderHabits,
+    renderMinorGoals,
+    renderTasks,
+    renderDraft,
+    renderPriorityMajorGoalOptions,
+    setStep,
+  };
 };

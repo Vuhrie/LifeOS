@@ -45,6 +45,30 @@ const withHm = (dateLike, hhmm) => {
   return date;
 };
 
+const toLocalDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const toHHMM = (value, fallback = "09:00") => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${hour}:${minute}`;
+};
+
+const tomorrowStart = () => {
+  const next = new Date();
+  next.setHours(0, 0, 0, 0);
+  next.setDate(next.getDate() + 1);
+  return next;
+};
+
 const filterIgnoredEvents = (events, ignoredIds) =>
   (events || []).filter((event) => !ignoredIds.includes(String(event.id || "")));
 
@@ -65,6 +89,7 @@ export const initPlannerController = (ui) => {
   };
   const view = createPlannerView(ui);
   let latestImportedEventsById = new Map();
+  let logic = null;
   let currentStep = 1;
   const lastAuthStateRef = { current: { isConfigured: true, isSignedIn: false, isLoading: false, error: "", accountKey: "anon" } };
   const commitmentUi = createCommitmentTypeUi(ui);
@@ -73,7 +98,10 @@ export const initPlannerController = (ui) => {
   const rerenderAll = () => {
     view.renderCommitments(week.profile.commitments);
     view.renderGoals(week.goals);
+    view.renderMinorGoals(week.minorGoals, week.goals);
+    view.renderTasks(week.tasks, week.minorGoals);
     view.renderHabits(week.habits);
+    view.renderPriorityMajorGoalOptions(week.goals, week.aiPlannerInputs?.priorityMajorGoalId || "");
     view.renderDraft(week.draft);
   };
 
@@ -85,6 +113,9 @@ export const initPlannerController = (ui) => {
     ui.needBreakfast.value = String(week.profile.necessities.breakfast.durationMinutes);
     ui.needDinner.value = String(week.profile.necessities.dinner.durationMinutes);
     ui.needShower.value = String(week.profile.necessities.shower.durationMinutes);
+    ui.aiChangedSince.value = week.aiPlannerInputs?.changedSinceLastRun || "";
+    ui.aiTaskProgressNotes.value = week.aiPlannerInputs?.taskProgressNotes || "";
+    ui.aiBriefNotes.value = week.aiPlannerInputs?.notes || "";
   };
 
   const profileFromUi = () => ({
@@ -108,6 +139,11 @@ export const initPlannerController = (ui) => {
     app = loadPlannerState(accountKey);
     weekKey = rotateWeekIfNeeded(app, new Date());
     week = ensureWeekState(app, weekKey);
+    if (!Array.isArray(week.minorGoals)) week.minorGoals = [];
+    if (!Array.isArray(week.tasks)) week.tasks = [];
+    if (!week.aiPlannerInputs || typeof week.aiPlannerInputs !== "object") {
+      week.aiPlannerInputs = { notes: "", changedSinceLastRun: "", taskProgressNotes: "", priorityMajorGoalId: "" };
+    }
     if (!Array.isArray(week.ignoredGoogleEventIds)) week.ignoredGoogleEventIds = [];
     if (!week.importedEventEdits || typeof week.importedEventEdits !== "object") week.importedEventEdits = {};
     latestImportedEventsById = new Map();
@@ -115,6 +151,18 @@ export const initPlannerController = (ui) => {
     applyUiFromState();
     commitmentUi.refresh();
     rerenderAll();
+    if (logic) {
+      logic = createPlannerLogic({
+        week,
+        weekKey,
+        save,
+        rerenderAll,
+        refreshAvailabilityFromProfile,
+        applyUiFromState,
+        writeClient,
+        lastAuthStateRef,
+      });
+    }
   };
 
   const syncClient = createPlannerSyncClient({
@@ -153,6 +201,53 @@ export const initPlannerController = (ui) => {
     week.draft.warnings = previewOverlapWarnings(week.draft.slots || [], editedImported);
   };
 
+  const syncImportedGoogleCommitments = async ({
+    startIso,
+    endIso,
+    silent = true,
+  } = {}) => {
+    if (!lastAuthStateRef.current.isSignedIn) return;
+    let events = [];
+    try {
+      events = await writeClient.fetchExistingEvents({
+        startIso: startIso || tomorrowStart().toISOString(),
+        endIso: endIso || new Date(tomorrowStart().getTime() + 14 * 86400000).toISOString(),
+      });
+    } catch (error) {
+      if (!silent) view.setStatus(`Google import failed: ${error.message}`, "error");
+      return;
+    }
+    const existingIds = new Set(
+      (week.profile.commitments || [])
+        .map((item) => String(item.googleEventId || ""))
+        .filter(Boolean),
+    );
+    const newCommitments = [];
+    events.forEach((event) => {
+      const eventId = String(event.id || "");
+      if (!eventId || existingIds.has(eventId)) return;
+      const start = event.start || "";
+      const end = event.end || event.start || "";
+      newCommitments.push(createCommitment({
+        mode: "one_off",
+        title: String(event.title || "Imported commitment"),
+        start: toHHMM(start, "09:00"),
+        end: toHHMM(end, "10:00"),
+        date: toLocalDate(start),
+        source: "google_imported",
+        googleEventId: eventId,
+      }));
+    });
+    if (!newCommitments.length) {
+      if (!silent) view.setStatus("Google commitments already synced.", "neutral");
+      return;
+    }
+    week.profile.commitments = [...week.profile.commitments, ...newCommitments];
+    save();
+    rerenderAll();
+    if (!silent) view.setStatus(`Imported ${newCommitments.length} Google events into commitments.`, "success");
+  };
+
   const writeClient = createCalendarWriteClient({
     onStateChange: async (state) => {
       lastAuthStateRef.current = state;
@@ -168,10 +263,11 @@ export const initPlannerController = (ui) => {
         view.setStatus(`Planner loaded for ${accountKey}.`, "success");
         if (syncClient.isEnabled()) await syncClient.bootstrap(accountKey);
       }
+      if (state.isSignedIn) await syncImportedGoogleCommitments({ silent: true });
     },
   });
 
-  const logic = createPlannerLogic({
+  logic = createPlannerLogic({
     ui,
     week,
     weekKey,
@@ -192,7 +288,10 @@ export const initPlannerController = (ui) => {
     validateButton: ui.aiValidateImport,
     applyButton: ui.aiApplyImport,
     clearButton: ui.aiClearImport,
-    onBuildPrompt: async () => logic.buildPromptContext(),
+    onBuildPrompt: async () => {
+      await syncImportedGoogleCommitments({ silent: true });
+      return logic.buildPromptContext();
+    },
     onValidateImport: (text) => parseAiBridgePlan(text),
     onApplyImport: (plan) => logic.applyAiOperations(plan, summarizeAiBridgePlan),
     onPersist: (next) => { week.aiAssist = { ...week.aiAssist, ...next }; save(); },
@@ -206,6 +305,17 @@ export const initPlannerController = (ui) => {
     rerenderAll();
   };
 
+  const onPlannerBriefChange = () => {
+    week.aiPlannerInputs = {
+      ...week.aiPlannerInputs,
+      changedSinceLastRun: ui.aiChangedSince.value.trim(),
+      taskProgressNotes: ui.aiTaskProgressNotes.value.trim(),
+      notes: ui.aiBriefNotes.value.trim(),
+      priorityMajorGoalId: ui.aiPriorityMajorGoal.value || "",
+    };
+    save();
+  };
+
   ui.connect.addEventListener("click", async () => {
     if (lastAuthStateRef.current.isSignedIn) return view.setStatus("Google Calendar is already connected.", "success");
     try { await writeClient.connect(); view.setStatus("Google connected. Planner unlocked.", "success"); } catch (error) { writeClient.setError(error.message); }
@@ -217,6 +327,10 @@ export const initPlannerController = (ui) => {
   ui.next.addEventListener("click", () => { currentStep = view.setStep(currentStep + 1); });
   ui.stepPills.forEach((pill) => pill.addEventListener("click", () => { currentStep = view.setStep(Number(pill.dataset.step)); }));
   [ui.wake, ui.sleep, ui.horizonDays, ui.lockedHours, ui.needBreakfast, ui.needDinner, ui.needShower].forEach((input) => input.addEventListener("change", onProfileChange));
+  [ui.aiChangedSince, ui.aiTaskProgressNotes, ui.aiBriefNotes, ui.aiPriorityMajorGoal].forEach((input) => {
+    input?.addEventListener("change", onPlannerBriefChange);
+    input?.addEventListener("input", onPlannerBriefChange);
+  });
 
   ui.addCommitment.addEventListener("click", () => {
     const mode = ui.commitmentType.value;
@@ -238,7 +352,17 @@ export const initPlannerController = (ui) => {
       applicableDays: commitmentUi.getApplicableDays(),
     });
     if (!validation.ok) return view.setStatus(validation.message, "warning");
-    week.profile.commitments.push(createCommitment({ mode, title, start, end, days: validation.days, startDate, endDate, date }));
+    week.profile.commitments.push(createCommitment({
+      mode,
+      title,
+      start,
+      end,
+      days: validation.days,
+      startDate,
+      endDate,
+      date,
+      source: "manual",
+    }));
     ui.commitmentTitle.value = "";
     if (mode === "one_off") ui.commitmentDay.value = "";
     onProfileChange();
@@ -249,12 +373,20 @@ export const initPlannerController = (ui) => {
     const title = ui.goalTitle.value.trim();
     const deadline = dateOnly(ui.goalDeadline.value);
     const priority = Number(ui.goalPriority.value);
-    const weeklyHours = Number(ui.goalHours.value);
-    if (!title || !deadline || weeklyHours <= 0) return view.setStatus("Goal title, deadline, and weekly hours are required.", "warning");
-    week.goals.push(createGoal({ title, deadlineIso: `${deadline}T23:59:59`, priority, weeklyHours }));
+    const weeklyHours = Math.max(1, Number(ui.goalHours.value) || 8);
+    if (!title) return view.setStatus("Major goal title is required.", "warning");
+    week.goals.push(createGoal({
+      title,
+      deadlineIso: deadline ? `${deadline}T23:59:59` : "",
+      priority,
+      weeklyHours,
+      deadlineSource: deadline ? "manual" : "ai_assessed_pending",
+    }));
     ui.goalTitle.value = "";
+    ui.goalDeadline.value = "";
     save();
     rerenderAll();
+    view.setStatus(deadline ? "Major goal added." : "Major goal added. AI may propose a deadline.", "success");
   });
 
   ui.addHabit.addEventListener("click", () => {
@@ -273,10 +405,32 @@ export const initPlannerController = (ui) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     const commitmentId = target.getAttribute("data-rm-commitment");
+    const editCommitmentId = target.getAttribute("data-edit-commitment");
     const goalId = target.getAttribute("data-rm-goal");
     const habitId = target.getAttribute("data-rm-habit");
     const editImportedEventId = target.getAttribute("data-edit-imported");
     const importedEventId = target.getAttribute("data-rm-imported");
+    if (editCommitmentId) {
+      const commitment = week.profile.commitments.find((item) => item.id === editCommitmentId);
+      if (!commitment) return;
+      const nextTitle = window.prompt("Commitment title", commitment.title || "");
+      if (nextTitle === null) return;
+      const nextStart = window.prompt("Start time (HH:MM)", commitment.start || "09:00");
+      if (nextStart === null) return;
+      const nextEnd = window.prompt("End time (HH:MM)", commitment.end || "18:00");
+      if (nextEnd === null) return;
+      commitment.title = nextTitle.trim() || commitment.title;
+      commitment.start = normalizeTime(nextStart, commitment.start || "09:00");
+      commitment.end = normalizeTime(nextEnd, commitment.end || "18:00");
+      if (commitment.mode === "one_off") {
+        const nextDate = window.prompt("Date (YYYY-MM-DD)", commitment.date || "");
+        if (nextDate !== null) commitment.date = dateOnly(nextDate) || commitment.date;
+      }
+      save();
+      rerenderAll();
+      view.setStatus("Commitment updated.", "success");
+      return;
+    }
     if (editImportedEventId) {
       const editableEvent = latestImportedEventsById.get(editImportedEventId);
       if (!editableEvent) {
@@ -328,30 +482,55 @@ export const initPlannerController = (ui) => {
       return;
     }
     if (commitmentId) week.profile.commitments = week.profile.commitments.filter((item) => item.id !== commitmentId);
-    if (goalId) week.goals = week.goals.filter((item) => item.id !== goalId);
+    if (goalId) {
+      week.goals = week.goals.filter((item) => item.id !== goalId);
+      const removedMinorIds = week.minorGoals.filter((item) => item.majorGoalId === goalId).map((item) => item.id);
+      week.minorGoals = week.minorGoals.filter((item) => item.majorGoalId !== goalId);
+      week.tasks = week.tasks.filter((item) => !removedMinorIds.includes(item.minorGoalId));
+    }
     if (habitId) week.habits = week.habits.filter((item) => item.id !== habitId);
     if (commitmentId || goalId || habitId) { save(); rerenderAll(); }
   });
 
+  document.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    const taskId = target.getAttribute("data-task-status");
+    if (!taskId) return;
+    const task = week.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    task.status = target.value;
+    task.updatedAt = new Date().toISOString();
+    save();
+    rerenderAll();
+    view.setStatus("Task progress updated for AI planning context.", "success");
+  });
+
   ui.generate.addEventListener("click", async () => {
     if (!lastAuthStateRef.current.isSignedIn) return view.setStatus("Connect Google first to plan.", "warning");
+    await syncImportedGoogleCommitments({ silent: true });
     const goal = week.goals[0] || null;
-    const minorGoals = week.goals.map((item) => ({ id: item.id, title: item.title, targetHours: item.weeklyHours }));
+    const minorGoals = week.minorGoals.map((item) => ({
+      id: item.id,
+      title: item.title,
+      targetHours: 2,
+    }));
     const tasks = [...week.tasks, ...logic.habitsAsTasks()];
-    const horizonStart = new Date(); horizonStart.setHours(0, 0, 0, 0);
+    const horizonStart = tomorrowStart();
+    const horizonDays = 7;
     const draft = generateDraftPlan({
       goal,
       minorGoals,
       tasks,
       availabilityRules: week.availabilityRules,
       horizonStart,
-      horizonDays: week.settings.horizonDays,
+      horizonDays,
       profile: week.profile,
       existingSlots: week.managedSlots,
       lockedHorizonHours: week.settings.lockedHorizonHours,
     });
     const end = new Date(horizonStart);
-    end.setDate(end.getDate() + week.settings.horizonDays);
+    end.setDate(end.getDate() + horizonDays);
     let existingEvents = [];
     try {
       existingEvents = await writeClient.fetchExistingEvents({ startIso: horizonStart.toISOString(), endIso: end.toISOString() });
@@ -361,12 +540,12 @@ export const initPlannerController = (ui) => {
     latestImportedEventsById = new Map(editedExistingEvents.map((item) => [String(item.id), item]));
     draft.importedEvents = visibleExistingEvents;
     draft.horizonStartIso = horizonStart.toISOString();
-    draft.horizonDays = week.settings.horizonDays;
+    draft.horizonDays = horizonDays;
     draft.preview = buildPlannerPreview({
       draftSlots: draft.slots,
       existingEvents: editedExistingEvents,
       horizonStart,
-      horizonDays: week.settings.horizonDays,
+      horizonDays,
       commitments: week.profile.commitments,
     });
     week.draft = draft;

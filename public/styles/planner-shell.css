@@ -32,6 +32,7 @@
   text-align: center;
   padding: 24px;
   backdrop-filter: blur(4px);
+  pointer-events: none;
 }
 
 .planner-lock[hidden] {

@@ -51,7 +51,7 @@ export const createAiBridgeUi = ({
         lastPrompt: prompt,
         lastImportText: importInput.value,
       });
-      setStatus("Prompt built. Copy it and ask your AI tool for JSON only.", "success");
+      setStatus("Prompt built. Ask your AI tool for organized reasoning plus a final fenced JSON block.", "success");
     } catch (error) {
       setStatus(`Prompt build failed: ${error.message}`, "error");
     } finally {
@@ -85,15 +85,19 @@ export const createAiBridgeUi = ({
       setStatus("Validate AI JSON before applying.", "warning");
       return;
     }
-    const summary = onApplyImport(validatedPlan);
-    clearValidation();
-    setStatus(`AI plan applied: ${summary}.`, "success");
-    onPersist({
-      lastPrompt: output.value,
-      lastImportText: importInput.value,
-      lastAppliedAt: new Date().toISOString(),
-      lastApplySummary: summary,
-    });
+    try {
+      const summary = onApplyImport(validatedPlan);
+      clearValidation();
+      setStatus(`AI plan applied: ${summary}.`, "success");
+      onPersist({
+        lastPrompt: output.value,
+        lastImportText: importInput.value,
+        lastAppliedAt: new Date().toISOString(),
+        lastApplySummary: summary,
+      });
+    } catch (error) {
+      setStatus(`AI plan blocked: ${error.message}`, "error");
+    }
   });
 
   clearButton.addEventListener("click", () => {

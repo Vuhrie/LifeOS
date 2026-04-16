@@ -39,6 +39,8 @@ export const getPlannerUi = () => ({
   goalHours: $("#goal-weekly-hours"),
   addGoal: $("#add-goal"),
   goalsList: $("#goals-list"),
+  minorGoalsList: $("#minor-goals-list"),
+  tasksList: $("#tasks-list"),
   habitName: $("#habit-name"),
   habitFrequency: $("#habit-frequency"),
   habitDuration: $("#habit-duration"),
@@ -56,4 +58,8 @@ export const getPlannerUi = () => ({
   aiApplyImport: $("#ai-apply-import"),
   aiClearImport: $("#ai-clear-import"),
   aiStatus: $("#ai-assist-status"),
+  aiChangedSince: $("#ai-changed-since"),
+  aiTaskProgressNotes: $("#ai-task-progress-notes"),
+  aiBriefNotes: $("#ai-brief-notes"),
+  aiPriorityMajorGoal: $("#ai-priority-major-goal"),
 });

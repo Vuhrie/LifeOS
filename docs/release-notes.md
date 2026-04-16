@@ -1,5 +1,14 @@
 # Release Notes
 
+## v1.0.0
+
+- Reworked planner flow to align with the defined-elements model and AI-managed planning model.
+- Added account-scoped Google event import into visible commitments so imported events can be edited directly in Step 1.
+- Upgraded AI contract to `v3.0` with rolling 7-day plan output, minor goals, and tasks.
+- Added deterministic validation guard for AI rolling-plan output before apply.
+- Added AI planning attachment controls for user context (changes since last run, task progress notes, preference notes, priority major goal).
+- Added AI-managed minor-goal and task lists in planner UI, with task status controls for progress signaling.
+
 ## v0.9.2
 
 - Updated the AI prompt builder so detailed reasoning is requested outside the JSON patch.
