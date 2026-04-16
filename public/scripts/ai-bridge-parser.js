@@ -74,39 +74,6 @@ const parseMinorGoals = (items, errors) =>
     };
   });
 
-const parseMajorGoalProposals = (items, errors) =>
-  (Array.isArray(items) ? items : []).map((item, index) => {
-    const action = item?.action === "modify" ? "modify" : "add";
-    const targetGoalId = safeText(item?.targetGoalId);
-    const targetGoalTitle = safeText(item?.targetGoalTitle);
-    const title = safeText(item?.title);
-    const deadline = safeText(item?.deadline);
-    const priorityRaw = Number(item?.priority);
-    const weeklyHoursRaw = Number(item?.weeklyHours);
-    const priority = Number.isFinite(priorityRaw) ? clamp(Math.round(priorityRaw), 1, 5) : null;
-    const weeklyHours = Number.isFinite(weeklyHoursRaw) ? clamp(Math.round(weeklyHoursRaw), 1, 80) : null;
-    if (action === "modify" && !targetGoalId && !targetGoalTitle) {
-      errors.push(`majorGoalProposals[${index}] modify action requires targetGoalId or targetGoalTitle.`);
-    }
-    if (action === "add" && !title) {
-      errors.push(`majorGoalProposals[${index}] add action requires title.`);
-    }
-    if (deadline && !DATE_RE.test(deadline)) {
-      errors.push(`majorGoalProposals[${index}] deadline must be YYYY-MM-DD.`);
-    }
-    return {
-      id: safeText(item?.id),
-      action,
-      targetGoalId,
-      targetGoalTitle,
-      title,
-      deadline,
-      priority,
-      weeklyHours,
-      rationale: safeText(item?.rationale),
-    };
-  });
-
 const parseTasks = (items, errors) =>
   (Array.isArray(items) ? items : []).map((item, index) => {
     const title = safeText(item?.title);
@@ -161,7 +128,6 @@ const parseRollingPlan = (days, errors) =>
   });
 
 const parseV3Plan = (parsed, errors) => {
-  const majorGoalProposals = parseMajorGoalProposals(parsed.majorGoalProposals, errors);
   const minorGoals = parseMinorGoals(parsed.minorGoals, errors);
   const tasks = parseTasks(parsed.tasks, errors);
   const rollingPlan = parseRollingPlan(parsed.rollingPlan, errors);
@@ -169,7 +135,6 @@ const parseV3Plan = (parsed, errors) => {
   return {
     kind: "rolling_v3",
     version: safeText(parsed.version) || AI_BRIDGE_VERSION,
-    majorGoalProposals,
     minorGoals,
     tasks,
     rollingPlan,
@@ -210,7 +175,7 @@ export const parseAiBridgePlan = (raw) => {
 
 export const summarizeAiBridgePlan = (plan) => {
   if (plan.kind === "rolling_v3") {
-    return `${plan.majorGoalProposals.length} major-goal proposals, ${plan.minorGoals.length} minor goals, ${plan.tasks.length} tasks, ${plan.rollingPlan.length} rolling days`;
+    return `${plan.minorGoals.length} minor goals, ${plan.tasks.length} tasks, ${plan.rollingPlan.length} rolling days`;
   }
   return `${plan.operations.length} operations`;
 };

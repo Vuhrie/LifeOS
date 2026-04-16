@@ -1,5 +1,8 @@
 import { createCalendarWriteClient } from "./calendar-write-client.js";
 import { createAiBridgeUi } from "./ai-bridge-ui.js";
+import { createMajorGoalAiUi } from "./major-goal-ai-ui.js";
+import { parseMajorGoalAiPlan, summarizeMajorGoalAiPlan } from "./major-goal-ai-parser.js";
+import { buildMajorGoalAiPrompt } from "./major-goal-ai-prompts.js";
 import { parseAiBridgePlan, summarizeAiBridgePlan } from "./ai-bridge-parser.js";
 import { createPlannerLogic } from "./planner-logic.js";
 import { generateDraftPlan, previewOverlapWarnings } from "./planner-engine.js";
@@ -7,6 +10,7 @@ import { buildPlannerPreview } from "./planner-preview-model.js";
 import {
   buildAvailabilityRulesFromProfile,
   createCommitment,
+  createAiMajorGoalSeed,
   createGoal,
   createHabit,
   ensureWeekState,
@@ -134,24 +138,6 @@ const collectCommitItemsFromDraft = (draft) => {
   return items;
 };
 
-const resolveGoalByProposal = (proposal, goals) => {
-  const byId = (goals || []).find((item) => item.id === proposal.targetGoalId);
-  if (byId) return byId;
-  const targetTitle = String(proposal.targetGoalTitle || "").toLowerCase().trim();
-  if (!targetTitle) return null;
-  return (goals || []).find((item) => String(item.title || "").toLowerCase() === targetTitle) || null;
-};
-
-const applyProposalToGoal = (goal, proposal) => {
-  if (proposal.title) goal.title = proposal.title;
-  if (proposal.deadline) goal.deadlineIso = `${proposal.deadline}T23:59:59`;
-  if (Number.isFinite(Number(proposal.weeklyHours))) goal.weeklyHours = Math.max(1, Number(proposal.weeklyHours));
-  if (Number.isFinite(Number(proposal.priority))) goal.priority = Math.max(1, Math.min(5, Number(proposal.priority)));
-  if (!goal.deadlineSource || goal.deadlineSource === "manual") {
-    goal.deadlineSource = proposal.deadline ? "manual" : "ai_assessed_pending";
-  }
-};
-
 export const initPlannerController = (ui) => {
   let accountKey = "anon";
   let app = loadPlannerState(accountKey);
@@ -164,17 +150,21 @@ export const initPlannerController = (ui) => {
   const view = createPlannerView(ui);
   let latestImportedEventsById = new Map();
   let logic = null;
+  let majorGoalAiUi = null;
   let currentStep = 1;
   let allowPageExit = false;
   let leaveGuardBusy = false;
+  let majorGoalMode = "manual";
   const lastAuthStateRef = { current: { isConfigured: true, isSignedIn: false, isLoading: false, error: "", accountKey: "anon" } };
   const commitmentUi = createCommitmentTypeUi(ui);
 
   const refreshAvailabilityFromProfile = () => { week.availabilityRules = buildAvailabilityRulesFromProfile(week.profile); };
   const rerenderAll = () => {
     view.renderCommitments(week.profile.commitments);
-    view.renderGoals(week.goals);
-    view.renderMajorGoalProposals(week.pendingMajorGoalProposals || [], week.goals);
+    view.renderGoals({
+      goals: week.goals,
+      aiGoalSeeds: week.aiMajorGoalSeeds || [],
+    });
     view.renderMinorGoals(week.minorGoals, week.goals);
     view.renderTasks(week.tasks, week.minorGoals);
     view.renderHabits(week.habits);
@@ -184,8 +174,6 @@ export const initPlannerController = (ui) => {
 
   const hasDraftPreview = () => Boolean(week.draft?.preview?.days?.length);
 
-  const hasPendingMajorGoalProposals = () => Boolean((week.pendingMajorGoalProposals || []).length);
-
   const clearDraftOnly = () => {
     week.draft = null;
     save();
@@ -193,41 +181,15 @@ export const initPlannerController = (ui) => {
     view.resetCommitProgress();
   };
 
-  const approveMajorGoalProposal = (index) => {
-    const proposals = week.pendingMajorGoalProposals || [];
-    const proposal = proposals[index];
-    if (!proposal) return { ok: false, message: "Proposal not found." };
-    if (proposal.action === "add") {
-      const title = String(proposal.title || "").trim();
-      if (!title) return { ok: false, message: "Proposal add action is missing title." };
-      const weeklyHours = Number.isFinite(Number(proposal.weeklyHours)) ? Number(proposal.weeklyHours) : 8;
-      const priority = Number.isFinite(Number(proposal.priority)) ? Number(proposal.priority) : 3;
-      week.goals.push(createGoal({
-        title,
-        deadlineIso: proposal.deadline ? `${proposal.deadline}T23:59:59` : "",
-        priority,
-        weeklyHours,
-        deadlineSource: proposal.deadline ? "manual" : "ai_assessed_pending",
-      }));
-    } else {
-      const goal = resolveGoalByProposal(proposal, week.goals);
-      if (!goal) {
-        return { ok: false, message: `Could not find target major goal for proposal "${proposal.targetGoalTitle || proposal.targetGoalId || "unknown"}".` };
-      }
-      applyProposalToGoal(goal, proposal);
-    }
-    week.pendingMajorGoalProposals = proposals.filter((_, proposalIndex) => proposalIndex !== index);
-    save();
-    rerenderAll();
-    return { ok: true, message: "Major goal proposal approved." };
-  };
-
-  const rejectMajorGoalProposal = (index) => {
-    const proposals = week.pendingMajorGoalProposals || [];
-    if (!proposals[index]) return;
-    week.pendingMajorGoalProposals = proposals.filter((_, proposalIndex) => proposalIndex !== index);
-    save();
-    rerenderAll();
+  const setMajorGoalMode = (mode) => {
+    majorGoalMode = mode === "ai_assisted" ? "ai_assisted" : "manual";
+    ui.majorGoalModeButtons?.forEach((button) => {
+      const selected = button.dataset.majorGoalMode === majorGoalMode;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    if (ui.majorGoalManualFields) ui.majorGoalManualFields.hidden = majorGoalMode !== "manual";
+    if (ui.majorGoalAiFields) ui.majorGoalAiFields.hidden = majorGoalMode !== "ai_assisted";
   };
 
   const applyUiFromState = () => {
@@ -266,7 +228,7 @@ export const initPlannerController = (ui) => {
     app = loadPlannerState(accountKey);
     weekKey = rotateWeekIfNeeded(app, new Date());
     week = ensureWeekState(app, weekKey);
-    if (!Array.isArray(week.pendingMajorGoalProposals)) week.pendingMajorGoalProposals = [];
+    if (!Array.isArray(week.aiMajorGoalSeeds)) week.aiMajorGoalSeeds = [];
     if (!Array.isArray(week.minorGoals)) week.minorGoals = [];
     if (!Array.isArray(week.tasks)) week.tasks = [];
     if (!week.aiPlannerInputs || typeof week.aiPlannerInputs !== "object") {
@@ -275,11 +237,16 @@ export const initPlannerController = (ui) => {
     if (!Array.isArray(week.ignoredGoogleEventIds)) week.ignoredGoogleEventIds = [];
     if (!Array.isArray(week.dismissedGoogleCommitmentIds)) week.dismissedGoogleCommitmentIds = [];
     if (!week.importedEventEdits || typeof week.importedEventEdits !== "object") week.importedEventEdits = {};
+    if (!week.majorGoalAiAssist || typeof week.majorGoalAiAssist !== "object") {
+      week.majorGoalAiAssist = { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" };
+    }
     latestImportedEventsById = new Map();
     if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
     applyUiFromState();
+    setMajorGoalMode("manual");
     commitmentUi.refresh();
     rerenderAll();
+    majorGoalAiUi?.hydrateSavedState(week.majorGoalAiAssist);
     if (logic) {
       logic = createPlannerLogic({
         week,
@@ -309,6 +276,7 @@ export const initPlannerController = (ui) => {
       if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
       applyUiFromState();
       rerenderAll();
+      majorGoalAiUi?.hydrateSavedState(week.majorGoalAiAssist);
     },
   });
 
@@ -461,6 +429,85 @@ export const initPlannerController = (ui) => {
     onPersist: (next) => { week.aiAssist = { ...week.aiAssist, ...next }; save(); },
   });
 
+  const buildMajorGoalAiPromptContext = () => {
+    const selectedSeed = [...(week.aiMajorGoalSeeds || [])].at(-1) || null;
+    if (!selectedSeed) throw new Error("Add at least one AI-assisted major-goal draft first.");
+    return buildMajorGoalAiPrompt({
+      currentMajorGoals: week.goals,
+      aiAssistedGoalSeeds: week.aiMajorGoalSeeds || [],
+      selectedSeed,
+    });
+  };
+
+  const applyMajorGoalAiPlan = (plan) => {
+    if (plan.status === "needs_clarification") {
+      const questionText = plan.questions.map((question, index) => `${index + 1}. ${question}`).join("\n");
+      window.alert(`AI needs clarification before defining a major goal:\n\n${questionText}`);
+      return summarizeMajorGoalAiPlan(plan);
+    }
+    let accepted = 0;
+    let rejected = 0;
+    plan.proposals.forEach((proposal) => {
+      const seed = (week.aiMajorGoalSeeds || []).find((item) => item.id === proposal.seedId);
+      const message = [
+        "AI proposal for major goal:",
+        "",
+        `From draft: ${seed?.title || proposal.seedId}`,
+        `Title: ${proposal.title}`,
+        `Deadline: ${proposal.deadline}`,
+        `Priority: ${proposal.priority}`,
+        `Weekly Hours: ${proposal.weeklyHours}`,
+        `Done Condition: ${proposal.doneCondition}`,
+        `Reason: ${proposal.rationale}`,
+        "",
+        "Accept this major goal?",
+      ].join("\n");
+      const acceptedProposal = window.confirm(message);
+      if (acceptedProposal) {
+        week.goals.push(createGoal({
+          title: proposal.title,
+          deadlineIso: `${proposal.deadline}T23:59:59`,
+          priority: proposal.priority,
+          weeklyHours: proposal.weeklyHours,
+          deadlineSource: "ai_assessed",
+          source: "ai_assisted",
+          doneCondition: proposal.doneCondition,
+        }));
+        week.aiMajorGoalSeeds = (week.aiMajorGoalSeeds || []).filter((item) => item.id !== proposal.seedId);
+        accepted += 1;
+        return;
+      }
+      const rejectConfirm = window.confirm("Reject this AI proposal and discard the linked AI-assisted draft?");
+      if (rejectConfirm) {
+        week.aiMajorGoalSeeds = (week.aiMajorGoalSeeds || []).filter((item) => item.id !== proposal.seedId);
+      }
+      rejected += 1;
+    });
+    save();
+    rerenderAll();
+    if (accepted && !rejected) return `accepted ${accepted} proposal(s)`;
+    if (!accepted && rejected) return `rejected ${rejected} proposal(s)`;
+    return `accepted ${accepted} proposal(s), rejected ${rejected} proposal(s)`;
+  };
+
+  majorGoalAiUi = createMajorGoalAiUi({
+    output: ui.majorGoalAiPromptOutput,
+    importInput: ui.majorGoalAiImportInput,
+    status: ui.majorGoalAiStatus,
+    buildButton: ui.majorGoalAiBuildPrompt,
+    copyButton: ui.majorGoalAiCopyPrompt,
+    validateButton: ui.majorGoalAiValidateImport,
+    applyButton: ui.majorGoalAiApplyImport,
+    clearButton: ui.majorGoalAiClearImport,
+    onBuildPrompt: () => buildMajorGoalAiPromptContext(),
+    onValidateImport: (text) =>
+      parseMajorGoalAiPlan(text, {
+        validSeedIds: (week.aiMajorGoalSeeds || []).map((item) => item.id),
+      }),
+    onApplyImport: (plan) => applyMajorGoalAiPlan(plan),
+    onPersist: (next) => { week.majorGoalAiAssist = { ...week.majorGoalAiAssist, ...next }; save(); },
+  });
+
   const onProfileChange = () => {
     week.profile = profileFromUi();
     week.settings = settingsFromUi();
@@ -495,6 +542,9 @@ export const initPlannerController = (ui) => {
   [ui.aiChangedSince, ui.aiTaskProgressNotes, ui.aiBriefNotes, ui.aiPriorityMajorGoal].forEach((input) => {
     input?.addEventListener("change", onPlannerBriefChange);
     input?.addEventListener("input", onPlannerBriefChange);
+  });
+  ui.majorGoalModeButtons?.forEach((button) => {
+    button.addEventListener("click", () => setMajorGoalMode(button.dataset.majorGoalMode || "manual"));
   });
 
   ui.addCommitment.addEventListener("click", () => {
@@ -535,6 +585,10 @@ export const initPlannerController = (ui) => {
   });
 
   ui.addGoal.addEventListener("click", () => {
+    if (majorGoalMode !== "manual") {
+      view.setStatus("Switch to Manual mode to add direct major goals.", "warning");
+      return;
+    }
     const title = ui.goalTitle.value.trim();
     const deadline = dateOnly(ui.goalDeadline.value);
     const priority = Number(ui.goalPriority.value);
@@ -546,12 +600,39 @@ export const initPlannerController = (ui) => {
       priority,
       weeklyHours,
       deadlineSource: deadline ? "manual" : "ai_assessed_pending",
+      source: "manual",
     }));
     ui.goalTitle.value = "";
     ui.goalDeadline.value = "";
     save();
     rerenderAll();
     view.setStatus(deadline ? "Major goal added." : "Major goal added. AI may propose a deadline.", "success");
+  });
+
+  ui.addGoalAiSeed?.addEventListener("click", () => {
+    if (majorGoalMode !== "ai_assisted") {
+      view.setStatus("Switch to AI Assisted mode to add AI drafts.", "warning");
+      return;
+    }
+    const title = ui.goalAiTitle.value.trim();
+    if (!title) {
+      view.setStatus("Goal idea is required for AI-assisted major goal drafts.", "warning");
+      return;
+    }
+    week.aiMajorGoalSeeds = [
+      ...(week.aiMajorGoalSeeds || []),
+      createAiMajorGoalSeed({
+        title,
+        targetDate: dateOnly(ui.goalAiTargetDate.value),
+        notes: String(ui.goalAiNotes.value || "").trim(),
+      }),
+    ];
+    ui.goalAiTitle.value = "";
+    ui.goalAiTargetDate.value = "";
+    ui.goalAiNotes.value = "";
+    save();
+    rerenderAll();
+    view.setStatus("AI-assisted major-goal draft saved.", "success");
   });
 
   ui.addHabit.addEventListener("click", () => {
@@ -566,35 +647,6 @@ export const initPlannerController = (ui) => {
     rerenderAll();
   });
 
-  ui.approveMajorGoalProposals?.addEventListener("click", () => {
-    const proposals = [...(week.pendingMajorGoalProposals || [])];
-    if (!proposals.length) return view.setStatus("No pending major-goal proposals.", "neutral");
-    let approved = 0;
-    let failed = 0;
-    while ((week.pendingMajorGoalProposals || []).length) {
-      const result = approveMajorGoalProposal(0);
-      if (result.ok) approved += 1;
-      else {
-        failed += 1;
-        rejectMajorGoalProposal(0);
-      }
-    }
-    rerenderAll();
-    if (failed) {
-      view.setStatus(`Approved ${approved} major-goal proposal(s), rejected ${failed} due to unresolved targets.`, "warning");
-      return;
-    }
-    view.setStatus(`Approved ${approved} major-goal proposal(s).`, "success");
-  });
-
-  ui.rejectMajorGoalProposals?.addEventListener("click", () => {
-    const count = (week.pendingMajorGoalProposals || []).length;
-    week.pendingMajorGoalProposals = [];
-    save();
-    rerenderAll();
-    view.setStatus(count ? `Rejected ${count} major-goal proposal(s).` : "No pending major-goal proposals.", "neutral");
-  });
-
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
@@ -602,20 +654,16 @@ export const initPlannerController = (ui) => {
     const editCommitmentId = target.getAttribute("data-edit-commitment");
     const goalId = target.getAttribute("data-rm-goal");
     const habitId = target.getAttribute("data-rm-habit");
-    const approveMajorProposalIndexRaw = target.getAttribute("data-approve-major-proposal");
-    const rejectMajorProposalIndexRaw = target.getAttribute("data-reject-major-proposal");
-    const approveMajorProposalIndex = approveMajorProposalIndexRaw == null ? NaN : Number(approveMajorProposalIndexRaw);
-    const rejectMajorProposalIndex = rejectMajorProposalIndexRaw == null ? NaN : Number(rejectMajorProposalIndexRaw);
+    const removeAiGoalSeedId = target.getAttribute("data-rm-ai-goal-seed");
     const editImportedEventId = target.getAttribute("data-edit-imported");
     const importedEventId = target.getAttribute("data-rm-imported");
-    if (Number.isInteger(approveMajorProposalIndex) && approveMajorProposalIndex >= 0) {
-      const result = approveMajorGoalProposal(approveMajorProposalIndex);
-      view.setStatus(result.message, result.ok ? "success" : "warning");
-      return;
-    }
-    if (Number.isInteger(rejectMajorProposalIndex) && rejectMajorProposalIndex >= 0) {
-      rejectMajorGoalProposal(rejectMajorProposalIndex);
-      view.setStatus("Major goal proposal rejected.", "neutral");
+    if (removeAiGoalSeedId) {
+      const confirmRemove = window.confirm("Remove this AI-assisted major-goal draft?");
+      if (!confirmRemove) return;
+      week.aiMajorGoalSeeds = (week.aiMajorGoalSeeds || []).filter((item) => item.id !== removeAiGoalSeedId);
+      save();
+      rerenderAll();
+      view.setStatus("AI-assisted major-goal draft removed.", "neutral");
       return;
     }
     if (editCommitmentId) {
@@ -724,11 +772,7 @@ export const initPlannerController = (ui) => {
 
   ui.generate.addEventListener("click", async () => {
     if (!lastAuthStateRef.current.isSignedIn) return view.setStatus("Connect Google first to plan.", "warning");
-    if (hasPendingMajorGoalProposals()) {
-      currentStep = view.setStep(2);
-      view.setStatus("Review AI major-goal proposals first. Approve or reject them before generating schedule.", "warning");
-      return;
-    }
+    const hasAiGoalSeeds = Boolean((week.aiMajorGoalSeeds || []).length);
     await syncImportedGoogleCommitments({ silent: true });
     const goal = week.goals[0] || null;
     const minorGoals = week.minorGoals.map((item) => ({
@@ -785,7 +829,12 @@ export const initPlannerController = (ui) => {
     view.resetCommitProgress();
     if (!draft.validation.ok) return view.setStatus(draft.validation.errors.join(" "), "warning");
     if (!minorGoals.length && !tasks.length) {
-      view.setStatus("Schedule generated with open hours. Add goals or habits when you are ready.", "neutral");
+      view.setStatus(
+        hasAiGoalSeeds
+          ? "Schedule generated with open hours. AI-assisted major-goal drafts are pending and not yet inserted."
+          : "Schedule generated with open hours. Add goals or habits when you are ready.",
+        "neutral",
+      );
       currentStep = view.setStep(3);
       return;
     }
@@ -940,9 +989,11 @@ export const initPlannerController = (ui) => {
 
   if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
   applyUiFromState();
+  setMajorGoalMode("manual");
   commitmentUi.refresh();
   rerenderAll();
   aiBridge.hydrateSavedState(week.aiAssist);
+  majorGoalAiUi.hydrateSavedState(week.majorGoalAiAssist);
   view.resetCommitProgress();
   currentStep = view.setStep(1);
   view.setPlannerLock(true);

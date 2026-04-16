@@ -20,6 +20,7 @@ const defaultWeekState = () => ({
   profile: defaultProfile(),
   settings: { horizonDays: 7, lockedHorizonHours: 12 },
   goals: [],
+  aiMajorGoalSeeds: [],
   pendingMajorGoalProposals: [],
   minorGoals: [],
   habits: [],
@@ -39,6 +40,7 @@ const defaultWeekState = () => ({
   importedEventEdits: {},
   planRuns: [],
   aiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
+  majorGoalAiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
 const defaultState = () => ({ schemaVersion: 10, currentWeekKey: "", weeks: {}, history: [] });
@@ -126,9 +128,23 @@ const normalizeWeekState = (week) => {
       weeklyHours: Math.max(1, Math.min(80, Number(item?.weeklyHours || 8))),
       status: String(item?.status || "active"),
       deadlineSource: String(item?.deadlineSource || "manual"),
+      doneCondition: String(item?.doneCondition || ""),
       createdAt: String(item?.createdAt || new Date().toISOString()),
       source: String(item?.source || "manual"),
     })).filter((item) => item.title)
+    : [];
+  const aiMajorGoalSeeds = Array.isArray(next.aiMajorGoalSeeds)
+    ? next.aiMajorGoalSeeds
+      .filter((item) => item && typeof item === "object")
+      .map((item) => ({
+        id: String(item?.id || uid("gseed")),
+        title: String(item?.title || "").trim(),
+        targetDate: String(item?.targetDate || ""),
+        notes: String(item?.notes || ""),
+        status: String(item?.status || "draft"),
+        createdAt: String(item?.createdAt || new Date().toISOString()),
+      }))
+      .filter((item) => item.title)
     : [];
   const minorGoals = Array.isArray(next.minorGoals)
     ? next.minorGoals.map((item) => ({
@@ -183,6 +199,7 @@ const normalizeWeekState = (week) => {
       lockedHorizonHours: Math.max(0, Math.min(48, Number(parse(next.settings, {}).lockedHorizonHours || 12))),
     },
     goals,
+    aiMajorGoalSeeds,
     pendingMajorGoalProposals,
     minorGoals,
     habits: Array.isArray(next.habits) ? next.habits : [],
@@ -210,6 +227,12 @@ const normalizeWeekState = (week) => {
       lastImportText: String(parse(next.aiAssist, {}).lastImportText || ""),
       lastAppliedAt: String(parse(next.aiAssist, {}).lastAppliedAt || ""),
       lastApplySummary: String(parse(next.aiAssist, {}).lastApplySummary || ""),
+    },
+    majorGoalAiAssist: {
+      lastPrompt: String(parse(next.majorGoalAiAssist, {}).lastPrompt || ""),
+      lastImportText: String(parse(next.majorGoalAiAssist, {}).lastImportText || ""),
+      lastAppliedAt: String(parse(next.majorGoalAiAssist, {}).lastAppliedAt || ""),
+      lastApplySummary: String(parse(next.majorGoalAiAssist, {}).lastApplySummary || ""),
     },
   };
 };
@@ -263,6 +286,8 @@ export const createGoal = ({
   priority = 3,
   weeklyHours = 8,
   deadlineSource = "manual",
+  source = "manual",
+  doneCondition = "",
 }) => ({
   id: uid("goal"),
   title,
@@ -271,6 +296,20 @@ export const createGoal = ({
   weeklyHours,
   status: "active",
   deadlineSource,
+  source,
+  doneCondition: String(doneCondition || ""),
+  createdAt: new Date().toISOString(),
+});
+export const createAiMajorGoalSeed = ({
+  title,
+  targetDate = "",
+  notes = "",
+}) => ({
+  id: uid("gseed"),
+  title,
+  targetDate,
+  notes,
+  status: "draft",
   createdAt: new Date().toISOString(),
 });
 export const createHabit = ({ name, frequency, durationMinutes, window }) => ({ id: uid("habit"), name, frequency, durationMinutes, window, status: "active" });

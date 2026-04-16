@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.12
+
+- Reworked major-goal creation into two modes inside the same card: `Manual` and `AI Assisted`.
+- Added dedicated AI-assisted major-goal draft flow with separate prompt builder, parser, and apply path (`major-goals-v1`) that is isolated from rolling-plan AI patch flow.
+- Added new persisted planner state for AI-assisted major-goal drafts and major-goal AI builder session data.
+- Updated rolling-plan AI prompt/schema/parser to remove mixed major-goal proposal contract, restoring rolling AI scope to minor goals, tasks, and rolling schedule only.
+- Updated planner visual and interaction checks for new major-goal mode controls and major-goal-only prompt content expectations.
+
 ## v1.0.11
 
 - Added AI major-goal proposal flow: AI can now suggest major-goal additions/modifications via `majorGoalProposals` without directly mutating defined major goals.

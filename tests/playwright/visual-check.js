@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.11";
+const releaseVersion = "v1.0.12";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -155,7 +155,7 @@ const run = async () => {
     const dayWrapInitialHidden = await desktop.locator("#commitment-day-wrap").isHidden();
     const dateRangeInitialHidden = await desktop.locator("#commitment-date-range-row").isHidden();
     const weekdaysInitialVisible = await desktop.locator("#commitment-weekdays").isVisible();
-    const weeklySelectedCount = await desktop.locator(".day-chip.is-selected").count();
+    const weeklySelectedCount = await desktop.locator("#commitment-days .day-chip.is-selected").count();
     if (!dayWrapInitialHidden || !dateRangeInitialHidden || !weekdaysInitialVisible) {
       throw new Error("Weekly recurring mode should show weekdays only.");
     }
@@ -178,7 +178,7 @@ const run = async () => {
       throw new Error("One-off mode should show date field and hide weekdays.");
     }
     await desktop.selectOption("#commitment-type", "date_range_recurring");
-    const dateRangeSelectedCount = await desktop.locator(".day-chip.is-selected").count();
+    const dateRangeSelectedCount = await desktop.locator("#commitment-days .day-chip.is-selected").count();
     if (dateRangeSelectedCount !== 7) {
       throw new Error(`Date-range recurring should default all weekdays selected. Found: ${dateRangeSelectedCount}`);
     }
@@ -192,6 +192,41 @@ const run = async () => {
     await desktop.selectOption("#commitment-type", "weekly_recurring");
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(100);
+    const manualMajorModeSelected = await desktop.locator('[data-major-goal-mode="manual"]').evaluate((element) =>
+      element.classList.contains("is-selected"),
+    );
+    const aiMajorModeSelected = await desktop.locator('[data-major-goal-mode="ai_assisted"]').evaluate((element) =>
+      element.classList.contains("is-selected"),
+    );
+    const manualGoalFieldsVisible = await desktop.locator("#major-goal-manual-fields").isVisible();
+    const aiGoalFieldsHidden = await desktop.locator("#major-goal-ai-fields").isHidden();
+    if (!manualMajorModeSelected || aiMajorModeSelected || !manualGoalFieldsVisible || !aiGoalFieldsHidden) {
+      throw new Error("Major goal mode should default to Manual with AI-assisted fields hidden.");
+    }
+    await desktop.locator('[data-major-goal-mode="ai_assisted"]').click();
+    await wait(100);
+    const aiGoalFieldsVisible = await desktop.locator("#major-goal-ai-fields").isVisible();
+    if (!aiGoalFieldsVisible) {
+      throw new Error("AI-assisted major-goal fields should be visible after selecting AI Assisted mode.");
+    }
+    await desktop.fill("#goal-ai-title", "Get good at cybersecurity");
+    await desktop.fill("#goal-ai-notes", "Prefer certificate-driven progression.");
+    await desktop.locator("#add-goal-ai-seed").click();
+    await wait(120);
+    await desktop.locator("#major-goal-ai-build-prompt").click();
+    await wait(150);
+    const majorGoalPrompt = await desktop.locator("#major-goal-ai-prompt-output").inputValue();
+    if (!majorGoalPrompt.includes("major-goals-v1")) {
+      throw new Error("Major-goal AI prompt should include major-goals-v1 contract.");
+    }
+    if (majorGoalPrompt.includes("\"rollingPlan\"")) {
+      throw new Error("Major-goal AI prompt should not include rollingPlan output.");
+    }
+    if (!majorGoalPrompt.includes("Do not generate minor goals")) {
+      throw new Error("Major-goal AI prompt should restrict scope to major goals only.");
+    }
+    await desktop.locator('[data-major-goal-mode="manual"]').click();
+    await wait(80);
     await desktop.fill("#habit-name", "Regression Gym Habit");
     await desktop.fill("#habit-frequency", "3");
     await desktop.fill("#habit-duration", "60");
@@ -255,8 +290,8 @@ const run = async () => {
     if (!builtPrompt.includes("\"rollingPlan\"")) {
       throw new Error("AI prompt should include rollingPlan JSON shape.");
     }
-    if (!builtPrompt.includes("\"majorGoalProposals\"")) {
-      throw new Error("AI prompt should include majorGoalProposals JSON shape.");
+    if (builtPrompt.includes("\"majorGoalProposals\"")) {
+      throw new Error("Rolling AI prompt should not include majorGoalProposals JSON shape.");
     }
     if (!builtPrompt.includes("\"necessityDefinitions\"") || !builtPrompt.includes("\"necessityDurationByType\"")) {
       throw new Error("AI prompt should include necessity definitions and duration context.");

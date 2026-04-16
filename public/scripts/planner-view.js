@@ -18,26 +18,6 @@ const formatTime = (value) =>
 const formatDate = (value) =>
   new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
 
-const majorGoalProposalSummary = (proposal, majorGoals) => {
-  const byId = new Map((majorGoals || []).map((item) => [item.id, item]));
-  const base = byId.get(proposal.targetGoalId)
-    || (majorGoals || []).find((item) => String(item.title || "").toLowerCase() === String(proposal.targetGoalTitle || "").toLowerCase())
-    || null;
-  if (proposal.action === "add") {
-    const deadline = proposal.deadline || "TBD";
-    const weeklyHours = Number.isFinite(Number(proposal.weeklyHours)) ? Number(proposal.weeklyHours) : 8;
-    const priority = Number.isFinite(Number(proposal.priority)) ? Number(proposal.priority) : 3;
-    return `Add "${proposal.title}" (deadline ${deadline}, ${weeklyHours}h/week, P${priority}).`;
-  }
-  const changes = [];
-  if (proposal.title && proposal.title !== (base?.title || "")) changes.push(`title "${base?.title || "Untitled"}" -> "${proposal.title}"`);
-  if (proposal.deadline && proposal.deadline !== String(base?.deadlineIso || "").slice(0, 10)) changes.push(`deadline ${(String(base?.deadlineIso || "").slice(0, 10) || "TBD")} -> ${proposal.deadline}`);
-  if (Number.isFinite(Number(proposal.weeklyHours)) && Number(proposal.weeklyHours) !== Number(base?.weeklyHours || 0)) changes.push(`weekly hours ${Number(base?.weeklyHours || 0) || "unset"} -> ${Number(proposal.weeklyHours)}`);
-  if (Number.isFinite(Number(proposal.priority)) && Number(proposal.priority) !== Number(base?.priority || 0)) changes.push(`priority ${Number(base?.priority || 0) || "unset"} -> ${Number(proposal.priority)}`);
-  if (!changes.length) return `Modify "${base?.title || proposal.targetGoalTitle || proposal.targetGoalId || "Goal"}" (no field-level changes detected).`;
-  return `Modify "${base?.title || proposal.targetGoalTitle || proposal.targetGoalId || "Goal"}": ${changes.join("; ")}.`;
-};
-
 const draftCard = (item) => `
   <article class="draft-event-card" data-kind="${escapeHtml(item.kind)}">
     <p class="draft-event-time">${escapeHtml(formatTime(item.start))} - ${escapeHtml(formatTime(item.end))}</p>
@@ -70,10 +50,14 @@ export const createPlannerView = (ui) => {
       ui.aiBuildPrompt,
       ui.aiValidateImport,
       ui.aiApplyImport,
+      ui.majorGoalAiBuildPrompt,
+      ui.majorGoalAiCopyPrompt,
+      ui.majorGoalAiValidateImport,
+      ui.majorGoalAiApplyImport,
+      ui.majorGoalAiClearImport,
       ui.addCommitment,
       ui.addGoal,
-      ui.approveMajorGoalProposals,
-      ui.rejectMajorGoalProposals,
+      ui.addGoalAiSeed,
       ui.addHabit,
       ui.aiChangedSince,
       ui.aiTaskProgressNotes,
@@ -100,31 +84,21 @@ export const createPlannerView = (ui) => {
     );
   };
 
-  const renderGoals = (items) => {
+  const renderGoals = ({ goals, aiGoalSeeds }) => {
+    const goalItems = Array.isArray(goals) ? goals : [];
+    const seedItems = Array.isArray(aiGoalSeeds) ? aiGoalSeeds : [];
+    const rows = [
+      ...goalItems.map((item) =>
+        `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, P${item.priority}, ${item.weeklyHours}h/week) <span class="draft-event-badge">${escapeHtml(item.source === "ai_assisted" ? "AI Assisted" : "Manual")}</span> <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`),
+      ...seedItems.map((item) =>
+        `<li>${escapeHtml(item.title)} (AI draft${item.targetDate ? `, target ${escapeHtml(item.targetDate)}` : ""}) <span class="draft-event-badge">AI Draft</span> <button type="button" class="inline-remove" data-rm-ai-goal-seed="${item.id}">Remove</button></li>`),
+    ];
     renderList(
       ui.goalsList,
-      items,
-      (item) =>
-        `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, P${item.priority}) <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`,
+      rows,
+      (item) => item,
+      "No major goals or AI-assisted drafts yet.",
     );
-  };
-
-  const renderMajorGoalProposals = (items, majorGoals) => {
-    renderList(
-      ui.majorGoalProposalsList,
-      items || [],
-      (item, index) => `
-        <li>
-          ${escapeHtml(majorGoalProposalSummary(item, majorGoals))}
-          ${item.rationale ? `<span class="draft-event-badge">${escapeHtml(item.rationale)}</span>` : ""}
-          <button type="button" class="action-button" data-approve-major-proposal="${index}">Approve</button>
-          <button type="button" class="inline-remove" data-reject-major-proposal="${index}">Reject</button>
-        </li>`,
-      "No pending AI major-goal proposals.",
-    );
-    const hasPending = Array.isArray(items) && items.length > 0;
-    if (ui.approveMajorGoalProposals) ui.approveMajorGoalProposals.disabled = !hasPending;
-    if (ui.rejectMajorGoalProposals) ui.rejectMajorGoalProposals.disabled = !hasPending;
   };
 
   const renderHabits = (items) => {
@@ -274,7 +248,6 @@ export const createPlannerView = (ui) => {
     setPlannerLock,
     renderCommitments,
     renderGoals,
-    renderMajorGoalProposals,
     renderHabits,
     renderMinorGoals,
     renderTasks,
