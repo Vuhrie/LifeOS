@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.10
+
+- Hardened LifeOS-managed event detection across old and new event formats (extended properties, marker descriptions, and legacy title prefix fallback).
+- Added LifeOS management markers to newly committed events (`lifeos_managed`, commit/source/type markers) to prevent re-import as immutable commitments.
+- Added commit-log event-id fallback filtering so previously written LifeOS events are excluded from commitment import and AI prompt commitment context.
+- Strengthened AI prompt instructions that existing calendar events are informational context only and must not override defined commitment/habit policy.
+
 ## v1.0.9
 
 - Stopped re-importing LifeOS-managed Google Calendar events as planner commitments, preventing old managed gym blocks from being treated as locked commitments.

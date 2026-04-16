@@ -18,6 +18,8 @@ export const buildAiBridgePrompt = (context) => {
     "- Habit scheduling default is max once per day per habit unless explicitly stated otherwise.",
     "- Habit duration is fixed by habit definition durationMinutes; do not shorten or lengthen habit blocks.",
     "- If prior calendar events conflict with current habit duration definitions, prioritize the current habit definitions.",
+    "- existingCalendarEvents are informational context only; only definedElements.commitments are immutable commitments.",
+    "- Do not treat previous LifeOS-generated habit/session events as locked commitments.",
     "- Habit frequencyPerWeek is a hard cap per Monday-Sunday week.",
     "- When rollingPlan spans two Monday-Sunday weeks, evaluate each week separately.",
     "- For partial weeks inside rollingPlan, use a proportional cap: ceil(frequencyPerWeek * daysInWeekPortion / 7).",

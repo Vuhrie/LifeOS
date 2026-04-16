@@ -95,7 +95,16 @@ const applyImportedEventEdits = (events, edits) =>
 const isLifeOsManagedCalendarEvent = (event) =>
   Boolean(event?.isLifeOsManaged)
   || String(event?.description || "").includes("lifeos_slot_id:")
-  || String(event?.description || "").includes("lifeos_commit_id:");
+  || String(event?.description || "").includes("lifeos_commit_id:")
+  || String(event?.title || "").startsWith("[LifeOS]");
+
+const managedCommitWriteIds = (week) =>
+  new Set(
+    (week?.commitLog || [])
+      .flatMap((entry) => Array.isArray(entry?.writes) ? entry.writes : [])
+      .map((item) => String(item?.id || ""))
+      .filter(Boolean),
+  );
 
 const formatDateLabel = (value) =>
   new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
@@ -274,6 +283,8 @@ export const initPlannerController = (ui) => {
         .map((event) => String(event.id || ""))
         .filter(Boolean),
     );
+    const managedIdsFromCommitLog = managedCommitWriteIds(week);
+    managedIdsFromCommitLog.forEach((id) => lifeOsManagedEventIds.add(id));
     let cleanedManagedCommitments = false;
     if (lifeOsManagedEventIds.size) {
       const before = week.profile.commitments.length;

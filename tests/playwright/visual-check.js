@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.9";
+const releaseVersion = "v1.0.10";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -278,6 +278,9 @@ const run = async () => {
     }
     if (!builtPrompt.includes("Habit duration is fixed by habit definition durationMinutes")) {
       throw new Error("AI prompt should state that habit duration is fixed by definition.");
+    }
+    if (!builtPrompt.includes("existingCalendarEvents are informational context only")) {
+      throw new Error("AI prompt should clarify existing calendar events are informational only.");
     }
     const rollingStart = new Date();
     rollingStart.setHours(0, 0, 0, 0);

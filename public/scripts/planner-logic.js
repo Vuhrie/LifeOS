@@ -127,7 +127,16 @@ const resolveMinorGoalId = (task, minorGoals) => {
 const isLifeOsManagedCalendarEvent = (event) =>
   Boolean(event?.isLifeOsManaged)
   || String(event?.description || "").includes("lifeos_slot_id:")
-  || String(event?.description || "").includes("lifeos_commit_id:");
+  || String(event?.description || "").includes("lifeos_commit_id:")
+  || String(event?.title || "").startsWith("[LifeOS]");
+
+const managedCommitWriteIds = (week) =>
+  new Set(
+    (week?.commitLog || [])
+      .flatMap((entry) => Array.isArray(entry?.writes) ? entry.writes : [])
+      .map((item) => String(item?.id || ""))
+      .filter(Boolean),
+  );
 
 export const createPlannerLogic = ({
   week,
@@ -172,6 +181,7 @@ export const createPlannerLogic = ({
     const dismissedGoogleIds = new Set(
       (week.dismissedGoogleCommitmentIds || []).map((item) => String(item || "")).filter(Boolean),
     );
+    const managedIdsFromCommitLog = managedCommitWriteIds(week);
     const ignoredGoogleIds = new Set(
       (week.ignoredGoogleEventIds || []).map((item) => String(item || "")).filter(Boolean),
     );
@@ -183,12 +193,13 @@ export const createPlannerLogic = ({
       if (!eventId) return true;
       return !dismissedGoogleIds.has(eventId)
         && !ignoredGoogleIds.has(eventId)
+        && !managedIdsFromCommitLog.has(eventId)
         && !isLifeOsManagedCalendarEvent(event);
     });
     const promptCommitments = (week.profile.commitments || []).filter((item) => {
       if (String(item.source || "") !== "google_imported") return true;
       const eventId = String(item.googleEventId || "");
-      return !eventId || !dismissedGoogleIds.has(eventId);
+      return !eventId || (!dismissedGoogleIds.has(eventId) && !managedIdsFromCommitLog.has(eventId));
     });
     const capacity = buildPlanningWindows({
       horizonStart: start,

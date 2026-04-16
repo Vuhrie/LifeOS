@@ -32,7 +32,8 @@ const parseCalendarEvent = (event) => ({
   description: event.description || "",
   isLifeOsManaged: String(event?.extendedProperties?.private?.lifeosManaged || "").toLowerCase() === "true"
     || String(event.description || "").includes("lifeos_slot_id:")
-    || String(event.description || "").includes("lifeos_commit_id:"),
+    || String(event.description || "").includes("lifeos_commit_id:")
+    || String(event.summary || "").startsWith("[LifeOS]"),
 });
 
 const toIso = (value) => {
@@ -215,17 +216,28 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   const insertCommitItem = async ({ item, commitId }) => {
     const token = await ensureSignedIn();
     const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
+    const sourceId = String(item.sourceId || item.id || "");
+    const itemType = String(item.type || "planned");
+    const markerDescription = [
+      String(item.description || "").trim(),
+      "lifeos_managed:true",
+      `lifeos_commit_id:${String(commitId)}`,
+      `lifeos_source_id:${sourceId}`,
+      `lifeos_item_type:${itemType}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
     const payload = {
       summary: String(item.title || "LifeOS Event"),
-      description: String(item.description || ""),
+      description: markerDescription,
       start: { dateTime: toIso(item.start) },
       end: { dateTime: toIso(item.end) },
       extendedProperties: {
         private: {
           lifeosManaged: "true",
           lifeosCommitId: String(commitId),
-          lifeosSourceId: String(item.sourceId || item.id || ""),
-          lifeosType: String(item.type || "planned"),
+          lifeosSourceId: sourceId,
+          lifeosType: itemType,
         },
       },
     };
