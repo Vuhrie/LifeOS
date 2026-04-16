@@ -22,6 +22,13 @@
   color: var(--ink-muted);
 }
 
+.event-empty--day {
+  border-style: solid;
+  border-color: rgba(202, 245, 255, 0.94);
+  text-align: left;
+  padding: 12px;
+}
+
 .draft-day-group {
   border-top: 1px solid rgba(232, 249, 255, 0.94);
   padding-top: 12px;
@@ -71,6 +78,19 @@
   background: rgba(204, 240, 252, 0.85);
 }
 
+.draft-event-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.draft-edit-imported {
+  padding: 4px 10px;
+  min-height: auto;
+  font-size: 0.76rem;
+}
+
 .draft-event-card[data-kind="planned"] .draft-event-badge {
   color: #075f86;
   background: rgba(177, 237, 255, 0.9);
@@ -79,4 +99,9 @@
 .draft-event-card[data-kind="existing"] .draft-event-badge {
   color: #3d5e70;
   background: rgba(227, 246, 255, 0.9);
+}
+
+.draft-event-card[data-kind="commitment"] .draft-event-badge {
+  color: #355566;
+  background: rgba(215, 237, 247, 0.95);
 }

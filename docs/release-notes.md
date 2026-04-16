@@ -1,5 +1,14 @@
 # Release Notes
 
+## v0.9.0
+
+- Made planner draft schedule render the full rolling horizon day-by-day, including empty-day placeholders.
+- Added commitment blocks directly into draft schedule cards so commitments remain visible in the generated timeline.
+- Added planner-owned control for imported Google events in draft view with warning popup plus edit and remove actions.
+- Updated commit flow to apply imported-event edits and removals to Google Calendar on commit.
+- Enforced one-habit-per-day scheduling and strengthened preferred-window scoring to reduce odd same-day placements.
+- Added visual test coverage for planner draft horizon rendering and imported-event remove controls.
+
 ## v0.8.2
 
 - Moved `Connect Google` to global navigation so auth is always reachable even when planner content is locked.

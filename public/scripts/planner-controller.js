@@ -27,6 +27,33 @@ const dateOnly = (value) => {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
 };
 
+const hmOf = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "09:00";
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${hour}:${minute}`;
+};
+
+const withHm = (dateLike, hhmm) => {
+  const [rawHour, rawMinute] = String(hhmm || "").split(":");
+  const hour = Number(rawHour);
+  const minute = Number(rawMinute);
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime()) || !Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+  date.setHours(hour, minute, 0, 0);
+  return date;
+};
+
+const filterIgnoredEvents = (events, ignoredIds) =>
+  (events || []).filter((event) => !ignoredIds.includes(String(event.id || "")));
+
+const applyImportedEventEdits = (events, edits) =>
+  (events || []).map((event) => {
+    const patch = edits?.[String(event.id || "")];
+    return patch ? { ...event, ...patch } : event;
+  });
+
 export const initPlannerController = (ui) => {
   let accountKey = "anon";
   let app = loadPlannerState(accountKey);
@@ -37,6 +64,7 @@ export const initPlannerController = (ui) => {
     if (lastAuthStateRef.current.isSignedIn) syncClient.queuePush(accountKey);
   };
   const view = createPlannerView(ui);
+  let latestImportedEventsById = new Map();
   let currentStep = 1;
   const lastAuthStateRef = { current: { isConfigured: true, isSignedIn: false, isLoading: false, error: "", accountKey: "anon" } };
   const commitmentUi = createCommitmentTypeUi(ui);
@@ -80,6 +108,9 @@ export const initPlannerController = (ui) => {
     app = loadPlannerState(accountKey);
     weekKey = rotateWeekIfNeeded(app, new Date());
     week = ensureWeekState(app, weekKey);
+    if (!Array.isArray(week.ignoredGoogleEventIds)) week.ignoredGoogleEventIds = [];
+    if (!week.importedEventEdits || typeof week.importedEventEdits !== "object") week.importedEventEdits = {};
+    latestImportedEventsById = new Map();
     if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
     applyUiFromState();
     commitmentUi.refresh();
@@ -103,6 +134,24 @@ export const initPlannerController = (ui) => {
       rerenderAll();
     },
   });
+
+  const rebuildDraftPreview = () => {
+    if (!week.draft) return;
+    const horizonStart = new Date(week.draft.horizonStartIso || Date.now());
+    horizonStart.setHours(0, 0, 0, 0);
+    const horizonDays = Number(week.draft.horizonDays || week.settings.horizonDays || 7);
+    const visibleImported = filterIgnoredEvents(week.draft.importedEvents || [], week.ignoredGoogleEventIds);
+    const editedImported = applyImportedEventEdits(visibleImported, week.importedEventEdits);
+    latestImportedEventsById = new Map(editedImported.map((item) => [String(item.id), item]));
+    week.draft.preview = buildPlannerPreview({
+      draftSlots: week.draft.slots || [],
+      existingEvents: editedImported,
+      horizonStart,
+      horizonDays,
+      commitments: week.profile.commitments,
+    });
+    week.draft.warnings = previewOverlapWarnings(week.draft.slots || [], editedImported);
+  };
 
   const writeClient = createCalendarWriteClient({
     onStateChange: async (state) => {
@@ -226,6 +275,58 @@ export const initPlannerController = (ui) => {
     const commitmentId = target.getAttribute("data-rm-commitment");
     const goalId = target.getAttribute("data-rm-goal");
     const habitId = target.getAttribute("data-rm-habit");
+    const editImportedEventId = target.getAttribute("data-edit-imported");
+    const importedEventId = target.getAttribute("data-rm-imported");
+    if (editImportedEventId) {
+      const editableEvent = latestImportedEventsById.get(editImportedEventId);
+      if (!editableEvent) {
+        view.setStatus("Imported event could not be found in the current draft.", "warning");
+        return;
+      }
+      const shouldEdit = window.confirm(
+        "This event is imported from Google Calendar. Continue editing it from LifeOS?",
+      );
+      if (!shouldEdit) return;
+      const nextTitle = window.prompt("Event title", String(editableEvent.title || "").trim());
+      if (nextTitle === null) return;
+      const nextStartHm = window.prompt("Start time (HH:MM, 24-hour)", hmOf(editableEvent.start));
+      if (nextStartHm === null) return;
+      const nextEndHm = window.prompt("End time (HH:MM, 24-hour)", hmOf(editableEvent.end));
+      if (nextEndHm === null) return;
+      const startDate = withHm(editableEvent.start, nextStartHm);
+      const endDate = withHm(editableEvent.end, nextEndHm);
+      if (!startDate || !endDate || endDate <= startDate) {
+        view.setStatus("Invalid imported event time range.", "warning");
+        return;
+      }
+      week.importedEventEdits[editImportedEventId] = {
+        title: String(nextTitle || editableEvent.title || "Imported event"),
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        description: String(editableEvent.description || ""),
+      };
+      week.ignoredGoogleEventIds = week.ignoredGoogleEventIds.filter((id) => id !== editImportedEventId);
+      rebuildDraftPreview();
+      save();
+      view.renderDraft(week.draft);
+      view.setStatus("Imported event updated in planner draft. Commit to apply to Google.", "warning");
+      return;
+    }
+    if (importedEventId) {
+      const shouldRemove = window.confirm(
+        "This event is imported from Google Calendar. Remove it from your LifeOS plan and delete it from Google when you commit?",
+      );
+      if (!shouldRemove) return;
+      if (!week.ignoredGoogleEventIds.includes(importedEventId)) {
+        week.ignoredGoogleEventIds.push(importedEventId);
+      }
+      delete week.importedEventEdits[importedEventId];
+      rebuildDraftPreview();
+      save();
+      view.renderDraft(week.draft);
+      view.setStatus("Imported event removed from planner draft. Commit to apply to Google.", "warning");
+      return;
+    }
     if (commitmentId) week.profile.commitments = week.profile.commitments.filter((item) => item.id !== commitmentId);
     if (goalId) week.goals = week.goals.filter((item) => item.id !== goalId);
     if (habitId) week.habits = week.habits.filter((item) => item.id !== habitId);
@@ -255,16 +356,23 @@ export const initPlannerController = (ui) => {
     try {
       existingEvents = await writeClient.fetchExistingEvents({ startIso: horizonStart.toISOString(), endIso: end.toISOString() });
     } catch {}
+    const visibleExistingEvents = filterIgnoredEvents(existingEvents, week.ignoredGoogleEventIds);
+    const editedExistingEvents = applyImportedEventEdits(visibleExistingEvents, week.importedEventEdits);
+    latestImportedEventsById = new Map(editedExistingEvents.map((item) => [String(item.id), item]));
+    draft.importedEvents = visibleExistingEvents;
+    draft.horizonStartIso = horizonStart.toISOString();
+    draft.horizonDays = week.settings.horizonDays;
     draft.preview = buildPlannerPreview({
       draftSlots: draft.slots,
-      existingEvents,
+      existingEvents: editedExistingEvents,
       horizonStart,
       horizonDays: week.settings.horizonDays,
+      commitments: week.profile.commitments,
     });
     week.draft = draft;
     week.managedSlots = draft.slots.map((slot) => ({ ...slot, lifeosManaged: true, planRunId: `run_${Date.now().toString(36)}` }));
     if (draft.validation.ok) {
-      draft.warnings = previewOverlapWarnings(draft.slots, existingEvents);
+      draft.warnings = previewOverlapWarnings(draft.slots, editedExistingEvents);
     }
     save();
     view.renderDraft(draft);
@@ -280,12 +388,34 @@ export const initPlannerController = (ui) => {
 
   ui.clear.addEventListener("click", () => { week.draft = null; save(); view.renderDraft(null); view.setStatus("Draft cleared.", "neutral"); });
   ui.commit.addEventListener("click", async () => {
-    if (!week.draft?.slots?.length) return view.setStatus("Generate a draft before committing.", "warning");
+    const hasSlots = Boolean(week.draft?.slots?.length);
+    const hasDeletes = Boolean(week.ignoredGoogleEventIds?.length);
+    const updateEvents = Object.entries(week.importedEventEdits || {})
+      .filter(([eventId]) => !week.ignoredGoogleEventIds.includes(eventId))
+      .map(([eventId, value]) => ({ id: eventId, ...value }));
+    const hasUpdates = Boolean(updateEvents.length);
+    if (!hasSlots && !hasDeletes && !hasUpdates) return view.setStatus("Generate a draft before committing.", "warning");
     try {
-      const result = await writeClient.commitDraft(week.draft.slots);
-      week.commitLog.push({ commitId: result.commitId, timestamp: new Date().toISOString(), writes: result.writes, warningCount: week.draft.warnings.length });
+      const deleteEventIds = [...new Set(week.ignoredGoogleEventIds)];
+      const result = await writeClient.commitDraft(week.draft?.slots || [], {
+        deleteEventIds,
+        updateEvents,
+      });
+      week.commitLog.push({
+        commitId: result.commitId,
+        timestamp: new Date().toISOString(),
+        writes: result.writes,
+        deletes: result.deletes,
+        updates: result.updates,
+        warningCount: week.draft.warnings.length,
+      });
+      week.ignoredGoogleEventIds = [];
+      week.importedEventEdits = {};
       save();
-      view.setStatus(`Committed ${result.writes.length} events to Google Calendar.`, "success");
+      view.setStatus(
+        `Committed ${result.writes.length} planned events, updated ${result.updates.length}, and removed ${result.deletes.length} imported events.`,
+        "success",
+      );
     } catch (error) {
       view.setStatus(`Commit failed: ${error.message}`, "error");
     }

@@ -25,6 +25,8 @@ const defaultWeekState = () => ({
   draft: null,
   commitLog: [],
   managedSlots: [],
+  ignoredGoogleEventIds: [],
+  importedEventEdits: {},
   planRuns: [],
   aiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
@@ -114,6 +116,10 @@ const normalizeWeekState = (week) => {
     draft: next.draft || null,
     commitLog: Array.isArray(next.commitLog) ? next.commitLog : [],
     managedSlots: Array.isArray(next.managedSlots) ? next.managedSlots : [],
+    ignoredGoogleEventIds: Array.isArray(next.ignoredGoogleEventIds)
+      ? next.ignoredGoogleEventIds.map((item) => String(item || "")).filter(Boolean)
+      : [],
+    importedEventEdits: parse(next.importedEventEdits, {}),
     planRuns: Array.isArray(next.planRuns) ? next.planRuns : [],
     aiAssist: {
       lastPrompt: String(parse(next.aiAssist, {}).lastPrompt || ""),
@@ -169,7 +175,25 @@ export const rotateWeekIfNeeded = (state, now = new Date()) => {
 
 export const createGoal = ({ title, deadlineIso, priority, weeklyHours }) => ({ id: uid("goal"), title, deadlineIso, priority, weeklyHours, status: "active", createdAt: new Date().toISOString() });
 export const createHabit = ({ name, frequency, durationMinutes, window }) => ({ id: uid("habit"), name, frequency, durationMinutes, window, status: "active" });
-export const createTask = ({ weekKey, title, estimateMinutes, priority, energy }) => ({ id: uid("task"), weekKey, title, estimateMinutes, priority, energy, status: "active" });
+export const createTask = ({
+  weekKey,
+  title,
+  estimateMinutes,
+  priority,
+  energy,
+  habitId = "",
+  preferredWindow = "",
+}) => ({
+  id: uid("task"),
+  weekKey,
+  title,
+  estimateMinutes,
+  priority,
+  energy,
+  habitId: String(habitId || ""),
+  preferredWindow: String(preferredWindow || ""),
+  status: "active",
+});
 export const createMinorGoal = ({ weekKey, title, targetHours }) => ({ id: uid("mgoal"), weekKey, title, targetHours, status: "active" });
 export const createCommitment = ({ mode, title, start, end, days, startDate, endDate, date }) => ({ id: uid("commit"), mode, title, start, end, days: days || [], startDate: startDate || "", endDate: endDate || "", date: date || "", isLocked: true, source: "manual" });
 

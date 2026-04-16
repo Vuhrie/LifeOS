@@ -167,11 +167,53 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
     return { id: data.id, title: data.summary || payload.summary, slotId: slot.id };
   };
 
-  const commitDraft = async (slots) => {
+  const deleteEvent = async (eventId) => {
+    const token = await ensureSignedIn();
+    const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
+    const response = await fetch(
+      `${GOOGLE_API_BASE}/calendars/${calendarId}/events/${encodeURIComponent(eventId)}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Failed to remove event (${response.status}).`);
+    }
+  };
+
+  const updateEventById = async (event) => {
+    const token = await ensureSignedIn();
+    const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
+    const payload = {
+      summary: String(event.title || "Updated event"),
+      description: String(event.description || ""),
+      start: { dateTime: new Date(event.start).toISOString() },
+      end: { dateTime: new Date(event.end).toISOString() },
+    };
+    const response = await fetch(
+      `${GOOGLE_API_BASE}/calendars/${calendarId}/events/${encodeURIComponent(event.id)}`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!response.ok) throw new Error(`Failed to update event (${response.status}).`);
+  };
+
+  const commitDraft = async (slots, { deleteEventIds = [], updateEvents = [] } = {}) => {
     const commitId = `commit_${Date.now().toString(36)}`;
     const writes = [];
+    const deletes = [];
+    const updates = [];
+    for (const eventId of deleteEventIds) {
+      await deleteEvent(eventId);
+      deletes.push(eventId);
+    }
+    for (const event of updateEvents) {
+      await updateEventById(event);
+      updates.push(event.id);
+    }
     for (const slot of slots) writes.push(await upsertEvent({ slot, commitId }));
-    return { commitId, writes };
+    return { commitId, writes, deletes, updates };
   };
 
   const signOut = () => {

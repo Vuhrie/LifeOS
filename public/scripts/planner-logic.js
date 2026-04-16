@@ -24,6 +24,8 @@ export const createPlannerLogic = ({
           estimateMinutes: duration,
           priority: 3,
           energy: habit.window === "night" ? "light" : "deep",
+          habitId: habit.id,
+          preferredWindow: habit.window,
         }));
     });
 
@@ -32,9 +34,11 @@ export const createPlannerLogic = ({
     now.setHours(0, 0, 0, 0);
     const end = new Date(now);
     end.setDate(now.getDate() + week.settings.horizonDays);
-    const events = lastAuthStateRef.current.isSignedIn
+    const eventsRaw = lastAuthStateRef.current.isSignedIn
       ? await writeClient.fetchExistingEvents({ startIso: now.toISOString(), endIso: end.toISOString() })
       : [];
+    const ignoredIds = Array.isArray(week.ignoredGoogleEventIds) ? week.ignoredGoogleEventIds : [];
+    const events = eventsRaw.filter((item) => !ignoredIds.includes(String(item.id || "")));
     const capacity = buildPlanningWindows({
       horizonStart: now,
       horizonDays: week.settings.horizonDays,
@@ -91,4 +95,3 @@ export const createPlannerLogic = ({
 
   return { habitsAsTasks, buildPromptContext, applyAiOperations };
 };
-

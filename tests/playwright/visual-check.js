@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v0.8.2";
+const releaseVersion = "v0.9.0";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -178,9 +178,29 @@ const run = async () => {
     }
     const previewCardCount = await desktop.locator(".draft-event-card").count();
     const previewText = await desktop.locator("#draft-schedule").innerText();
+    const previewDayCount = await desktop.locator(".draft-day-group").count();
+    const importedEditCount = await desktop.locator("[data-edit-imported]").count();
+    const importedRemoveCount = await desktop.locator("[data-rm-imported]").count();
     if (previewCardCount < 1 || !previewText.includes("Existing Calendar Event")) {
       throw new Error("Planner draft preview should include merged existing calendar event cards.");
     }
+    if (previewDayCount !== 7) {
+      throw new Error(`Planner draft should render the full 7-day horizon. Found: ${previewDayCount}`);
+    }
+    if (importedRemoveCount < 1) {
+      throw new Error("Planner draft should allow removing imported events.");
+    }
+    if (importedEditCount < 1) {
+      throw new Error("Planner draft should allow editing imported events.");
+    }
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, "visual-test-desktop-planner-draft-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-planner-draft-${releaseVersion}.png`),
+      fullPage: true,
+    });
     await desktop.locator('.step-pill[data-step="2"]').click();
     await wait(200);
     const aiAssistTitle = await desktop.locator("#ai-assist-title").textContent();

@@ -22,7 +22,14 @@ const draftCard = (item) => `
   <article class="draft-event-card" data-kind="${escapeHtml(item.kind)}">
     <p class="draft-event-time">${escapeHtml(formatTime(item.start))} - ${escapeHtml(formatTime(item.end))}</p>
     <h3>${escapeHtml(item.title)}</h3>
-    <span class="draft-event-badge">${escapeHtml(item.badge)}</span>
+    <div class="draft-event-meta">
+      <span class="draft-event-badge">${escapeHtml(item.badge)}</span>
+      ${
+        item.kind === "existing"
+          ? `<button type="button" class="action-button draft-edit-imported" data-edit-imported="${escapeHtml(item.id)}">Edit</button><button type="button" class="inline-remove draft-remove-imported" data-rm-imported="${escapeHtml(item.id)}">Remove</button>`
+          : ""
+      }
+    </div>
   </article>
 `;
 
@@ -95,7 +102,7 @@ export const createPlannerView = (ui) => {
         <section class="draft-day-group">
           <h3>${escapeHtml(formatDate(day.date))}</h3>
           <div class="draft-day-list">
-            ${day.items.map(draftCard).join("")}
+            ${day.items.length ? day.items.map(draftCard).join("") : `<article class="event-empty event-empty--day"><p>Nothing scheduled yet.</p></article>`}
           </div>
         </section>`,
       )

@@ -17,6 +17,26 @@ const chunkTask = (task) => {
   return chunks;
 };
 
+const minutesOfDay = (date) => date.getHours() * 60 + date.getMinutes();
+
+const windowScore = (preferredWindow, start) => {
+  const minute = minutesOfDay(start);
+  if (preferredWindow === "any" || preferredWindow === "anytime" || !preferredWindow) return 0;
+  if (preferredWindow === "morning") return minute >= 360 && minute < 720 ? 12 : -8;
+  if (preferredWindow === "afternoon") return minute >= 720 && minute < 1020 ? 12 : -8;
+  if (preferredWindow === "evening") return minute >= 1020 && minute < 1260 ? 12 : -8;
+  if (preferredWindow === "night") return minute >= 1140 || minute < 360 ? 12 : -8;
+  return 0;
+};
+
+const habitKeyFromSlot = (slot) => {
+  if (slot.habitId) return String(slot.habitId);
+  const title = String(slot.title || "");
+  const match = title.match(/^(.*)\s+Session\s+\d+$/i);
+  if (match?.[1]) return match[1].trim().toLowerCase();
+  return "";
+};
+
 const buildUnits = ({ goal, minorGoals, tasks }) => {
   const units = [];
   minorGoals.forEach((item) => {
@@ -44,10 +64,12 @@ const buildUnits = ({ goal, minorGoals, tasks }) => {
         id: `${task.id}_${index}`,
         sourceId: task.id,
         title: task.title,
-        type: "task",
+        type: task.habitId ? "habit" : "task",
         priority: Number(task.priority || 3),
         mustDo: 0,
         energy: task.energy || "deep",
+        habitId: String(task.habitId || ""),
+        preferredWindow: String(task.preferredWindow || ""),
         deadlineIso: goal.deadlineIso,
         durationMinutes: chunk.durationMinutes,
       });
@@ -73,7 +95,8 @@ const scoreCandidate = ({ unit, start, dayPlan, dayRule }) => {
   const contextSwitch = dayPlan.length * 3;
   const latePenalty = start.getHours() >= 21 ? 12 : 0;
   const deepPenalty = unit.energy === "deep" && dayRule.maxDeepBlocks > 0 && dayPlan.filter((slot) => slot.energy === "deep").length >= dayRule.maxDeepBlocks ? 50 : 0;
-  return urgency + priority + mustDo + energyMatch - contextSwitch - latePenalty - deepPenalty;
+  const preferredWindow = windowScore(unit.preferredWindow, start);
+  return urgency + priority + mustDo + energyMatch + preferredWindow - contextSwitch - latePenalty - deepPenalty;
 };
 
 export const validatePlannerInput = ({ goal, minorGoals, availabilityRules }) => {
@@ -106,14 +129,20 @@ export const validatePlannerInput = ({ goal, minorGoals, availabilityRules }) =>
 const tryKeepExistingSlots = ({ existingSlots, hardBlocks, lockedUntil, horizonStart, horizonEnd, units }) => {
   const keep = [];
   const consumed = new Set();
+  const keptHabitDayKeys = new Set();
   const sorted = [...existingSlots].sort((left, right) => new Date(left.start) - new Date(right.start));
   sorted.forEach((slot) => {
     if (!canKeepExistingSlot({ slot, hardBlocks, lockedUntil, horizonStart, horizonEnd })) return;
     if (!units.find((unit) => unit.id === slot.id) || consumed.has(slot.id)) return;
+    const slotStart = new Date(slot.start);
+    const dayKey = slotStart.toDateString();
+    const habitKey = habitKeyFromSlot(slot);
+    if (habitKey && keptHabitDayKeys.has(`${habitKey}|${dayKey}`)) return;
     consumed.add(slot.id);
+    if (habitKey) keptHabitDayKeys.add(`${habitKey}|${dayKey}`);
     keep.push({
       ...slot,
-      start: new Date(slot.start),
+      start: slotStart,
       end: new Date(slot.end),
       preserved: true,
       score: Number(slot.score || 0),
@@ -167,6 +196,7 @@ export const generateDraftPlan = ({
   });
   const pendingUnits = units.filter((unit) => !consumed.has(unit.id));
   const dayPlans = new Map();
+  const habitDayKeys = new Set();
   const trace = [];
   const slots = [...keep];
   const unscheduled = [];
@@ -176,6 +206,9 @@ export const generateDraftPlan = ({
     const key = new Date(slot.start).toDateString();
     if (!dayPlans.has(key)) dayPlans.set(key, []);
     dayPlans.get(key).push(slot);
+    if (slot.type === "habit" && slot.habitId) {
+      habitDayKeys.add(`${slot.habitId}|${key}`);
+    }
   });
 
   const sortedUnits = [...pendingUnits].sort((left, right) => {
@@ -205,6 +238,9 @@ export const generateDraftPlan = ({
         const collides = dayPlan.some((existing) => hasOverlap(start, end, existing.start, existing.end))
           || hardBlocks.some((block) => hasOverlap(start, end, block.start, block.end));
         if (collides) {
+          continue;
+        }
+        if (unit.type === "habit" && unit.habitId && habitDayKeys.has(`${unit.habitId}|${key}`)) {
           continue;
         }
 
@@ -240,6 +276,7 @@ export const generateDraftPlan = ({
       sourceId: unit.sourceId,
       title: unit.title,
       type: unit.type,
+      habitId: unit.habitId || "",
       energy: unit.energy,
       durationMinutes: unit.durationMinutes,
       start: best.start,
@@ -249,6 +286,9 @@ export const generateDraftPlan = ({
     };
     const key = best.window.date.toDateString();
     dayPlans.get(key).push(slot);
+    if (slot.type === "habit" && slot.habitId) {
+      habitDayKeys.add(`${slot.habitId}|${key}`);
+    }
     slots.push(slot);
     trace.push(`Scheduled ${unit.title} at ${best.start.toLocaleString()} score=${best.score}.`);
   });
