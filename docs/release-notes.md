@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.7
+
+- Split shower necessities into separate `Morning Shower` and `Night Shower` definitions with independent durations in Planner.
+- Updated deterministic necessity blocking so both shower windows are protected daily (`Morning Shower` after wake/breakfast and `Night Shower` near sleep).
+- Added backward-compatible migration from legacy single `shower` settings so existing users automatically get both shower durations preserved.
+- Extended visual checks to assert the new shower inputs and prompt context for both shower definitions.
+
 ## v1.0.6
 
 - Added daily-rhythm blocks to generated draft schedule previews so each rolling day visibly shows the wake/sleep window.

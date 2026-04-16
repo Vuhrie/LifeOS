@@ -126,7 +126,8 @@ export const initPlannerController = (ui) => {
     ui.lockedHours.value = String(week.settings.lockedHorizonHours);
     ui.needBreakfast.value = String(week.profile.necessities.breakfast.durationMinutes);
     ui.needDinner.value = String(week.profile.necessities.dinner.durationMinutes);
-    ui.needShower.value = String(week.profile.necessities.shower.durationMinutes);
+    ui.needMorningShower.value = String(week.profile.necessities.morningShower.durationMinutes);
+    ui.needNightShower.value = String(week.profile.necessities.nightShower.durationMinutes);
     ui.aiChangedSince.value = week.aiPlannerInputs?.changedSinceLastRun || "";
     ui.aiTaskProgressNotes.value = week.aiPlannerInputs?.taskProgressNotes || "";
     ui.aiBriefNotes.value = week.aiPlannerInputs?.notes || "";
@@ -139,7 +140,8 @@ export const initPlannerController = (ui) => {
     necessities: {
       breakfast: { enabled: true, durationMinutes: Number(ui.needBreakfast.value) || 30 },
       dinner: { enabled: true, durationMinutes: Number(ui.needDinner.value) || 45 },
-      shower: { enabled: true, durationMinutes: Number(ui.needShower.value) || 20 },
+      morningShower: { enabled: true, durationMinutes: Number(ui.needMorningShower.value) || 20 },
+      nightShower: { enabled: true, durationMinutes: Number(ui.needNightShower.value) || 20 },
     },
   });
 
@@ -355,7 +357,8 @@ export const initPlannerController = (ui) => {
   ui.prev.addEventListener("click", () => { currentStep = view.setStep(currentStep - 1); });
   ui.next.addEventListener("click", () => { currentStep = view.setStep(currentStep + 1); });
   ui.stepPills.forEach((pill) => pill.addEventListener("click", () => { currentStep = view.setStep(Number(pill.dataset.step)); }));
-  [ui.wake, ui.sleep, ui.horizonDays, ui.lockedHours, ui.needBreakfast, ui.needDinner, ui.needShower].forEach((input) => input.addEventListener("change", onProfileChange));
+  [ui.wake, ui.sleep, ui.horizonDays, ui.lockedHours, ui.needBreakfast, ui.needDinner, ui.needMorningShower, ui.needNightShower]
+    .forEach((input) => input.addEventListener("change", onProfileChange));
   [ui.aiChangedSince, ui.aiTaskProgressNotes, ui.aiBriefNotes, ui.aiPriorityMajorGoal].forEach((input) => {
     input?.addEventListener("change", onPlannerBriefChange);
     input?.addEventListener("input", onPlannerBriefChange);

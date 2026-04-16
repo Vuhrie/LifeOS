@@ -28,7 +28,12 @@ const toHHMM = (dateLike) => {
 
 const necessityDefinitionsFromProfile = (profile) => {
   const definitions = profile?.necessities || {};
-  const labels = { breakfast: "Breakfast", dinner: "Dinner", shower: "Shower" };
+  const labels = {
+    breakfast: "Breakfast",
+    dinner: "Dinner",
+    morningShower: "Morning Shower",
+    nightShower: "Night Shower",
+  };
   return Object.entries(labels).map(([key, title]) => {
     const value = definitions[key] || {};
     return {

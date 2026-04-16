@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.6";
+const releaseVersion = "v1.0.7";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -129,8 +129,10 @@ const run = async () => {
     }
     const horizonVisible = await desktop.locator("#horizon-days").isVisible();
     const commitmentsVisible = await desktop.locator("#add-commitment").isVisible();
+    const morningShowerVisible = await desktop.locator("#need-morning-shower").isVisible();
+    const nightShowerVisible = await desktop.locator("#need-night-shower").isVisible();
     const lockCount = await desktop.locator("#planner-lock").count();
-    if (!horizonVisible || !commitmentsVisible || lockCount !== 1) {
+    if (!horizonVisible || !commitmentsVisible || !morningShowerVisible || !nightShowerVisible || lockCount !== 1) {
       throw new Error("Planner step 1 should include horizon + unified commitments + lock overlay element.");
     }
     await desktop.screenshot({
@@ -243,6 +245,9 @@ const run = async () => {
     }
     if (!builtPrompt.includes("\"necessityDefinitions\"") || !builtPrompt.includes("\"necessityDurationByType\"")) {
       throw new Error("AI prompt should include necessity definitions and duration context.");
+    }
+    if (!builtPrompt.includes("Morning Shower") || !builtPrompt.includes("Night Shower")) {
+      throw new Error("AI prompt should include split morning/night shower necessity definitions.");
     }
     if (!builtPrompt.includes("\"dailyRhythmByDay\"")) {
       throw new Error("AI prompt should include per-day daily rhythm context.");

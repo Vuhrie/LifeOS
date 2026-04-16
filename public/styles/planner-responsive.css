@@ -4,7 +4,8 @@
   }
 
   .inline-fields,
-  .inline-fields--triple {
+  .inline-fields--triple,
+  .inline-fields--quad {
     grid-template-columns: 1fr;
   }
 
@@ -35,4 +36,3 @@
     padding-inline: 10px;
   }
 }
-

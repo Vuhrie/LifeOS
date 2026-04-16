@@ -36,18 +36,25 @@ const necessityBlocks = ({ profile, date }) => {
   const blocks = [];
   const breakfast = rules.breakfast;
   const dinner = rules.dinner;
-  const shower = rules.shower;
+  const morningShower = rules.morningShower;
+  const nightShower = rules.nightShower;
+  let breakfastEnd = wake + 30;
   if (breakfast?.enabled) {
     const start = Math.min(wake + 30, sleep - 30);
-    blocks.push(toBlock(date, start, start + breakfast.durationMinutes, "necessity", "Breakfast"));
+    breakfastEnd = start + breakfast.durationMinutes;
+    blocks.push(toBlock(date, start, breakfastEnd, "necessity", "Breakfast"));
+  }
+  if (morningShower?.enabled) {
+    const start = Math.min(Math.max(wake + 15, breakfastEnd), sleep - 60);
+    blocks.push(toBlock(date, start, start + morningShower.durationMinutes, "necessity", "Morning Shower"));
   }
   if (dinner?.enabled) {
     const end = Math.max(wake + 120, sleep - 60);
     blocks.push(toBlock(date, end - dinner.durationMinutes, end, "necessity", "Dinner"));
   }
-  if (shower?.enabled) {
+  if (nightShower?.enabled) {
     const end = Math.max(wake + 60, sleep - 15);
-    blocks.push(toBlock(date, end - shower.durationMinutes, end, "necessity", "Shower"));
+    blocks.push(toBlock(date, end - nightShower.durationMinutes, end, "necessity", "Night Shower"));
   }
   return blocks.filter((block) => block.end > block.start);
 };

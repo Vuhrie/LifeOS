@@ -11,7 +11,8 @@ const defaultProfile = () => ({
   necessities: {
     breakfast: { enabled: true, durationMinutes: 30 },
     dinner: { enabled: true, durationMinutes: 45 },
-    shower: { enabled: true, durationMinutes: 20 },
+    morningShower: { enabled: true, durationMinutes: 20 },
+    nightShower: { enabled: true, durationMinutes: 20 },
   },
 });
 
@@ -83,6 +84,7 @@ const migrateLegacyCommitments = (profile) => {
 const normalizeProfile = (profile) => {
   const next = parse(profile, {});
   const commitmentsRaw = Array.isArray(next.commitments) ? next.commitments : migrateLegacyCommitments(next);
+  const legacyShower = normalizeNeed(parse(next.necessities, {}).shower, 20);
   return {
     wakeTime: normalizeTime(next.wakeTime, "06:00"),
     sleepTime: normalizeTime(next.sleepTime, "22:00"),
@@ -105,7 +107,8 @@ const normalizeProfile = (profile) => {
     necessities: {
       breakfast: normalizeNeed(parse(next.necessities, {}).breakfast, 30),
       dinner: normalizeNeed(parse(next.necessities, {}).dinner, 45),
-      shower: normalizeNeed(parse(next.necessities, {}).shower, 20),
+      morningShower: normalizeNeed(parse(next.necessities, {}).morningShower, legacyShower.durationMinutes),
+      nightShower: normalizeNeed(parse(next.necessities, {}).nightShower, legacyShower.durationMinutes),
     },
   };
 };
