@@ -3,6 +3,31 @@ export const MAJOR_GOAL_AI_VERSION = "major-goals-v1";
 export const MAJOR_GOAL_AI_TEMPLATE = `\`\`\`json
 {
   "version": "major-goals-v1",
+  "status": "in_progress",
+  "seedId": "seed_1",
+  "known": {
+    "title": "Preparation for SIT Information Security",
+    "targetDate": "",
+    "priority": null,
+    "weeklyHours": null,
+    "doneCondition": "",
+    "rationale": ""
+  },
+  "missing": [
+    "targetDate",
+    "priority",
+    "weeklyHours",
+    "doneCondition"
+  ],
+  "questions": [
+    "What is your expected matriculation date?"
+  ]
+}
+\`\`\`
+
+\`\`\`json
+{
+  "version": "major-goals-v1",
   "status": "proposals_ready",
   "proposals": [
     {

@@ -63,20 +63,32 @@ export const parseMajorGoalAiPlan = (raw, { validSeedIds = [] } = {}) => {
   }
 
   const status = safeText(parsed.status);
-  if (status !== "needs_clarification" && status !== "proposals_ready") {
-    errors.push('status must be "needs_clarification" or "proposals_ready".');
+  if (status !== "in_progress" && status !== "proposals_ready" && status !== "needs_clarification") {
+    errors.push('status must be "in_progress" or "proposals_ready".');
   }
 
-  if (status === "needs_clarification") {
+  if (status === "in_progress" || status === "needs_clarification") {
     const questions = Array.isArray(parsed.questions) ? parsed.questions.map(safeText).filter(Boolean) : [];
-    if (!questions.length) errors.push("needs_clarification requires questions[].");
+    if (!questions.length) errors.push("in_progress requires questions[].");
+    const knownRaw = (parsed.known && typeof parsed.known === "object" && !Array.isArray(parsed.known)) ? parsed.known : {};
+    const known = {
+      title: safeText(knownRaw.title),
+      targetDate: safeText(knownRaw.targetDate),
+      priority: Number.isFinite(Number(knownRaw.priority)) ? clamp(Math.round(Number(knownRaw.priority)), 1, 5) : null,
+      weeklyHours: Number.isFinite(Number(knownRaw.weeklyHours)) ? clamp(Math.round(Number(knownRaw.weeklyHours)), 1, 80) : null,
+      doneCondition: safeText(knownRaw.doneCondition),
+      rationale: safeText(knownRaw.rationale),
+    };
+    const missing = Array.isArray(parsed.missing) ? parsed.missing.map(safeText).filter(Boolean) : [];
     const plan = {
       kind: "major_goal_ai_v1",
       version: version || MAJOR_GOAL_AI_VERSION,
-      status,
+      status: "in_progress",
       seedId: safeText(parsed.seedId),
       workingUnderstanding: safeText(parsed.workingUnderstanding),
       questions,
+      known,
+      missing,
       proposals: [],
     };
     return errors.length ? { ok: false, errors, warnings, plan: null } : { ok: true, errors: [], warnings, plan };
@@ -105,6 +117,6 @@ export const parseMajorGoalAiPlan = (raw, { validSeedIds = [] } = {}) => {
 
 export const summarizeMajorGoalAiPlan = (plan) => {
   if (!plan) return "No plan";
-  if (plan.status === "needs_clarification") return `${plan.questions.length} clarification question(s)`;
+  if (plan.status === "in_progress") return `${plan.questions.length} question(s) pending`;
   return `${plan.proposals.length} major-goal proposal(s)`;
 };

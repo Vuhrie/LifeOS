@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.13";
+const releaseVersion = "v1.0.14";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -230,6 +230,12 @@ const run = async () => {
     const majorGoalPrompt = await desktop.locator("#major-goal-ai-prompt-output").inputValue();
     if (!majorGoalPrompt.includes("major-goals-v1")) {
       throw new Error("Major-goal AI prompt should include major-goals-v1 contract.");
+    }
+    if (!majorGoalPrompt.includes("Questions For You") || !majorGoalPrompt.includes("Working Major Goal Draft")) {
+      throw new Error("Major-goal AI prompt should require question-first conversation with a working draft.");
+    }
+    if (!majorGoalPrompt.includes('"status":"in_progress"')) {
+      throw new Error("Major-goal AI prompt should include in_progress working draft status.");
     }
     if (majorGoalPrompt.includes("\"rollingPlan\"")) {
       throw new Error("Major-goal AI prompt should not include rollingPlan output.");

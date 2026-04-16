@@ -77,9 +77,14 @@ export const createMajorGoalAiUi = ({
       return;
     }
     validatedPlan = result.plan;
-    applyButton.disabled = false;
     const warningText = result.warnings.length ? ` Warnings: ${result.warnings.join(" ")}` : "";
-    setStatus(`JSON looks valid.${warningText}`, "success");
+    if (validatedPlan.status === "proposals_ready") {
+      applyButton.disabled = false;
+      setStatus(`JSON looks valid and ready to insert.${warningText}`, "success");
+    } else {
+      applyButton.disabled = true;
+      setStatus(`Draft is valid but still in progress. Continue AI Q&A, then paste final proposals_ready JSON.${warningText}`, "warning");
+    }
     onPersist({
       lastPrompt: output.value,
       lastImportText: importInput.value,

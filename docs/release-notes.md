@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.14
+
+- Updated AI-assisted major-goal prompt flow to support conversational clarification rounds with a `Working Major Goal Draft`.
+- Added `in_progress` draft-state contract for major-goal JSON so chatbot replies can evolve across turns before finalization.
+- Kept insertion gated to final `proposals_ready` responses only; `in_progress` drafts validate but cannot be inserted.
+- Updated major-goal parser and UI validation messaging to guide users to continue Q&A until final proposal JSON is ready.
+- Added visual regression checks for prompt requirements (`Questions For You`, `Working Major Goal Draft`, and `status":"in_progress"`).
+
 ## v1.0.13
 
 - Fixed `Build Major Goal Prompt` so it no longer appears stuck after click and always exits pressed/loading state cleanly.

@@ -464,10 +464,8 @@ export const initPlannerController = (ui) => {
   };
 
   const applyMajorGoalAiPlan = (plan) => {
-    if (plan.status === "needs_clarification") {
-      const questionText = plan.questions.map((question, index) => `${index + 1}. ${question}`).join("\n");
-      window.alert(`AI needs clarification before defining a major goal:\n\n${questionText}`);
-      return summarizeMajorGoalAiPlan(plan);
+    if (plan.status === "in_progress") {
+      throw new Error("Plan is still in progress. Continue AI Q&A and import final proposals_ready JSON.");
     }
     let accepted = 0;
     let rejected = 0;
