@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.1";
+const releaseVersion = "v1.0.2";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -229,6 +229,9 @@ const run = async () => {
     }
     if (!builtPrompt.includes("\"rollingPlan\"")) {
       throw new Error("AI prompt should include rollingPlan JSON shape.");
+    }
+    if (builtPrompt.includes("Existing Calendar Event")) {
+      throw new Error("Removed imported events should not reappear in AI prompt context.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-step2-current.png"),

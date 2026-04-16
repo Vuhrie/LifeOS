@@ -19,6 +19,7 @@ const toIsoDate = (date) => {
 const toDateFromDayTime = (dateText, timeText) => new Date(`${dateText}T${timeText}:00`);
 
 const buildAiDraftFromRollingPlan = (plan) => {
+  const slots = [];
   const days = (plan.rollingPlan || []).map((day) => ({
     date: new Date(`${day.date}T00:00:00`),
     items: (day.items || []).map((item, index) => ({
@@ -26,15 +27,33 @@ const buildAiDraftFromRollingPlan = (plan) => {
       start: toDateFromDayTime(day.date, item.start),
       end: toDateFromDayTime(day.date, item.end),
       title: item.title,
+      sourceId: item.sourceId || "",
       kind: item.type === "commitment" ? "commitment" : "planned",
       badge: item.type === "commitment" ? "Commitment" : item.type === "habit" ? "Habit" : item.type === "necessity" ? "Necessity" : "Planned",
     })),
   }));
+  days.forEach((day) => {
+    day.items.forEach((item) => {
+      if (item.kind === "commitment") return;
+      slots.push({
+        id: item.id,
+        sourceId: item.sourceId || item.id,
+        title: item.title,
+        type: "task",
+        energy: "deep",
+        durationMinutes: Math.max(15, Math.round((item.end - item.start) / 60000)),
+        start: item.start,
+        end: item.end,
+        score: 0,
+        preserved: false,
+      });
+    });
+  });
   const startDate = days[0]?.date ? toIsoDate(days[0].date) : "";
   const endDate = days[days.length - 1]?.date ? toIsoDate(days[days.length - 1].date) : "";
   return {
     validation: { ok: true, errors: [] },
-    slots: [],
+    slots,
     unscheduled: [],
     warnings: (plan.warnings || []).map((text) => ({ slotTitle: "AI warning", existingTitle: text })),
     preview: {
@@ -79,7 +98,7 @@ export const createPlannerLogic = ({
       return Array.from({ length: count }).map((_, index) =>
         createTask({
           weekKey,
-          title: `${habit.name} Session ${index + 1}`,
+          title: `${habit.name}`,
           estimateMinutes: duration,
           priority: 3,
           energy: habit.window === "night" ? "light" : "deep",
@@ -95,22 +114,39 @@ export const createPlannerLogic = ({
     start.setDate(start.getDate() + 1);
     const end = new Date(start);
     end.setDate(start.getDate() + 7);
-    const events = lastAuthStateRef.current.isSignedIn
+    const dismissedGoogleIds = new Set(
+      (week.dismissedGoogleCommitmentIds || []).map((item) => String(item || "")).filter(Boolean),
+    );
+    const ignoredGoogleIds = new Set(
+      (week.ignoredGoogleEventIds || []).map((item) => String(item || "")).filter(Boolean),
+    );
+    const eventsRaw = lastAuthStateRef.current.isSignedIn
       ? await writeClient.fetchExistingEvents({ startIso: start.toISOString(), endIso: end.toISOString() })
       : [];
+    const events = (eventsRaw || []).filter((event) => {
+      const eventId = String(event?.id || "");
+      if (!eventId) return true;
+      return !dismissedGoogleIds.has(eventId) && !ignoredGoogleIds.has(eventId);
+    });
+    const promptCommitments = (week.profile.commitments || []).filter((item) => {
+      if (String(item.source || "") !== "google_imported") return true;
+      const eventId = String(item.googleEventId || "");
+      return !eventId || !dismissedGoogleIds.has(eventId);
+    });
     const capacity = buildPlanningWindows({
       horizonStart: start,
       horizonDays: 7,
       profile: week.profile,
       availabilityRules: week.availabilityRules,
-      reservedSlots: week.managedSlots,
+      // AI prompt context should not lock in previously managed slots.
+      reservedSlots: [],
     });
 
     return buildAiBridgePrompt({
       definedElements: {
         dailyRhythm: { wakeTime: week.profile.wakeTime, sleepTime: week.profile.sleepTime },
         necessities: week.profile.necessities,
-        commitments: week.profile.commitments,
+        commitments: promptCommitments,
         habits: week.habits,
         majorGoals: week.goals,
       },
@@ -140,6 +176,8 @@ export const createPlannerLogic = ({
         rollingDays: 7,
         rollingExcludesToday: true,
         habitsUseMondaySundayWeek: true,
+        habitMaxPerDayDefault: 1,
+        dismissedGoogleEventIds: [...dismissedGoogleIds],
         aiMayModify: ["minorGoals", "tasks", "habitExecutionTiming", "necessityExecutionTiming"],
         aiMayNotModify: ["majorGoals", "commitments", "dailyRhythm", "necessityDefinitions", "habitDefinitions"],
       },
@@ -203,6 +241,11 @@ export const createPlannerLogic = ({
     week.minorGoals = nextMinorGoals;
     week.tasks = nextTasks;
     week.draft = buildAiDraftFromRollingPlan(validation.plan);
+    week.managedSlots = (week.draft?.slots || []).map((slot) => ({
+      ...slot,
+      lifeosManaged: true,
+      planRunId: `run_${Date.now().toString(36)}`,
+    }));
   };
 
   const applyAiOperations = (plan, summaryFn) => {

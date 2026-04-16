@@ -18,6 +18,35 @@ const dateFromIso = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const inDateRange = (dateText, startDate, endDate) => {
+  if (!dateText || !startDate || !endDate) return false;
+  return dateText >= startDate && dateText <= endDate;
+};
+
+const expandCommitmentsByDate = (commitments, dates) => {
+  const byDate = new Map(dates.map((date) => [date, []]));
+  (commitments || []).forEach((item) => {
+    const mode = String(item?.mode || "weekly_recurring");
+    const days = Array.isArray(item?.days) ? item.days.map(Number) : [];
+    const title = String(item?.title || "Commitment");
+    const start = toMinutes(item?.start);
+    const end = toMinutes(item?.end);
+    if (start == null || end == null || end <= start) return;
+    dates.forEach((dateText) => {
+      const date = dateFromIso(dateText);
+      if (!date) return;
+      const day = date.getDay();
+      let include = false;
+      if (mode === "weekly_recurring") include = days.includes(day);
+      if (mode === "date_range_recurring") include = days.includes(day) && inDateRange(dateText, item?.startDate, item?.endDate);
+      if (mode === "one_off") include = dateText === item?.date;
+      if (!include) return;
+      byDate.get(dateText).push({ title, start, end });
+    });
+  });
+  return byDate;
+};
+
 const resolveMajorGoalId = (item, majorByTitle) => {
   if (item.majorGoalId) return item.majorGoalId;
   const byTitle = majorByTitle.get(String(item.majorGoalTitle || "").toLowerCase());
@@ -102,15 +131,17 @@ export const validateAiRollingPlan = ({ plan, week }) => {
   const wakeMin = toMinutes(week.profile?.wakeTime || "06:00");
   const sleepMin = toMinutes(week.profile?.sleepTime || "22:00");
   const commitmentsByDate = new Map();
-  (week.profile?.commitments || []).forEach((item) => {
-    if (item.mode !== "one_off" || !item.date) return;
-    if (!commitmentsByDate.has(item.date)) commitmentsByDate.set(item.date, []);
-    commitmentsByDate.get(item.date).push(item);
-  });
+  const rollingDates = days.map((day) => day.date).filter(Boolean);
+  const expandedCommitments = expandCommitmentsByDate(week.profile?.commitments || [], rollingDates);
+  expandedCommitments.forEach((value, key) => commitmentsByDate.set(key, value));
+  const dismissedGoogleIds = new Set(
+    (week.dismissedGoogleCommitmentIds || []).map((item) => String(item || "")).filter(Boolean),
+  );
 
   days.forEach((day) => {
     const commitmentList = commitmentsByDate.get(day.date) || [];
     const slots = [];
+    const habitDailyCounter = new Map();
     day.items.forEach((item) => {
       const start = toMinutes(item.start);
       const end = toMinutes(item.end);
@@ -119,16 +150,23 @@ export const validateAiRollingPlan = ({ plan, week }) => {
         errors.push(`${day.date}: "${item.title}" is outside daily rhythm.`);
       }
       commitmentList.forEach((commitment) => {
-        const cStart = toMinutes(commitment.start);
-        const cEnd = toMinutes(commitment.end);
-        if (cStart == null || cEnd == null) return;
-        if (item.type !== "commitment" && hasOverlap(start, end, cStart, cEnd)) {
+        if (item.type !== "commitment" && hasOverlap(start, end, commitment.start, commitment.end)) {
           errors.push(`${day.date}: "${item.title}" overlaps commitment "${commitment.title}".`);
         }
       });
+      if (item.type === "habit") {
+        const key = String(item.title || "").toLowerCase();
+        habitDailyCounter.set(key, (habitDailyCounter.get(key) || 0) + 1);
+      }
+      if (item.type === "commitment" && item.sourceId && dismissedGoogleIds.has(String(item.sourceId))) {
+        errors.push(`${day.date}: "${item.title}" references a dismissed Google event and must not be reintroduced.`);
+      }
       const collides = slots.some((slot) => hasOverlap(start, end, slot.start, slot.end));
       if (collides) errors.push(`${day.date}: overlapping plan items detected.`);
       slots.push({ start, end });
+    });
+    habitDailyCounter.forEach((count, title) => {
+      if (count > 1) errors.push(`${day.date}: habit "${title}" is scheduled more than once in a day.`);
     });
   });
 

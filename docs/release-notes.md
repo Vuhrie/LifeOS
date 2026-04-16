@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.2
+
+- Fixed AI prompt-context leakage so removed/dismissed Google events are filtered out of `existingCalendarEvents` before prompt build.
+- Updated AI prompt policy to explicitly forbid reintroducing dismissed Google events and to enforce one habit occurrence per day by default.
+- Stopped AI prompt-capacity calculation from treating previous managed slots as hard locks, preventing stale gym/session carry-over in AI suggestions.
+- Improved rolling-plan validation to check recurring commitments and reject duplicate same-day habit placements.
+- Removed fragile habit session numbering in deterministic task expansion to avoid reversed `Session 3/2/1` display patterns.
+
 ## v1.0.1
 
 - Fixed re-import loop for removed Google-imported commitments.
