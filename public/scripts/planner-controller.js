@@ -134,6 +134,24 @@ const collectCommitItemsFromDraft = (draft) => {
   return items;
 };
 
+const resolveGoalByProposal = (proposal, goals) => {
+  const byId = (goals || []).find((item) => item.id === proposal.targetGoalId);
+  if (byId) return byId;
+  const targetTitle = String(proposal.targetGoalTitle || "").toLowerCase().trim();
+  if (!targetTitle) return null;
+  return (goals || []).find((item) => String(item.title || "").toLowerCase() === targetTitle) || null;
+};
+
+const applyProposalToGoal = (goal, proposal) => {
+  if (proposal.title) goal.title = proposal.title;
+  if (proposal.deadline) goal.deadlineIso = `${proposal.deadline}T23:59:59`;
+  if (Number.isFinite(Number(proposal.weeklyHours))) goal.weeklyHours = Math.max(1, Number(proposal.weeklyHours));
+  if (Number.isFinite(Number(proposal.priority))) goal.priority = Math.max(1, Math.min(5, Number(proposal.priority)));
+  if (!goal.deadlineSource || goal.deadlineSource === "manual") {
+    goal.deadlineSource = proposal.deadline ? "manual" : "ai_assessed_pending";
+  }
+};
+
 export const initPlannerController = (ui) => {
   let accountKey = "anon";
   let app = loadPlannerState(accountKey);
@@ -147,6 +165,8 @@ export const initPlannerController = (ui) => {
   let latestImportedEventsById = new Map();
   let logic = null;
   let currentStep = 1;
+  let allowPageExit = false;
+  let leaveGuardBusy = false;
   const lastAuthStateRef = { current: { isConfigured: true, isSignedIn: false, isLoading: false, error: "", accountKey: "anon" } };
   const commitmentUi = createCommitmentTypeUi(ui);
 
@@ -154,11 +174,60 @@ export const initPlannerController = (ui) => {
   const rerenderAll = () => {
     view.renderCommitments(week.profile.commitments);
     view.renderGoals(week.goals);
+    view.renderMajorGoalProposals(week.pendingMajorGoalProposals || [], week.goals);
     view.renderMinorGoals(week.minorGoals, week.goals);
     view.renderTasks(week.tasks, week.minorGoals);
     view.renderHabits(week.habits);
     view.renderPriorityMajorGoalOptions(week.goals, week.aiPlannerInputs?.priorityMajorGoalId || "");
     view.renderDraft(week.draft);
+  };
+
+  const hasDraftPreview = () => Boolean(week.draft?.preview?.days?.length);
+
+  const hasPendingMajorGoalProposals = () => Boolean((week.pendingMajorGoalProposals || []).length);
+
+  const clearDraftOnly = () => {
+    week.draft = null;
+    save();
+    view.renderDraft(null);
+    view.resetCommitProgress();
+  };
+
+  const approveMajorGoalProposal = (index) => {
+    const proposals = week.pendingMajorGoalProposals || [];
+    const proposal = proposals[index];
+    if (!proposal) return { ok: false, message: "Proposal not found." };
+    if (proposal.action === "add") {
+      const title = String(proposal.title || "").trim();
+      if (!title) return { ok: false, message: "Proposal add action is missing title." };
+      const weeklyHours = Number.isFinite(Number(proposal.weeklyHours)) ? Number(proposal.weeklyHours) : 8;
+      const priority = Number.isFinite(Number(proposal.priority)) ? Number(proposal.priority) : 3;
+      week.goals.push(createGoal({
+        title,
+        deadlineIso: proposal.deadline ? `${proposal.deadline}T23:59:59` : "",
+        priority,
+        weeklyHours,
+        deadlineSource: proposal.deadline ? "manual" : "ai_assessed_pending",
+      }));
+    } else {
+      const goal = resolveGoalByProposal(proposal, week.goals);
+      if (!goal) {
+        return { ok: false, message: `Could not find target major goal for proposal "${proposal.targetGoalTitle || proposal.targetGoalId || "unknown"}".` };
+      }
+      applyProposalToGoal(goal, proposal);
+    }
+    week.pendingMajorGoalProposals = proposals.filter((_, proposalIndex) => proposalIndex !== index);
+    save();
+    rerenderAll();
+    return { ok: true, message: "Major goal proposal approved." };
+  };
+
+  const rejectMajorGoalProposal = (index) => {
+    const proposals = week.pendingMajorGoalProposals || [];
+    if (!proposals[index]) return;
+    week.pendingMajorGoalProposals = proposals.filter((_, proposalIndex) => proposalIndex !== index);
+    save();
+    rerenderAll();
   };
 
   const applyUiFromState = () => {
@@ -197,6 +266,7 @@ export const initPlannerController = (ui) => {
     app = loadPlannerState(accountKey);
     weekKey = rotateWeekIfNeeded(app, new Date());
     week = ensureWeekState(app, weekKey);
+    if (!Array.isArray(week.pendingMajorGoalProposals)) week.pendingMajorGoalProposals = [];
     if (!Array.isArray(week.minorGoals)) week.minorGoals = [];
     if (!Array.isArray(week.tasks)) week.tasks = [];
     if (!week.aiPlannerInputs || typeof week.aiPlannerInputs !== "object") {
@@ -496,6 +566,35 @@ export const initPlannerController = (ui) => {
     rerenderAll();
   });
 
+  ui.approveMajorGoalProposals?.addEventListener("click", () => {
+    const proposals = [...(week.pendingMajorGoalProposals || [])];
+    if (!proposals.length) return view.setStatus("No pending major-goal proposals.", "neutral");
+    let approved = 0;
+    let failed = 0;
+    while ((week.pendingMajorGoalProposals || []).length) {
+      const result = approveMajorGoalProposal(0);
+      if (result.ok) approved += 1;
+      else {
+        failed += 1;
+        rejectMajorGoalProposal(0);
+      }
+    }
+    rerenderAll();
+    if (failed) {
+      view.setStatus(`Approved ${approved} major-goal proposal(s), rejected ${failed} due to unresolved targets.`, "warning");
+      return;
+    }
+    view.setStatus(`Approved ${approved} major-goal proposal(s).`, "success");
+  });
+
+  ui.rejectMajorGoalProposals?.addEventListener("click", () => {
+    const count = (week.pendingMajorGoalProposals || []).length;
+    week.pendingMajorGoalProposals = [];
+    save();
+    rerenderAll();
+    view.setStatus(count ? `Rejected ${count} major-goal proposal(s).` : "No pending major-goal proposals.", "neutral");
+  });
+
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
@@ -503,8 +602,22 @@ export const initPlannerController = (ui) => {
     const editCommitmentId = target.getAttribute("data-edit-commitment");
     const goalId = target.getAttribute("data-rm-goal");
     const habitId = target.getAttribute("data-rm-habit");
+    const approveMajorProposalIndexRaw = target.getAttribute("data-approve-major-proposal");
+    const rejectMajorProposalIndexRaw = target.getAttribute("data-reject-major-proposal");
+    const approveMajorProposalIndex = approveMajorProposalIndexRaw == null ? NaN : Number(approveMajorProposalIndexRaw);
+    const rejectMajorProposalIndex = rejectMajorProposalIndexRaw == null ? NaN : Number(rejectMajorProposalIndexRaw);
     const editImportedEventId = target.getAttribute("data-edit-imported");
     const importedEventId = target.getAttribute("data-rm-imported");
+    if (Number.isInteger(approveMajorProposalIndex) && approveMajorProposalIndex >= 0) {
+      const result = approveMajorGoalProposal(approveMajorProposalIndex);
+      view.setStatus(result.message, result.ok ? "success" : "warning");
+      return;
+    }
+    if (Number.isInteger(rejectMajorProposalIndex) && rejectMajorProposalIndex >= 0) {
+      rejectMajorGoalProposal(rejectMajorProposalIndex);
+      view.setStatus("Major goal proposal rejected.", "neutral");
+      return;
+    }
     if (editCommitmentId) {
       const commitment = week.profile.commitments.find((item) => item.id === editCommitmentId);
       if (!commitment) return;
@@ -611,6 +724,11 @@ export const initPlannerController = (ui) => {
 
   ui.generate.addEventListener("click", async () => {
     if (!lastAuthStateRef.current.isSignedIn) return view.setStatus("Connect Google first to plan.", "warning");
+    if (hasPendingMajorGoalProposals()) {
+      currentStep = view.setStep(2);
+      view.setStatus("Review AI major-goal proposals first. Approve or reject them before generating schedule.", "warning");
+      return;
+    }
     await syncImportedGoogleCommitments({ silent: true });
     const goal = week.goals[0] || null;
     const minorGoals = week.minorGoals.map((item) => ({
@@ -676,18 +794,19 @@ export const initPlannerController = (ui) => {
   });
 
   ui.clear.addEventListener("click", () => {
-    week.draft = null;
-    save();
-    view.renderDraft(null);
-    view.resetCommitProgress();
+    clearDraftOnly();
     view.setStatus("Draft cleared.", "neutral");
   });
-  ui.commit.addEventListener("click", async () => {
+
+  const commitDraftToCalendar = async () => {
     if (currentStep !== 3) {
       view.setStatus("Commit is available only in Step 3 (Rolling 7-Day Plan).", "warning");
-      return;
+      return false;
     }
-    if (!week.draft?.preview?.days?.length) return view.setStatus("Generate a draft before committing.", "warning");
+    if (!week.draft?.preview?.days?.length) {
+      view.setStatus("Generate a draft before committing.", "warning");
+      return false;
+    }
     const horizonStart = new Date(week.draft.horizonStartIso || tomorrowStart());
     horizonStart.setHours(0, 0, 0, 0);
     const horizonDays = Number(week.draft.horizonDays || week.settings.horizonDays || 7);
@@ -696,19 +815,19 @@ export const initPlannerController = (ui) => {
     const commitItems = collectCommitItemsFromDraft(week.draft);
     if (!commitItems.length) {
       view.setStatus("No schedule items available to commit in this rolling window.", "warning");
-      return;
+      return false;
     }
     const firstConfirm = window.confirm(
       `Replace Google Calendar events from ${formatDateLabel(horizonStart)} to ${formatDateLabel(horizonEnd)} with ${commitItems.length} LifeOS items?`,
     );
     if (!firstConfirm) {
       view.setStatus("Commit canceled before replacement started.", "neutral");
-      return;
+      return false;
     }
     const secondConfirm = window.prompt("Type REPLACE to confirm calendar replacement.");
     if (String(secondConfirm || "").trim().toUpperCase() !== "REPLACE") {
       view.setStatus("Second confirmation failed. Commit canceled.", "warning");
-      return;
+      return false;
     }
     view.showCommitProgress();
     view.updateCommitProgress({
@@ -750,10 +869,73 @@ export const initPlannerController = (ui) => {
         `Committed rolling 7-day schedule. Deleted ${result.deletes.length}, added ${result.writes.length}, failed ${result.failed.length}.`,
         result.failed.length ? "warning" : "success",
       );
+      return true;
     } catch (error) {
       view.appendCommitProgressLog(`Commit failed: ${error.message}`);
       view.setStatus(`Commit failed: ${error.message}`, "error");
+      return false;
     }
+  };
+
+  ui.commit.addEventListener("click", async () => {
+    await commitDraftToCalendar();
+  });
+
+  const resolveDraftExitAction = async () => {
+    if (!hasDraftPreview()) return "proceed";
+    if (leaveGuardBusy) return "stay";
+    leaveGuardBusy = true;
+    try {
+      const input = window.prompt(
+        "A draft schedule exists. Type SAVE to keep it, REMOVE to discard it, COMMIT to send it to Google Calendar, or CANCEL to stay.",
+      );
+      const action = String(input || "").trim().toUpperCase();
+      if (action === "SAVE") {
+        save();
+        view.setStatus("Draft saved. Leaving planner.", "neutral");
+        return "proceed";
+      }
+      if (action === "REMOVE") {
+        clearDraftOnly();
+        view.setStatus("Draft removed. Leaving planner.", "neutral");
+        return "proceed";
+      }
+      if (action === "COMMIT") {
+        currentStep = view.setStep(3);
+        const ok = await commitDraftToCalendar();
+        return ok ? "proceed" : "stay";
+      }
+      view.setStatus("Stayed on planner. Draft unchanged.", "neutral");
+      return "stay";
+    } finally {
+      leaveGuardBusy = false;
+    }
+  };
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const link = target.closest("a[href]");
+    if (!link) return;
+    if (link.target && link.target !== "_self") return;
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("#")) return;
+    const nextUrl = new URL(link.href, window.location.href);
+    if (nextUrl.href === window.location.href) return;
+    if (!hasDraftPreview()) return;
+    event.preventDefault();
+    resolveDraftExitAction().then((decision) => {
+      if (decision !== "proceed") return;
+      allowPageExit = true;
+      window.location.href = nextUrl.href;
+    });
+  }, true);
+
+  window.addEventListener("beforeunload", (event) => {
+    if (navigator.webdriver) return;
+    if (allowPageExit || !hasDraftPreview()) return;
+    event.preventDefault();
+    event.returnValue = "";
   });
 
   if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();

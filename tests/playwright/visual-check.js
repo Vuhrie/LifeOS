@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.10";
+const releaseVersion = "v1.0.11";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -254,6 +254,9 @@ const run = async () => {
     }
     if (!builtPrompt.includes("\"rollingPlan\"")) {
       throw new Error("AI prompt should include rollingPlan JSON shape.");
+    }
+    if (!builtPrompt.includes("\"majorGoalProposals\"")) {
+      throw new Error("AI prompt should include majorGoalProposals JSON shape.");
     }
     if (!builtPrompt.includes("\"necessityDefinitions\"") || !builtPrompt.includes("\"necessityDurationByType\"")) {
       throw new Error("AI prompt should include necessity definitions and duration context.");

@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.11
+
+- Added AI major-goal proposal flow: AI can now suggest major-goal additions/modifications via `majorGoalProposals` without directly mutating defined major goals.
+- Added explicit Planner UI approval queue for major-goal proposals, with field-level change summaries and Approve/Reject actions.
+- Added schedule-generation guard: users must resolve pending major-goal proposals before `Generate Schedule` runs.
+- Added planner draft leave protection for navigation/reload flows with explicit `SAVE`, `REMOVE`, or `COMMIT` decision handling before leaving.
+- Kept rolling-plan application stable: approved AI rolling plans still update minor goals, tasks, and draft schedule as before.
+
 ## v1.0.10
 
 - Hardened LifeOS-managed event detection across old and new event formats (extended properties, marker descriptions, and legacy title prefix fallback).

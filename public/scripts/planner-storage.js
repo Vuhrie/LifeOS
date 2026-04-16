@@ -20,6 +20,7 @@ const defaultWeekState = () => ({
   profile: defaultProfile(),
   settings: { horizonDays: 7, lockedHorizonHours: 12 },
   goals: [],
+  pendingMajorGoalProposals: [],
   minorGoals: [],
   habits: [],
   tasks: [],
@@ -142,6 +143,22 @@ const normalizeWeekState = (week) => {
       updatedAt: String(item?.updatedAt || new Date().toISOString()),
     })).filter((item) => item.title)
     : [];
+  const pendingMajorGoalProposals = Array.isArray(next.pendingMajorGoalProposals)
+    ? next.pendingMajorGoalProposals
+      .filter((item) => item && typeof item === "object")
+      .map((item) => ({
+        id: String(item?.id || uid("mgprop")),
+        action: item?.action === "modify" ? "modify" : "add",
+        targetGoalId: String(item?.targetGoalId || ""),
+        targetGoalTitle: String(item?.targetGoalTitle || ""),
+        title: String(item?.title || "").trim(),
+        deadline: String(item?.deadline || ""),
+        priority: Number.isFinite(Number(item?.priority)) ? Math.max(1, Math.min(5, Number(item.priority))) : null,
+        weeklyHours: Number.isFinite(Number(item?.weeklyHours)) ? Math.max(1, Math.min(80, Number(item.weeklyHours))) : null,
+        rationale: String(item?.rationale || ""),
+      }))
+      .filter((item) => item.title || item.action === "modify")
+    : [];
   const tasks = Array.isArray(next.tasks)
     ? next.tasks.map((item) => ({
       id: String(item?.id || uid("task")),
@@ -166,6 +183,7 @@ const normalizeWeekState = (week) => {
       lockedHorizonHours: Math.max(0, Math.min(48, Number(parse(next.settings, {}).lockedHorizonHours || 12))),
     },
     goals,
+    pendingMajorGoalProposals,
     minorGoals,
     habits: Array.isArray(next.habits) ? next.habits : [],
     tasks,

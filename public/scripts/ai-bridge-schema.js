@@ -3,6 +3,7 @@ export const AI_BRIDGE_VERSION = "3.0";
 export const AI_BRIDGE_SCHEMA = Object.freeze({
   root: "object",
   fields: [
+    "majorGoalProposals",
     "minorGoals",
     "tasks",
     "rollingPlan",
@@ -12,6 +13,9 @@ export const AI_BRIDGE_SCHEMA = Object.freeze({
 export const AI_BRIDGE_MINIMAL_TEMPLATE = `\`\`\`json
 {
   "version": "3.0",
+  "majorGoalProposals": [
+    { "action": "modify", "targetGoalTitle": "Pass CEH", "weeklyHours": 10, "deadline": "2026-05-30", "priority": 4, "rationale": "Current target needs stronger weekly pace." }
+  ],
   "minorGoals": [
     { "majorGoalId": "goal_1", "title": "Complete module fundamentals", "deadline": "2026-05-01", "status": "active" }
   ],

@@ -260,6 +260,7 @@ export const createPlannerLogic = ({
       policy: {
         rollingDays: 7,
         rollingExcludesToday: true,
+        majorGoalProposalRequiresApproval: true,
         habitsUseMondaySundayWeek: true,
         habitMaxPerDayDefault: 1,
         habitFrequencyHardCap: true,
@@ -294,6 +295,7 @@ export const createPlannerLogic = ({
       if (operation.op === "replaceTasks") week.tasks = operation.items.map((item) => createTask({ weekKey, ...item }));
       if (operation.op === "replaceAvailabilityRules") week.availabilityRules = operation.items;
     });
+    week.pendingMajorGoalProposals = [];
   };
 
   const applyRollingPlan = (plan) => {
@@ -327,6 +329,7 @@ export const createPlannerLogic = ({
 
     week.minorGoals = nextMinorGoals;
     week.tasks = nextTasks;
+    week.pendingMajorGoalProposals = validation.plan.majorGoalProposals || [];
     week.draft = buildAiDraftFromRollingPlan(validation.plan, week.profile);
     week.managedSlots = (week.draft?.slots || []).map((slot) => ({
       ...slot,
