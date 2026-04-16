@@ -33,12 +33,13 @@ const defaultWeekState = () => ({
   commitLog: [],
   managedSlots: [],
   ignoredGoogleEventIds: [],
+  dismissedGoogleCommitmentIds: [],
   importedEventEdits: {},
   planRuns: [],
   aiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
-const defaultState = () => ({ schemaVersion: 9, currentWeekKey: "", weeks: {}, history: [] });
+const defaultState = () => ({ schemaVersion: 10, currentWeekKey: "", weeks: {}, history: [] });
 
 const normalizeNeed = (value, fallbackDuration) => {
   const item = parse(value, {});
@@ -178,6 +179,9 @@ const normalizeWeekState = (week) => {
     ignoredGoogleEventIds: Array.isArray(next.ignoredGoogleEventIds)
       ? next.ignoredGoogleEventIds.map((item) => String(item || "")).filter(Boolean)
       : [],
+    dismissedGoogleCommitmentIds: Array.isArray(next.dismissedGoogleCommitmentIds)
+      ? next.dismissedGoogleCommitmentIds.map((item) => String(item || "")).filter(Boolean)
+      : [],
     importedEventEdits: parse(next.importedEventEdits, {}),
     planRuns: Array.isArray(next.planRuns) ? next.planRuns : [],
     aiAssist: {
@@ -197,7 +201,7 @@ export const loadPlannerState = (accountKey = "anon") => {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
-    const state = { schemaVersion: 9, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
+    const state = { schemaVersion: 10, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
     Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => { state.weeks[key] = normalizeWeekState(value); });
     return state;
   } catch {

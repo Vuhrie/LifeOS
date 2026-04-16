@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.0";
+const releaseVersion = "v1.0.1";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -146,6 +146,11 @@ const run = async () => {
     if (weeklySelectedCount !== 5) {
       throw new Error(`Weekly recurring should default to Mon-Fri selected. Found: ${weeklySelectedCount}`);
     }
+    const importedCommitmentItem = desktop.locator("#commitments-list li", { hasText: "Existing Calendar Event" });
+    if (await importedCommitmentItem.count()) {
+      await importedCommitmentItem.locator('[data-rm-commitment]').first().click();
+      await wait(150);
+    }
     const noticeCount = await desktop.locator("#planner-input-notice").count();
     if (noticeCount !== 0) {
       throw new Error("Planner input notice block should be removed.");
@@ -172,6 +177,10 @@ const run = async () => {
     await desktop.locator('.step-pill[data-step="3"]').click();
     await desktop.locator("#generate-draft").click();
     await wait(200);
+    const reimportedCommitmentCount = await desktop.locator("#commitments-list li", { hasText: "Existing Calendar Event" }).count();
+    if (reimportedCommitmentCount > 0) {
+      throw new Error("Removed imported commitment should not be reinserted after generate.");
+    }
     const noGoalStatus = await desktop.locator("#planner-status").textContent();
     if (!noGoalStatus?.includes("open hours")) {
       throw new Error(`Planner should generate without goals and show open-hours status. Found: ${noGoalStatus}`);
@@ -356,5 +365,6 @@ run().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
 
 

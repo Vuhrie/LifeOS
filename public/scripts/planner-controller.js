@@ -145,6 +145,7 @@ export const initPlannerController = (ui) => {
       week.aiPlannerInputs = { notes: "", changedSinceLastRun: "", taskProgressNotes: "", priorityMajorGoalId: "" };
     }
     if (!Array.isArray(week.ignoredGoogleEventIds)) week.ignoredGoogleEventIds = [];
+    if (!Array.isArray(week.dismissedGoogleCommitmentIds)) week.dismissedGoogleCommitmentIds = [];
     if (!week.importedEventEdits || typeof week.importedEventEdits !== "object") week.importedEventEdits = {};
     latestImportedEventsById = new Map();
     if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
@@ -222,10 +223,19 @@ export const initPlannerController = (ui) => {
         .map((item) => String(item.googleEventId || ""))
         .filter(Boolean),
     );
+    const dismissedIds = new Set(
+      (week.dismissedGoogleCommitmentIds || []).map((item) => String(item || "")).filter(Boolean),
+    );
+    let changedDismissed = false;
+    existingIds.forEach((eventId) => {
+      if (!dismissedIds.has(eventId)) return;
+      dismissedIds.delete(eventId);
+      changedDismissed = true;
+    });
     const newCommitments = [];
     events.forEach((event) => {
       const eventId = String(event.id || "");
-      if (!eventId || existingIds.has(eventId)) return;
+      if (!eventId || existingIds.has(eventId) || dismissedIds.has(eventId)) return;
       const start = event.start || "";
       const end = event.end || event.start || "";
       newCommitments.push(createCommitment({
@@ -238,7 +248,11 @@ export const initPlannerController = (ui) => {
         googleEventId: eventId,
       }));
     });
+    if (changedDismissed) {
+      week.dismissedGoogleCommitmentIds = [...dismissedIds];
+    }
     if (!newCommitments.length) {
+      if (changedDismissed) save();
       if (!silent) view.setStatus("Google commitments already synced.", "neutral");
       return;
     }
@@ -481,7 +495,15 @@ export const initPlannerController = (ui) => {
       view.setStatus("Imported event removed from planner draft. Commit to apply to Google.", "warning");
       return;
     }
-    if (commitmentId) week.profile.commitments = week.profile.commitments.filter((item) => item.id !== commitmentId);
+    if (commitmentId) {
+      const commitment = week.profile.commitments.find((item) => item.id === commitmentId);
+      if (commitment?.source === "google_imported" && commitment.googleEventId) {
+        const dismissed = new Set(week.dismissedGoogleCommitmentIds || []);
+        dismissed.add(String(commitment.googleEventId));
+        week.dismissedGoogleCommitmentIds = [...dismissed];
+      }
+      week.profile.commitments = week.profile.commitments.filter((item) => item.id !== commitmentId);
+    }
     if (goalId) {
       week.goals = week.goals.filter((item) => item.id !== goalId);
       const removedMinorIds = week.minorGoals.filter((item) => item.majorGoalId === goalId).map((item) => item.id);

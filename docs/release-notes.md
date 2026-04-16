@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.1
+
+- Fixed re-import loop for removed Google-imported commitments.
+- Added persisted `dismissedGoogleCommitmentIds` in planner state so removed imported commitments stay removed across sync and generation.
+- Updated Google commitment sync logic to skip dismissed event IDs and avoid re-inserting intentionally removed commitments.
+
 ## v1.0.0
 
 - Reworked planner flow to align with the defined-elements model and AI-managed planning model.
