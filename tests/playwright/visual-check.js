@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.7";
+const releaseVersion = "v1.0.8";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -129,11 +129,19 @@ const run = async () => {
     }
     const horizonVisible = await desktop.locator("#horizon-days").isVisible();
     const commitmentsVisible = await desktop.locator("#add-commitment").isVisible();
+    const commitButtonStep1Hidden = await desktop.locator("#commit-draft").isHidden();
     const morningShowerVisible = await desktop.locator("#need-morning-shower").isVisible();
     const nightShowerVisible = await desktop.locator("#need-night-shower").isVisible();
+    const commitProgressPanelPresent = await desktop.locator("#commit-progress").count();
     const lockCount = await desktop.locator("#planner-lock").count();
     if (!horizonVisible || !commitmentsVisible || !morningShowerVisible || !nightShowerVisible || lockCount !== 1) {
       throw new Error("Planner step 1 should include horizon + unified commitments + lock overlay element.");
+    }
+    if (!commitButtonStep1Hidden) {
+      throw new Error("Commit button should only be visible in step 3.");
+    }
+    if (commitProgressPanelPresent !== 1) {
+      throw new Error("Commit progress panel should be present in planner.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-current.png"),
@@ -191,6 +199,10 @@ const run = async () => {
     await desktop.locator("#add-habit").click();
     await wait(100);
     await desktop.locator('.step-pill[data-step="3"]').click();
+    const commitButtonStep3Visible = await desktop.locator("#commit-draft").isVisible();
+    if (!commitButtonStep3Visible) {
+      throw new Error("Commit button should be visible in step 3.");
+    }
     await desktop.locator("#generate-draft").click();
     await wait(200);
     const reimportedCommitmentCount = await desktop.locator("#commitments-list li", { hasText: "Existing Calendar Event" }).count();

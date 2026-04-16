@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v1.0.7</title>
+  <title>Planner | LifeOS v1.0.8</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v1.0.7</a>
+      <a class="brand" href="index.html">LifeOS v1.0.8</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -31,7 +31,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.7</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.8</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -60,9 +60,7 @@
           <h1 id="planner-title">Planner</h1>
           <p class="planner-subtitle">Defined elements stay stable. AI manages minor goals, tasks, and 7-day arrangement.</p>
         </div>
-        <div class="planner-actions">
-          <button class="action-button" type="button" id="commit-draft">Commit To Calendar</button>
-        </div>
+        <div class="planner-actions"></div>
       </header>
 
       <section class="planner-status" id="planner-status" aria-live="polite">Connect Google to unlock planning.</section>
@@ -216,6 +214,17 @@
           <h2>Draft Schedule</h2>
           <button class="action-button action-button--primary" type="button" id="generate-draft">Generate Schedule</button>
           <button class="action-button action-button--danger" type="button" id="clear-draft">Clear Draft</button>
+          <button class="action-button" type="button" id="commit-draft">Commit To Calendar</button>
+          <section class="planner-commit-progress" id="commit-progress" hidden aria-live="polite">
+            <p class="planner-commit-progress-title" id="commit-progress-phase">Idle</p>
+            <div class="planner-commit-progress-bar-shell">
+              <div class="planner-commit-progress-bar" id="commit-progress-bar"></div>
+            </div>
+            <p class="planner-commit-progress-meta" id="commit-progress-meta">0%</p>
+            <p class="planner-commit-progress-current" id="commit-progress-current">Waiting to commit.</p>
+            <p class="planner-commit-progress-counts" id="commit-progress-counts">Deleted 0 | Added 0 | Failed 0</p>
+            <ul class="planner-commit-progress-log" id="commit-progress-log"></ul>
+          </section>
           <div id="draft-schedule" class="schedule-grid"></div>
         </article>
         <article class="planner-card"><h2>Unscheduled</h2><ul class="list-block" id="unscheduled-list"></ul></article>

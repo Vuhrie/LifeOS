@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.8
+
+- Moved `Commit To Calendar` to Step 3 (`Rolling 7-Day Plan`) so commit can only run from the final planning stage.
+- Added double confirmation for calendar replacement with explicit typed confirmation (`REPLACE`) before write starts.
+- Added a live commit progress panel showing phase, percentage, current action, and deleted/added/failed counters.
+- Reworked calendar commit behavior to replace the full next 7-day window: fetch existing events, delete them, then insert the rolling plan.
+- Fixed missing commitment writes by building commit payload from draft preview schedule items (`planned` + `commitment`) instead of only deterministic draft slots.
+
 ## v1.0.7
 
 - Split shower necessities into separate `Morning Shower` and `Night Shower` definitions with independent durations in Planner.

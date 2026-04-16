@@ -57,6 +57,7 @@ export const createPlannerView = (ui) => {
       ui.aiTaskProgressNotes,
       ui.aiBriefNotes,
       ui.aiPriorityMajorGoal,
+      ui.commit,
     ];
     controls.forEach((control) => {
       if (control) control.disabled = locked;
@@ -172,7 +173,53 @@ export const createPlannerView = (ui) => {
     ui.stepPanels.forEach((panel) => panel.classList.toggle("is-active", Number(panel.dataset.stepPanel) === currentStep));
     ui.prev.disabled = currentStep === 1;
     ui.next.hidden = currentStep === 3;
+    if (ui.commit) ui.commit.hidden = currentStep !== 3;
     return currentStep;
+  };
+
+  const resetCommitProgress = () => {
+    if (!ui.commitProgress) return;
+    ui.commitProgress.hidden = true;
+    ui.commitProgressPhase.textContent = "Idle";
+    ui.commitProgressBar.style.width = "0%";
+    ui.commitProgressMeta.textContent = "0%";
+    ui.commitProgressCurrent.textContent = "Waiting to commit.";
+    ui.commitProgressCounts.textContent = "Deleted 0 | Added 0 | Failed 0";
+    ui.commitProgressLog.innerHTML = "";
+  };
+
+  const showCommitProgress = () => {
+    if (!ui.commitProgress) return;
+    ui.commitProgress.hidden = false;
+  };
+
+  const updateCommitProgress = ({
+    phase = "Working",
+    percent = 0,
+    current = "",
+    deleted = 0,
+    added = 0,
+    failed = 0,
+  }) => {
+    if (!ui.commitProgress) return;
+    const bounded = Math.max(0, Math.min(100, Number(percent || 0)));
+    ui.commitProgress.hidden = false;
+    ui.commitProgressPhase.textContent = phase;
+    ui.commitProgressBar.style.width = `${bounded}%`;
+    ui.commitProgressMeta.textContent = `${Math.round(bounded)}%`;
+    if (current) ui.commitProgressCurrent.textContent = current;
+    ui.commitProgressCounts.textContent = `Deleted ${deleted} | Added ${added} | Failed ${failed}`;
+  };
+
+  const appendCommitProgressLog = (text) => {
+    if (!ui.commitProgressLog || !text) return;
+    const li = document.createElement("li");
+    li.textContent = text;
+    ui.commitProgressLog.appendChild(li);
+    while (ui.commitProgressLog.children.length > 8) {
+      ui.commitProgressLog.removeChild(ui.commitProgressLog.firstChild);
+    }
+    ui.commitProgressLog.scrollTop = ui.commitProgressLog.scrollHeight;
   };
 
   const renderPriorityMajorGoalOptions = (goals, selectedId = "") => {
@@ -193,5 +240,9 @@ export const createPlannerView = (ui) => {
     renderDraft,
     renderPriorityMajorGoalOptions,
     setStep,
+    resetCommitProgress,
+    showCommitProgress,
+    updateCommitProgress,
+    appendCommitProgressLog,
   };
 };

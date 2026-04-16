@@ -92,6 +92,34 @@ const applyImportedEventEdits = (events, edits) =>
     return patch ? { ...event, ...patch } : event;
   });
 
+const formatDateLabel = (value) =>
+  new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
+
+const collectCommitItemsFromDraft = (draft) => {
+  const items = [];
+  const days = draft?.preview?.days || [];
+  days.forEach((day) => {
+    (day.items || []).forEach((item, index) => {
+      const kind = String(item.kind || "");
+      if (kind !== "planned" && kind !== "commitment") return;
+      if (String(item.title || "").trim().toLowerCase() === "daily rhythm") return;
+      const start = new Date(item.start);
+      const end = new Date(item.end);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return;
+      items.push({
+        id: String(item.id || `${start.toISOString()}_${index}`),
+        sourceId: String(item.sourceId || item.id || ""),
+        title: String(item.title || "LifeOS Event"),
+        type: kind === "commitment" ? "commitment" : "planned",
+        start,
+        end,
+      });
+    });
+  });
+  items.sort((left, right) => left.start - right.start || left.title.localeCompare(right.title));
+  return items;
+};
+
 export const initPlannerController = (ui) => {
   let accountKey = "anon";
   let app = loadPlannerState(accountKey);
@@ -601,6 +629,7 @@ export const initPlannerController = (ui) => {
     }
     save();
     view.renderDraft(draft);
+    view.resetCommitProgress();
     if (!draft.validation.ok) return view.setStatus(draft.validation.errors.join(" "), "warning");
     if (!minorGoals.length && !tasks.length) {
       view.setStatus("Schedule generated with open hours. Add goals or habits when you are ready.", "neutral");
@@ -611,37 +640,83 @@ export const initPlannerController = (ui) => {
     currentStep = view.setStep(3);
   });
 
-  ui.clear.addEventListener("click", () => { week.draft = null; save(); view.renderDraft(null); view.setStatus("Draft cleared.", "neutral"); });
+  ui.clear.addEventListener("click", () => {
+    week.draft = null;
+    save();
+    view.renderDraft(null);
+    view.resetCommitProgress();
+    view.setStatus("Draft cleared.", "neutral");
+  });
   ui.commit.addEventListener("click", async () => {
-    const hasSlots = Boolean(week.draft?.slots?.length);
-    const hasDeletes = Boolean(week.ignoredGoogleEventIds?.length);
-    const updateEvents = Object.entries(week.importedEventEdits || {})
-      .filter(([eventId]) => !week.ignoredGoogleEventIds.includes(eventId))
-      .map(([eventId, value]) => ({ id: eventId, ...value }));
-    const hasUpdates = Boolean(updateEvents.length);
-    if (!hasSlots && !hasDeletes && !hasUpdates) return view.setStatus("Generate a draft before committing.", "warning");
+    if (currentStep !== 3) {
+      view.setStatus("Commit is available only in Step 3 (Rolling 7-Day Plan).", "warning");
+      return;
+    }
+    if (!week.draft?.preview?.days?.length) return view.setStatus("Generate a draft before committing.", "warning");
+    const horizonStart = new Date(week.draft.horizonStartIso || tomorrowStart());
+    horizonStart.setHours(0, 0, 0, 0);
+    const horizonDays = Number(week.draft.horizonDays || week.settings.horizonDays || 7);
+    const horizonEnd = new Date(horizonStart);
+    horizonEnd.setDate(horizonStart.getDate() + horizonDays);
+    const commitItems = collectCommitItemsFromDraft(week.draft);
+    if (!commitItems.length) {
+      view.setStatus("No schedule items available to commit in this rolling window.", "warning");
+      return;
+    }
+    const firstConfirm = window.confirm(
+      `Replace Google Calendar events from ${formatDateLabel(horizonStart)} to ${formatDateLabel(horizonEnd)} with ${commitItems.length} LifeOS items?`,
+    );
+    if (!firstConfirm) {
+      view.setStatus("Commit canceled before replacement started.", "neutral");
+      return;
+    }
+    const secondConfirm = window.prompt("Type REPLACE to confirm calendar replacement.");
+    if (String(secondConfirm || "").trim().toUpperCase() !== "REPLACE") {
+      view.setStatus("Second confirmation failed. Commit canceled.", "warning");
+      return;
+    }
+    view.showCommitProgress();
+    view.updateCommitProgress({
+      phase: "Preparing",
+      percent: 2,
+      current: "Starting rolling 7-day replacement.",
+      deleted: 0,
+      added: 0,
+      failed: 0,
+    });
     try {
-      const deleteEventIds = [...new Set(week.ignoredGoogleEventIds)];
-      const result = await writeClient.commitDraft(week.draft?.slots || [], {
-        deleteEventIds,
-        updateEvents,
+      const result = await writeClient.commitRollingWindow({
+        startIso: horizonStart.toISOString(),
+        endIso: horizonEnd.toISOString(),
+        items: commitItems,
+        onProgress: (update) => {
+          view.updateCommitProgress(update);
+          if (update.current) view.appendCommitProgressLog(update.current);
+        },
       });
       week.commitLog.push({
         commitId: result.commitId,
         timestamp: new Date().toISOString(),
+        startIso: horizonStart.toISOString(),
+        endIso: horizonEnd.toISOString(),
         writes: result.writes,
         deletes: result.deletes,
-        updates: result.updates,
-        warningCount: week.draft.warnings.length,
+        failed: result.failed,
+        targetCount: result.targetCount,
+        existingCount: result.existingCount,
       });
       week.ignoredGoogleEventIds = [];
       week.importedEventEdits = {};
       save();
+      view.appendCommitProgressLog(
+        `Done: deleted ${result.deletes.length}, added ${result.writes.length}, failed ${result.failed.length}.`,
+      );
       view.setStatus(
-        `Committed ${result.writes.length} planned events, updated ${result.updates.length}, and removed ${result.deletes.length} imported events.`,
-        "success",
+        `Committed rolling 7-day schedule. Deleted ${result.deletes.length}, added ${result.writes.length}, failed ${result.failed.length}.`,
+        result.failed.length ? "warning" : "success",
       );
     } catch (error) {
+      view.appendCommitProgressLog(`Commit failed: ${error.message}`);
       view.setStatus(`Commit failed: ${error.message}`, "error");
     }
   });
@@ -651,6 +726,7 @@ export const initPlannerController = (ui) => {
   commitmentUi.refresh();
   rerenderAll();
   aiBridge.hydrateSavedState(week.aiAssist);
+  view.resetCommitProgress();
   currentStep = view.setStep(1);
   view.setPlannerLock(true);
   view.setStatus("Connect Google to unlock account-scoped planning.", "neutral");
