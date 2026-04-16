@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v1.0.12</title>
+  <title>Planner | LifeOS v1.0.13</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v1.0.12</a>
+      <a class="brand" href="index.html">LifeOS v1.0.13</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -31,7 +31,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.12</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.13</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -154,11 +154,12 @@
           <div class="weekday-picker">
             <p class="weekday-picker-title">Creation Mode</p>
             <div class="day-chips" id="major-goal-mode" role="group" aria-label="Major goal creation mode">
-              <button type="button" class="day-chip is-selected" data-major-goal-mode="manual" aria-pressed="true">Manual</button>
+              <button type="button" class="day-chip" data-major-goal-mode="manual" aria-pressed="false">Manual</button>
               <button type="button" class="day-chip" data-major-goal-mode="ai_assisted" aria-pressed="false">AI Assisted</button>
             </div>
+            <p class="weekday-picker-hint">Choose a mode to show inputs.</p>
           </div>
-          <div id="major-goal-manual-fields">
+          <div id="major-goal-manual-fields" hidden>
             <div class="inline-fields">
               <label>Title<input id="goal-title" type="text" maxlength="160"></label>
               <label>Deadline<input id="goal-deadline" type="date"></label>

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.12";
+const releaseVersion = "v1.0.13";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -198,10 +198,16 @@ const run = async () => {
     const aiMajorModeSelected = await desktop.locator('[data-major-goal-mode="ai_assisted"]').evaluate((element) =>
       element.classList.contains("is-selected"),
     );
-    const manualGoalFieldsVisible = await desktop.locator("#major-goal-manual-fields").isVisible();
+    const manualGoalFieldsHidden = await desktop.locator("#major-goal-manual-fields").isHidden();
     const aiGoalFieldsHidden = await desktop.locator("#major-goal-ai-fields").isHidden();
-    if (!manualMajorModeSelected || aiMajorModeSelected || !manualGoalFieldsVisible || !aiGoalFieldsHidden) {
-      throw new Error("Major goal mode should default to Manual with AI-assisted fields hidden.");
+    if (manualMajorModeSelected || aiMajorModeSelected || !manualGoalFieldsHidden || !aiGoalFieldsHidden) {
+      throw new Error("Major goal mode should start neutral with both mode panels hidden.");
+    }
+    await desktop.locator('[data-major-goal-mode="manual"]').click();
+    await wait(80);
+    const manualGoalFieldsVisible = await desktop.locator("#major-goal-manual-fields").isVisible();
+    if (!manualGoalFieldsVisible) {
+      throw new Error("Manual major-goal fields should be visible after selecting Manual mode.");
     }
     await desktop.locator('[data-major-goal-mode="ai_assisted"]').click();
     await wait(100);
@@ -211,10 +217,16 @@ const run = async () => {
     }
     await desktop.fill("#goal-ai-title", "Get good at cybersecurity");
     await desktop.fill("#goal-ai-notes", "Prefer certificate-driven progression.");
-    await desktop.locator("#add-goal-ai-seed").click();
-    await wait(120);
     await desktop.locator("#major-goal-ai-build-prompt").click();
     await wait(150);
+    const majorGoalBuildStatus = await desktop.locator("#major-goal-ai-status").textContent();
+    if (!majorGoalBuildStatus?.toLowerCase().includes("built")) {
+      throw new Error(`Major-goal build status should confirm success. Found: ${majorGoalBuildStatus}`);
+    }
+    const aiDraftCount = await desktop.locator("#goals-list li", { hasText: "AI draft" }).count();
+    if (!aiDraftCount) {
+      throw new Error("Build Major Goal Prompt should auto-save current AI-assisted draft when needed.");
+    }
     const majorGoalPrompt = await desktop.locator("#major-goal-ai-prompt-output").inputValue();
     if (!majorGoalPrompt.includes("major-goals-v1")) {
       throw new Error("Major-goal AI prompt should include major-goals-v1 contract.");

@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.13
+
+- Fixed `Build Major Goal Prompt` so it no longer appears stuck after click and always exits pressed/loading state cleanly.
+- Added fallback behavior for major-goal prompt build: when no saved AI-assisted seed exists, the current AI-assisted input fields are auto-saved and used to build the prompt.
+- Added regression coverage so `Build Major Goal Prompt` works even when the user skips `Save AI-Assisted Draft`.
+- Kept neutral Major Goals mode behavior: no mode preselected on load, with both manual and AI-assisted input panels hidden until explicitly selected.
+
 ## v1.0.12
 
 - Reworked major-goal creation into two modes inside the same card: `Manual` and `AI Assisted`.

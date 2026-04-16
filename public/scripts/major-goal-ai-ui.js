@@ -45,6 +45,9 @@ export const createMajorGoalAiUi = ({
     setStatus("Building major-goal prompt...", "neutral");
     Promise.resolve(onBuildPrompt())
       .then((prompt) => {
+        if (!String(prompt || "").trim()) {
+          throw new Error("No prompt was generated.");
+        }
         output.value = prompt;
         clearValidation();
         onPersist({
@@ -58,6 +61,7 @@ export const createMajorGoalAiUi = ({
       })
       .finally(() => {
         buildButton.disabled = false;
+        if (typeof buildButton.blur === "function") buildButton.blur();
       });
   });
 

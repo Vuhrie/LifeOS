@@ -154,7 +154,7 @@ export const initPlannerController = (ui) => {
   let currentStep = 1;
   let allowPageExit = false;
   let leaveGuardBusy = false;
-  let majorGoalMode = "manual";
+  let majorGoalMode = "";
   const lastAuthStateRef = { current: { isConfigured: true, isSignedIn: false, isLoading: false, error: "", accountKey: "anon" } };
   const commitmentUi = createCommitmentTypeUi(ui);
 
@@ -182,9 +182,13 @@ export const initPlannerController = (ui) => {
   };
 
   const setMajorGoalMode = (mode) => {
-    majorGoalMode = mode === "ai_assisted" ? "ai_assisted" : "manual";
+    if (mode === "manual" || mode === "ai_assisted") {
+      majorGoalMode = mode;
+    } else {
+      majorGoalMode = "";
+    }
     ui.majorGoalModeButtons?.forEach((button) => {
-      const selected = button.dataset.majorGoalMode === majorGoalMode;
+      const selected = majorGoalMode && button.dataset.majorGoalMode === majorGoalMode;
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
@@ -243,7 +247,7 @@ export const initPlannerController = (ui) => {
     latestImportedEventsById = new Map();
     if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
     applyUiFromState();
-    setMajorGoalMode("manual");
+    setMajorGoalMode("");
     commitmentUi.refresh();
     rerenderAll();
     majorGoalAiUi?.hydrateSavedState(week.majorGoalAiAssist);
@@ -430,8 +434,28 @@ export const initPlannerController = (ui) => {
   });
 
   const buildMajorGoalAiPromptContext = () => {
-    const selectedSeed = [...(week.aiMajorGoalSeeds || [])].at(-1) || null;
-    if (!selectedSeed) throw new Error("Add at least one AI-assisted major-goal draft first.");
+    const existingSeed = [...(week.aiMajorGoalSeeds || [])].at(-1) || null;
+    let selectedSeed = existingSeed;
+    if (!selectedSeed) {
+      const draftTitle = String(ui.goalAiTitle?.value || "").trim();
+      if (draftTitle) {
+        selectedSeed = createAiMajorGoalSeed({
+          title: draftTitle,
+          targetDate: dateOnly(ui.goalAiTargetDate?.value),
+          notes: String(ui.goalAiNotes?.value || "").trim(),
+        });
+        week.aiMajorGoalSeeds = [...(week.aiMajorGoalSeeds || []), selectedSeed];
+        ui.goalAiTitle.value = "";
+        ui.goalAiTargetDate.value = "";
+        ui.goalAiNotes.value = "";
+        save();
+        rerenderAll();
+        view.setStatus("Saved current AI-assisted draft and built prompt.", "success");
+      }
+    }
+    if (!selectedSeed) {
+      throw new Error("Enter a Goal Idea first, or click Save AI-Assisted Draft, then build prompt.");
+    }
     return buildMajorGoalAiPrompt({
       currentMajorGoals: week.goals,
       aiAssistedGoalSeeds: week.aiMajorGoalSeeds || [],
@@ -585,6 +609,10 @@ export const initPlannerController = (ui) => {
   });
 
   ui.addGoal.addEventListener("click", () => {
+    if (!majorGoalMode) {
+      view.setStatus("Choose Manual or AI Assisted mode first.", "warning");
+      return;
+    }
     if (majorGoalMode !== "manual") {
       view.setStatus("Switch to Manual mode to add direct major goals.", "warning");
       return;
@@ -610,6 +638,10 @@ export const initPlannerController = (ui) => {
   });
 
   ui.addGoalAiSeed?.addEventListener("click", () => {
+    if (!majorGoalMode) {
+      view.setStatus("Choose Manual or AI Assisted mode first.", "warning");
+      return;
+    }
     if (majorGoalMode !== "ai_assisted") {
       view.setStatus("Switch to AI Assisted mode to add AI drafts.", "warning");
       return;
@@ -989,7 +1021,7 @@ export const initPlannerController = (ui) => {
 
   if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
   applyUiFromState();
-  setMajorGoalMode("manual");
+  setMajorGoalMode("");
   commitmentUi.refresh();
   rerenderAll();
   aiBridge.hydrateSavedState(week.aiAssist);
