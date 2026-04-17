@@ -48,6 +48,7 @@ Life OS/
 |   |   |-- planner-policy.js
 |   |   |-- planner-preview-model.js
 |   |   |-- planner-storage.js
+|   |   |-- planner-state-cleanup.js
 |   |   |-- planner-sync-client.js
 |   |   |-- planner-time.js
 |   |   |-- planner-validation.js

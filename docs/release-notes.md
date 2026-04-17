@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.17
+
+- Added automatic cleanup for stale AI-managed minor goals and tasks when their parent Major Goal has been removed.
+- Hardened Major Goal deletion so tasks linked by direct `majorGoalId` or removed `minorGoalId` are pruned immediately.
+- Cleared stale draft previews when orphan AI planning data is cleaned, preventing old tasks from lingering in generated schedule previews.
+- Added visual regression coverage for stale AI task cleanup on Planner load.
+
 ## v1.0.16
 
 - Upgraded Schedule Prompt Builder to a conversational flow with `status: "in_progress"` and `status: "schedule_ready"` states.

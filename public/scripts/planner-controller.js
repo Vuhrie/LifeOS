@@ -25,6 +25,7 @@ import { applyGoogleConnectButtonState } from "./google-connect-button.js";
 import { createCommitmentTypeUi } from "./planner-commitment-ui.js";
 import { validateCommitmentInput } from "./planner-validation.js";
 import { createPlannerSyncClient } from "./planner-sync-client.js";
+import { cleanupPlannerWeek } from "./planner-state-cleanup.js";
 
 const dateOnly = (value) => {
   const date = new Date(value);
@@ -181,6 +182,20 @@ export const initPlannerController = (ui) => {
     view.resetCommitProgress();
   };
 
+  const runStateCleanup = ({ shouldSave = true, announce = false } = {}) => {
+    const result = cleanupPlannerWeek(week);
+    if (!result.changed) return result;
+    if (shouldSave) save();
+    if (announce) {
+      const parts = [
+        result.removedMinorGoals ? `${result.removedMinorGoals} orphan minor goal(s)` : "",
+        result.removedTasks ? `${result.removedTasks} orphan task(s)` : "",
+      ].filter(Boolean);
+      view.setStatus(`Cleaned stale AI planning data: ${parts.join(", ")}.`, "warning");
+    }
+    return result;
+  };
+
   const setMajorGoalMode = (mode) => {
     if (mode === "manual" || mode === "ai_assisted") {
       majorGoalMode = mode;
@@ -244,6 +259,7 @@ export const initPlannerController = (ui) => {
     if (!week.majorGoalAiAssist || typeof week.majorGoalAiAssist !== "object") {
       week.majorGoalAiAssist = { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" };
     }
+    runStateCleanup({ announce: true });
     latestImportedEventsById = new Map();
     if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
     applyUiFromState();
@@ -277,6 +293,8 @@ export const initPlannerController = (ui) => {
       app = remoteState;
       weekKey = rotateWeekIfNeeded(app, new Date());
       week = ensureWeekState(app, weekKey);
+      const cleanup = runStateCleanup({ announce: true });
+      if (cleanup.changed) view.resetCommitProgress();
       if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
       applyUiFromState();
       rerenderAll();
@@ -776,7 +794,10 @@ export const initPlannerController = (ui) => {
       week.goals = week.goals.filter((item) => item.id !== goalId);
       const removedMinorIds = week.minorGoals.filter((item) => item.majorGoalId === goalId).map((item) => item.id);
       week.minorGoals = week.minorGoals.filter((item) => item.majorGoalId !== goalId);
-      week.tasks = week.tasks.filter((item) => !removedMinorIds.includes(item.minorGoalId));
+      week.tasks = week.tasks.filter((item) =>
+        item.majorGoalId !== goalId && !removedMinorIds.includes(item.minorGoalId),
+      );
+      cleanupPlannerWeek(week);
     }
     if (habitId) week.habits = week.habits.filter((item) => item.id !== habitId);
     if (commitmentId || goalId || habitId) { save(); rerenderAll(); }
@@ -1013,6 +1034,7 @@ export const initPlannerController = (ui) => {
     event.returnValue = "";
   });
 
+  runStateCleanup({ shouldSave: false });
   if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
   applyUiFromState();
   setMajorGoalMode("");

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.16";
+const releaseVersion = "v1.0.17";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -142,6 +142,60 @@ const run = async () => {
     }
     if (commitProgressPanelPresent !== 1) {
       throw new Error("Commit progress panel should be present in planner.");
+    }
+    const cleanupSeed = await desktop.evaluate(() => {
+      const key = Object.keys(window.localStorage)
+        .find((item) => item.startsWith("lifeos_planner_state_v2_")) || "lifeos_planner_state_v2_anon";
+      const state = JSON.parse(window.localStorage.getItem(key) || '{"schemaVersion":11,"currentWeekKey":"","weeks":{},"history":[]}');
+      const weekKey = state.currentWeekKey || Object.keys(state.weeks || {})[0] || "visual-cleanup-week";
+      const existingWeek = state.weeks?.[weekKey] || {};
+      state.currentWeekKey = weekKey;
+      state.weeks = {
+        ...(state.weeks || {}),
+        [weekKey]: {
+          ...existingWeek,
+          goals: [],
+          minorGoals: [
+            {
+              id: "mgoal_removed_visual",
+              majorGoalId: "goal_removed_visual",
+              title: "Removed Visual Minor Goal",
+              source: "ai",
+            },
+          ],
+          tasks: [
+            {
+              id: "task_removed_visual",
+              title: "Removed Visual Task",
+              minorGoalId: "mgoal_removed_visual",
+              estimateMinutes: 45,
+              priority: 3,
+              energy: "deep",
+              source: "ai",
+            },
+          ],
+          draft: { preview: { days: [] }, slots: [] },
+        },
+      };
+      window.localStorage.setItem(key, JSON.stringify(state));
+      return { key, weekKey };
+    });
+    await desktop.reload({ waitUntil: "domcontentloaded" });
+    await wait(150);
+    const staleTaskText = await desktop.locator("#tasks-list").innerText();
+    if (staleTaskText.includes("Removed Visual Task")) {
+      throw new Error("Planner should clean stale AI tasks after their Major Goal was removed.");
+    }
+    const cleanupPersisted = await desktop.evaluate(({ key, weekKey }) => {
+      const state = JSON.parse(window.localStorage.getItem(key) || "{}");
+      return {
+        tasks: state.weeks?.[weekKey]?.tasks || [],
+        minorGoals: state.weeks?.[weekKey]?.minorGoals || [],
+        draft: state.weeks?.[weekKey]?.draft || null,
+      };
+    }, cleanupSeed);
+    if (cleanupPersisted.tasks.length || cleanupPersisted.minorGoals.length || cleanupPersisted.draft) {
+      throw new Error("Planner cleanup should persist removed orphan AI work and clear stale draft data.");
     }
     await desktop.screenshot({
       path: path.join(screenshotsDir, "visual-test-desktop-planner-current.png"),
