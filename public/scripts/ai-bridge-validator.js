@@ -183,6 +183,26 @@ export const validateAiRollingPlan = ({ plan, week }) => {
       if (collides) errors.push(`${day.date}: overlapping plan items detected.`);
       slots.push({ start, end });
     });
+    const sortedSlots = [...slots].sort((left, right) => left.start - right.start);
+    for (let i = 1; i < sortedSlots.length; i += 1) {
+      const gap = sortedSlots[i].start - sortedSlots[i - 1].end;
+      if (gap === 0) {
+        warnings.push(`${day.date}: back-to-back blocks detected with no transition buffer.`);
+        break;
+      }
+    }
+    const middayWindowStart = 11 * 60 + 30;
+    const middayWindowEnd = 14 * 60;
+    const hasLunch = (day.items || []).some((item) => item.type === "necessity" && String(item.title || "").toLowerCase().includes("lunch"));
+    const hasMiddayCommitmentCover = commitmentList.some((commitment) => commitment.start <= middayWindowStart && commitment.end >= middayWindowEnd);
+    const hasMiddayFreeCapacity = !hasMiddayCommitmentCover && !slots.some((slot) => hasOverlap(middayWindowStart, middayWindowEnd, slot.start, slot.end));
+    if (!hasLunch && (hasMiddayFreeCapacity || !hasMiddayCommitmentCover)) {
+      warnings.push(`${day.date}: no Lunch block was scheduled in a day with midday availability.`);
+    }
+    const hasRestLike = (day.items || []).some((item) => item.type === "rest" || item.type === "free_time");
+    if (!hasRestLike && slots.length >= 5) {
+      warnings.push(`${day.date}: high-load day has no explicit rest/free_time block.`);
+    }
     habitDailyCounter.forEach((count, title) => {
       if (count > 1) errors.push(`${day.date}: habit "${title}" is scheduled more than once in a day.`);
     });

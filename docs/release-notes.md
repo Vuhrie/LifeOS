@@ -1,5 +1,14 @@
 # Release Notes
 
+## v1.0.16
+
+- Upgraded Schedule Prompt Builder to a conversational flow with `status: "in_progress"` and `status: "schedule_ready"` states.
+- Added in-progress import validation path for schedule AI responses: valid draft JSON can be validated but cannot be applied until `schedule_ready`.
+- Added AI-managed `rest` and `free_time` rolling-plan item support in parsing, rendering, and draft persistence.
+- Expanded schedule prompt policy to protect humane pacing: lunch guidance, rest/free-time guidance, transition-buffer awareness, and open-time protection.
+- Added schedule validator warnings for missing lunch in free midday windows, high-load days without rest/free-time blocks, and zero-transition back-to-back blocks.
+- Preserved backward compatibility for legacy one-shot schedule JSON imports (`version: "3.0"` without status).
+
 ## v1.0.15
 
 - Removed `weeklyHours` as a required major-goal field in manual and AI-assisted flows.

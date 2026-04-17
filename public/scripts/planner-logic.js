@@ -70,19 +70,36 @@ const buildAiDraftFromRollingPlan = (plan, profile) => {
         rawType: item.type,
         sourceId: item.sourceId || "",
         kind: item.type === "commitment" ? "commitment" : "planned",
-        badge: item.type === "commitment" ? "Commitment" : item.type === "habit" ? "Habit" : item.type === "necessity" ? "Necessity" : "Planned",
+        badge: item.type === "commitment"
+          ? "Commitment"
+          : item.type === "habit"
+            ? "Habit"
+            : item.type === "necessity"
+              ? "Necessity"
+              : item.type === "rest"
+                ? "Rest"
+                : item.type === "free_time"
+                  ? "Free Time"
+                  : "Planned",
       })),
     ],
   }));
   days.forEach((day) => {
     day.items.forEach((item) => {
       if (item.kind === "commitment" || item.rawType === "daily_rhythm") return;
+      const normalizedType = item.rawType === "habit"
+        ? "habit"
+        : item.rawType === "rest"
+          ? "rest"
+          : item.rawType === "free_time"
+            ? "free_time"
+            : "task";
       slots.push({
         id: item.id,
         sourceId: item.sourceId || item.id,
         title: item.title,
-        type: item.rawType === "habit" ? "habit" : "task",
-        energy: "deep",
+        type: normalizedType,
+        energy: normalizedType === "rest" || normalizedType === "free_time" ? "light" : "deep",
         durationMinutes: Math.max(15, Math.round((item.end - item.start) / 60000)),
         start: item.start,
         end: item.end,
@@ -260,6 +277,22 @@ export const createPlannerLogic = ({
       policy: {
         rollingDays: 7,
         rollingExcludesToday: true,
+        restFreeTimePolicy: {
+          aiManaged: true,
+          manualInputs: false,
+          openTimeIsNotAutomaticallyWorkTime: true,
+          protectFreeTimeWhenCapacityAllows: true,
+          useRestAfterLongCommitments: true,
+          useRestAfterGym: true,
+          avoidExactBackToBackWhenRealistic: true,
+        },
+        lunchPolicy: {
+          aiManaged: true,
+          preferredWindow: "11:30-14:00",
+          defaultDurationMinutes: 45,
+          includeWhenMiddayIsFree: true,
+          ifCoveredByLongCommitment: "assume internal lunch only when realistic and state assumption",
+        },
         habitsUseMondaySundayWeek: true,
         habitMaxPerDayDefault: 1,
         habitFrequencyHardCap: true,
@@ -336,6 +369,9 @@ export const createPlannerLogic = ({
   };
 
   const applyAiOperations = (plan, summaryFn) => {
+    if (plan.kind === "rolling_v3_in_progress") {
+      throw new Error("Schedule plan is still in progress. Continue AI Q&A and import schedule_ready JSON.");
+    }
     if (plan.kind === "rolling_v3") {
       applyRollingPlan(plan);
     } else {

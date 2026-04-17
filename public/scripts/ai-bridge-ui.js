@@ -71,9 +71,14 @@ export const createAiBridgeUi = ({
       return;
     }
     validatedPlan = result.plan;
-    applyButton.disabled = false;
     const warningText = result.warnings.length ? ` Warnings: ${result.warnings.join(" ")}` : "";
-    setStatus(`Import looks valid.${warningText}`, "success");
+    if (validatedPlan.kind === "rolling_v3_in_progress") {
+      applyButton.disabled = true;
+      setStatus(`Schedule draft is valid but still in progress. Continue AI Q&A, then paste schedule_ready JSON.${warningText}`, "warning");
+    } else {
+      applyButton.disabled = false;
+      setStatus(`Import looks valid.${warningText}`, "success");
+    }
     onPersist({
       lastPrompt: output.value,
       lastImportText: importInput.value,

@@ -103,7 +103,7 @@ const parseRollingPlan = (days, errors) =>
     const date = safeText(day?.date);
     if (!DATE_RE.test(date)) errors.push(`rollingPlan[${dayIndex}].date must be YYYY-MM-DD.`);
     const items = (Array.isArray(day?.items) ? day.items : []).map((item, itemIndex) => {
-      const type = ["commitment", "necessity", "habit", "task", "minor_goal"].includes(item?.type)
+      const type = ["commitment", "necessity", "habit", "task", "minor_goal", "rest", "free_time"].includes(item?.type)
         ? item.type
         : "task";
       const title = safeText(item?.title);
@@ -127,7 +127,27 @@ const parseRollingPlan = (days, errors) =>
     return { date, items };
   });
 
-const parseV3Plan = (parsed, errors) => {
+const parseV3InProgress = (parsed, errors) => {
+  const questions = Array.isArray(parsed.questions) ? parsed.questions.map(safeText).filter(Boolean) : [];
+  if (!questions.length) errors.push("in_progress requires questions[].");
+  const workingPlanRaw = parsed.workingPlan && typeof parsed.workingPlan === "object" ? parsed.workingPlan : {};
+  const minorGoals = parseMinorGoals(workingPlanRaw.minorGoals, errors);
+  const tasks = parseTasks(workingPlanRaw.tasks, errors);
+  const rollingPlan = parseRollingPlan(workingPlanRaw.rollingPlan, errors);
+  return {
+    kind: "rolling_v3_in_progress",
+    version: safeText(parsed.version) || AI_BRIDGE_VERSION,
+    status: "in_progress",
+    questions,
+    assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.map(safeText).filter(Boolean) : [],
+    concerns: Array.isArray(parsed.concerns) ? parsed.concerns.map(safeText).filter(Boolean) : [],
+    minorGoals,
+    tasks,
+    rollingPlan,
+  };
+};
+
+const parseV3Ready = (parsed, errors) => {
   const minorGoals = parseMinorGoals(parsed.minorGoals, errors);
   const tasks = parseTasks(parsed.tasks, errors);
   const rollingPlan = parseRollingPlan(parsed.rollingPlan, errors);
@@ -135,9 +155,11 @@ const parseV3Plan = (parsed, errors) => {
   return {
     kind: "rolling_v3",
     version: safeText(parsed.version) || AI_BRIDGE_VERSION,
+    status: "schedule_ready",
     minorGoals,
     tasks,
     rollingPlan,
+    assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.map(safeText).filter(Boolean) : [],
     warnings: Array.isArray(parsed.warnings) ? parsed.warnings.map(safeText).filter(Boolean) : [],
     questionsForUser: Array.isArray(parsed.questionsForUser) ? parsed.questionsForUser.map(safeText).filter(Boolean) : [],
   };
@@ -161,19 +183,31 @@ export const parseAiBridgePlan = (raw) => {
   }
 
   const version = safeText(parsed.version);
-  if (version && version !== AI_BRIDGE_VERSION && version !== "2.0") {
-    warnings.push(`Expected version ${AI_BRIDGE_VERSION} (or legacy 2.0), got ${version}.`);
+  if (version && version !== AI_BRIDGE_VERSION && version !== "3.0" && version !== "2.0") {
+    warnings.push(`Expected version ${AI_BRIDGE_VERSION} (or legacy 3.0/2.0), got ${version}.`);
   }
 
   const plan = Array.isArray(parsed.operations)
     ? parseLegacyOperations(parsed, errors)
-    : parseV3Plan(parsed, errors);
+    : (() => {
+      const status = safeText(parsed.status);
+      if (status === "in_progress") return parseV3InProgress(parsed, errors);
+      if (status === "schedule_ready") return parseV3Ready(parsed, errors);
+      if (!status && (version === "3.0" || version === "3.1" || !version)) {
+        return parseV3Ready(parsed, errors);
+      }
+      if (status) errors.push('status must be "in_progress" or "schedule_ready".');
+      return null;
+    })();
 
   if (!plan || errors.length) return { ok: false, errors, warnings, plan: null };
   return { ok: true, errors: [], warnings, plan };
 };
 
 export const summarizeAiBridgePlan = (plan) => {
+  if (plan.kind === "rolling_v3_in_progress") {
+    return `${plan.questions.length} question(s) pending`;
+  }
   if (plan.kind === "rolling_v3") {
     return `${plan.minorGoals.length} minor goals, ${plan.tasks.length} tasks, ${plan.rollingPlan.length} rolling days`;
   }

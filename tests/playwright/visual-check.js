@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.15";
+const releaseVersion = "v1.0.16";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -318,6 +318,9 @@ const run = async () => {
     if (!builtPrompt.includes("Provide organized reasoning OUTSIDE JSON first.")) {
       throw new Error("AI prompt should require reasoning outside JSON.");
     }
+    if (!builtPrompt.includes('"status": "in_progress"') || !builtPrompt.includes('"status": "schedule_ready"')) {
+      throw new Error("AI prompt should include conversational status flow.");
+    }
     if (!builtPrompt.includes("\"rollingPlan\"")) {
       throw new Error("AI prompt should include rollingPlan JSON shape.");
     }
@@ -354,6 +357,38 @@ const run = async () => {
     if (!builtPrompt.includes("Major goals contain outcome, deadline, and importance only")) {
       throw new Error("AI prompt should clarify major goals are importance-based without weekly-hour targets.");
     }
+    if (!builtPrompt.includes("Open time is not automatically work time")) {
+      throw new Error("AI prompt should protect free time by default.");
+    }
+    if (!builtPrompt.includes("Include Lunch when midday capacity is free")) {
+      throw new Error("AI prompt should include lunch guidance.");
+    }
+    if (!builtPrompt.includes("rest and free_time")) {
+      throw new Error("AI prompt should include rest/free_time guidance.");
+    }
+    const inProgressPlan = {
+      version: "3.1",
+      status: "in_progress",
+      questions: ["Should lunch be explicit on CHFI days?"],
+      assumptions: [],
+      concerns: [],
+      workingPlan: {
+        minorGoals: [],
+        tasks: [],
+        rollingPlan: [],
+      },
+    };
+    await desktop.fill("#ai-import-input", JSON.stringify(inProgressPlan, null, 2));
+    await desktop.locator("#ai-validate-import").click();
+    await wait(120);
+    const inProgressStatus = await desktop.locator("#ai-assist-status").textContent();
+    const inProgressApplyDisabled = await desktop.locator("#ai-apply-import").isDisabled();
+    if (!inProgressApplyDisabled) {
+      throw new Error("Apply should stay disabled for in_progress schedule JSON.");
+    }
+    if (!inProgressStatus?.toLowerCase().includes("still in progress")) {
+      throw new Error(`Expected in_progress status guidance. Found: ${inProgressStatus}`);
+    }
     const rollingStart = new Date();
     rollingStart.setHours(0, 0, 0, 0);
     rollingStart.setDate(rollingStart.getDate() + 1);
@@ -372,7 +407,8 @@ const run = async () => {
       };
     });
     const appliedPlan = {
-      version: "3.0",
+      version: "3.1",
+      status: "schedule_ready",
       minorGoals: [],
       tasks: [],
       rollingPlan,
