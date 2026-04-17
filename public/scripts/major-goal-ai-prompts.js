@@ -27,6 +27,7 @@ export const buildMajorGoalAiPrompt = ({
     "- Keep updating the same in_progress JSON draft across conversation turns.",
     '- Once enough details are confirmed, return one final JSON block with {"status":"proposals_ready","proposals":[...]}.',
     "- For proposals_ready, each proposal must include seedId, title, deadline, importance, doneCondition, rationale.",
+    "- You may include optional scheduleBuilderInstruction to guide later schedule planning behavior for this major goal.",
     "- Do not ask for weekly hours and do not include weeklyHours in major-goal JSON.",
     "- Weekly effort will be inferred later from minor goals, tasks, deadlines, and calendar capacity.",
     "- If target date is missing, you may propose a realistic date in rationale but still ask user to confirm.",

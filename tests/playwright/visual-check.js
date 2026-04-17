@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.19";
+const releaseVersion = "v1.0.20";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -493,14 +493,9 @@ const run = async () => {
     await desktop.locator('.step-pill[data-step="3"]').click();
     await wait(150);
     const aiAppliedDraftText = await desktop.locator("#draft-schedule").innerText();
-    if (!aiAppliedDraftText.includes("Regression Gym Habit")) {
-      throw new Error("Applied AI rolling plan should render habit item in draft.");
+    if (!aiAppliedDraftText.includes("No schedule generated")) {
+      throw new Error("Applied AI rolling plan should not auto-create a persisted draft preview.");
     }
-    if (!aiAppliedDraftText.includes("AI Morning Prep") || !aiAppliedDraftText.includes("Regression Focus Task")) {
-      throw new Error("Applied AI rolling plan should render non-habit items in draft.");
-    }
-    await desktop.locator("#clear-draft").click();
-    await wait(120);
     await desktop.locator("#generate-draft").click();
     await wait(220);
     const regeneratedDraftText = await desktop.locator("#draft-schedule").innerText();

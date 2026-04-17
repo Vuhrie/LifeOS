@@ -34,7 +34,8 @@ export const MAJOR_GOAL_AI_TEMPLATE = `\`\`\`json
       "deadline": "2026-06-30",
       "importance": 4,
       "doneCondition": "Pass CEH exam with valid result.",
-      "rationale": "Turns a vague cybersecurity goal into a measurable target."
+      "rationale": "Turns a vague cybersecurity goal into a measurable target.",
+      "scheduleBuilderInstruction": "Optional. Guide how schedule planning should prioritize this major goal."
     }
   ]
 }

@@ -1,5 +1,14 @@
 # Release Notes
 
+## v1.0.20
+
+- Added optional `scheduleBuilderInstruction` support on AI-assisted major goals and carried it into schedule prompt context.
+- Updated Planner draft lifecycle to be temporary-only: drafts are no longer persisted and are cleared on leave/discard workflows.
+- Removed draft "save" leave-path; users now choose `COMMIT`, `DISCARD`, or `CANCEL` when navigating away with a temporary draft.
+- Stopped AI schedule import from auto-populating Step 3 draft preview; users now explicitly generate temporary drafts.
+- Redesigned Settings page with a dedicated shell/cards layout and clearer Google session behavior copy.
+- Updated release version labels and visual regression baseline version to `v1.0.20`.
+
 ## v1.0.19
 
 - Updated Google auth buttons to show the signed-in account email when available instead of a generic `Google Connected` label.

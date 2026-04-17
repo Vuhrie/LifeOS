@@ -129,6 +129,7 @@ const normalizeWeekState = (week) => {
       status: String(item?.status || "active"),
       deadlineSource: String(item?.deadlineSource || "manual"),
       doneCondition: String(item?.doneCondition || ""),
+      scheduleBuilderInstruction: String(item?.scheduleBuilderInstruction || ""),
       createdAt: String(item?.createdAt || new Date().toISOString()),
       source: String(item?.source || "manual"),
     })).filter((item) => item.title)
@@ -291,6 +292,7 @@ export const createGoal = ({
   deadlineSource = "manual",
   source = "manual",
   doneCondition = "",
+  scheduleBuilderInstruction = "",
 }) => ({
   id: uid("goal"),
   title,
@@ -302,6 +304,7 @@ export const createGoal = ({
   deadlineSource,
   source,
   doneCondition: String(doneCondition || ""),
+  scheduleBuilderInstruction: String(scheduleBuilderInstruction || ""),
   createdAt: new Date().toISOString(),
 });
 export const createAiMajorGoalSeed = ({

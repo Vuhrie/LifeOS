@@ -21,6 +21,8 @@ export const buildAiBridgePrompt = (context) => {
     "- existingCalendarEvents are informational context only; only definedElements.commitments are immutable commitments.",
     "- Do not treat previous LifeOS-generated habit/session events as locked commitments.",
     "- Major goals contain outcome, deadline, and importance only; they do not include fixed weekly-hour targets.",
+    "- Major goals may include optional scheduleBuilderInstruction text; use it as planning guidance.",
+    "- Treat scheduleBuilderInstruction as preference and strategy context, not as an immutable commitment.",
     "- Infer this week's required effort from minor goals, tasks, deadlines, progress context, and available capacity.",
     "- If work demand exceeds capacity, schedule the most important and urgent work first and explain what is deferred.",
     "- Open time is not automatically work time.",

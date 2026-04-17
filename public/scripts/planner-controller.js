@@ -144,8 +144,17 @@ export const initPlannerController = (ui) => {
   let app = loadPlannerState(accountKey);
   let weekKey = rotateWeekIfNeeded(app, new Date());
   let week = ensureWeekState(app, weekKey);
+  week.draft = null;
+  const persistableState = () => {
+    const cloned = JSON.parse(JSON.stringify(app));
+    Object.values(cloned.weeks || {}).forEach((value) => {
+      if (!value || typeof value !== "object") return;
+      value.draft = null;
+    });
+    return cloned;
+  };
   const save = () => {
-    savePlannerState(app, accountKey);
+    savePlannerState(persistableState(), accountKey);
     if (lastAuthStateRef.current.isSignedIn) syncClient.queuePush(accountKey);
   };
   const view = createPlannerView(ui);
@@ -247,6 +256,7 @@ export const initPlannerController = (ui) => {
     app = loadPlannerState(accountKey);
     weekKey = rotateWeekIfNeeded(app, new Date());
     week = ensureWeekState(app, weekKey);
+    week.draft = null;
     if (!Array.isArray(week.aiMajorGoalSeeds)) week.aiMajorGoalSeeds = [];
     if (!Array.isArray(week.minorGoals)) week.minorGoals = [];
     if (!Array.isArray(week.tasks)) week.tasks = [];
@@ -293,6 +303,7 @@ export const initPlannerController = (ui) => {
       app = remoteState;
       weekKey = rotateWeekIfNeeded(app, new Date());
       week = ensureWeekState(app, weekKey);
+      week.draft = null;
       const cleanup = runStateCleanup({ announce: true });
       if (cleanup.changed) view.resetCommitProgress();
       if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
@@ -497,6 +508,7 @@ export const initPlannerController = (ui) => {
         `Deadline: ${proposal.deadline}`,
         `Importance: ${proposal.importance}`,
         `Done Condition: ${proposal.doneCondition}`,
+        `Schedule Strategy: ${proposal.scheduleBuilderInstruction || "None"}`,
         `Reason: ${proposal.rationale}`,
         "",
         "Accept this major goal?",
@@ -510,6 +522,7 @@ export const initPlannerController = (ui) => {
           deadlineSource: "ai_assessed",
           source: "ai_assisted",
           doneCondition: proposal.doneCondition,
+          scheduleBuilderInstruction: proposal.scheduleBuilderInstruction,
         }));
         week.aiMajorGoalSeeds = (week.aiMajorGoalSeeds || []).filter((item) => item.id !== proposal.seedId);
         accepted += 1;
@@ -927,7 +940,9 @@ export const initPlannerController = (ui) => {
       });
       week.ignoredGoogleEventIds = [];
       week.importedEventEdits = {};
+      week.draft = null;
       save();
+      view.renderDraft(null);
       view.appendCommitProgressLog(
         `Done: deleted ${result.deletes.length}, added ${result.writes.length}, failed ${result.failed.length}.`,
       );
@@ -953,17 +968,12 @@ export const initPlannerController = (ui) => {
     leaveGuardBusy = true;
     try {
       const input = window.prompt(
-        "A draft schedule exists. Type SAVE to keep it, REMOVE to discard it, COMMIT to send it to Google Calendar, or CANCEL to stay.",
+        "A temporary draft exists. Type COMMIT to send it to Google Calendar, DISCARD to delete it and leave, or CANCEL to stay.",
       );
       const action = String(input || "").trim().toUpperCase();
-      if (action === "SAVE") {
-        save();
-        view.setStatus("Draft saved. Leaving planner.", "neutral");
-        return "proceed";
-      }
-      if (action === "REMOVE") {
+      if (action === "DISCARD") {
         clearDraftOnly();
-        view.setStatus("Draft removed. Leaving planner.", "neutral");
+        view.setStatus("Draft discarded. Leaving planner.", "neutral");
         return "proceed";
       }
       if (action === "COMMIT") {

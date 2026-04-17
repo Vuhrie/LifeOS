@@ -96,8 +96,11 @@ export const createPlannerView = (ui) => {
     const goalItems = Array.isArray(goals) ? goals : [];
     const seedItems = Array.isArray(aiGoalSeeds) ? aiGoalSeeds : [];
     const rows = [
-      ...goalItems.map((item) =>
-        `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, ${escapeHtml(importanceLabel(item.importance ?? item.priority))} importance) <span class="draft-event-badge">${escapeHtml(item.source === "ai_assisted" ? "AI Assisted" : "Manual")}</span> <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`),
+      ...goalItems.map((item) => {
+        const strategy = String(item.scheduleBuilderInstruction || "").trim();
+        const strategyNote = strategy ? ` | Strategy: ${escapeHtml(strategy)}` : "";
+        return `<li>${escapeHtml(item.title)} (deadline ${escapeHtml(String(item.deadlineIso || "").slice(0, 10) || "TBD")}, ${escapeHtml(importanceLabel(item.importance ?? item.priority))} importance)${strategyNote} <span class="draft-event-badge">${escapeHtml(item.source === "ai_assisted" ? "AI Assisted" : "Manual")}</span> <button type="button" class="inline-remove" data-rm-goal="${item.id}">Remove</button></li>`;
+      }),
       ...seedItems.map((item) =>
         `<li>${escapeHtml(item.title)} (AI draft${item.targetDate ? `, target ${escapeHtml(item.targetDate)}` : ""}) <span class="draft-event-badge">AI Draft</span> <button type="button" class="inline-remove" data-rm-ai-goal-seed="${item.id}">Remove</button></li>`),
     ];

@@ -20,6 +20,7 @@ const parseProposal = (proposal, index, errors) => {
   const deadline = safeText(proposal?.deadline);
   const doneCondition = safeText(proposal?.doneCondition);
   const rationale = safeText(proposal?.rationale);
+  const scheduleBuilderInstruction = safeText(proposal?.scheduleBuilderInstruction);
   const importanceRaw = Number(proposal?.importance ?? proposal?.priority);
   const importance = Number.isFinite(importanceRaw) ? clamp(Math.round(importanceRaw), 1, 5) : NaN;
   if (!seedId) errors.push(`proposals[${index}].seedId is required.`);
@@ -37,6 +38,7 @@ const parseProposal = (proposal, index, errors) => {
     priority: Number.isFinite(importance) ? importance : 3,
     doneCondition,
     rationale,
+    scheduleBuilderInstruction,
   };
 };
 

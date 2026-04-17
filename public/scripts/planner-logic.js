@@ -357,10 +357,10 @@ export const createPlannerLogic = ({
         source: "ai",
       }));
 
+    const aiDraft = buildAiDraftFromRollingPlan(validation.plan, week.profile);
     week.minorGoals = nextMinorGoals;
     week.tasks = nextTasks;
-    week.draft = buildAiDraftFromRollingPlan(validation.plan, week.profile);
-    week.managedSlots = (week.draft?.slots || []).map((slot) => ({
+    week.managedSlots = (aiDraft?.slots || []).map((slot) => ({
       ...slot,
       lifeosManaged: true,
       persistedFromAiApply: true,
@@ -377,6 +377,7 @@ export const createPlannerLogic = ({
     } else {
       applyLegacyOperations(plan);
     }
+    week.draft = null;
     applyUiFromState();
     refreshAvailabilityFromProfile();
     rerenderAll();
