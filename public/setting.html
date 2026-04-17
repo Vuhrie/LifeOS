@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Setting | LifeOS v1.0.18</title>
+  <title>Setting | LifeOS v1.0.19</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/calendar.css">
 </head>
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v1.0.18</a>
+      <a class="brand" href="index.html">LifeOS v1.0.19</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -35,7 +36,7 @@
           <p class="drawer-eyebrow">Navigation</p>
           <div>
             <p class="drawer-brand">LifeOS</p>
-            <p class="drawer-version">v1.0.18</p>
+            <p class="drawer-version">v1.0.19</p>
           </div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu">
@@ -69,6 +70,19 @@
 
   <main class="page-content page-content--centered">
     <h1>Setting</h1>
+    <section class="calendar-panel" aria-labelledby="account-title">
+      <div class="calendar-head">
+        <div>
+          <p class="calendar-eyebrow">Google Account</p>
+          <h2 id="account-title">Session</h2>
+          <p class="calendar-subtitle" id="account-email">Not connected</p>
+        </div>
+        <div class="calendar-controls">
+          <button class="action-button action-button--danger" type="button" id="sign-out" disabled>Sign out</button>
+        </div>
+      </div>
+      <p class="calendar-status" id="account-status" data-kind="neutral">Connect Google to continue.</p>
+    </section>
   </main>
 
   <script src="scripts/config.js"></script>

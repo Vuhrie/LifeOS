@@ -109,7 +109,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
     return tokenClient;
   };
 
-  const requestToken = async (prompt = "consent") => {
+  const requestToken = async (prompt = "consent", silent = false) => {
     const client = await ensureClient();
     state.isLoading = true;
     setError("");
@@ -119,7 +119,10 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
         if (!response || response.error || !response.access_token) {
           clearSession();
           emit();
-          reject(new Error(response?.error || "Unable to get calendar write token."));
+          const fallbackError = silent
+            ? "Silent sign-in not available. Please reconnect Google."
+            : "Unable to get calendar write token.";
+          reject(new Error(response?.error || fallbackError));
           return;
         }
         accessToken = response.access_token;
@@ -139,7 +142,14 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
     });
   };
 
-  const ensureSignedIn = async () => (tokenValid() ? accessToken : requestToken("consent"));
+  const ensureSignedIn = async () => {
+    if (tokenValid()) return accessToken;
+    try {
+      return await requestToken("", true);
+    } catch {
+      return requestToken("consent");
+    }
+  };
   const getAccessToken = async ({ interactive = false } = {}) => {
     if (tokenValid()) return accessToken;
     if (!interactive) return "";

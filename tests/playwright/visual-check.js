@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.18";
+const releaseVersion = "v1.0.19";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -77,17 +77,31 @@ const run = async () => {
       window.localStorage.setItem("lifeos_google_calendar_auth_v1", JSON.stringify(token));
       window.localStorage.setItem("lifeos_google_calendar_write_auth_v1", JSON.stringify(token));
     }, seededToken);
-    await desktop.route("https://www.googleapis.com/calendar/v3/**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(seededEventsPayload),
-      });
+    const seededEmail = "vuhrie@example.com";
+    await desktop.route("https://www.googleapis.com/**", async (route) => {
+      const url = route.request().url();
+      if (url.includes("/oauth2/v3/userinfo")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ email: seededEmail }),
+        });
+        return;
+      }
+      if (url.includes("/calendar/v3/")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(seededEventsPayload),
+        });
+        return;
+      }
+      await route.continue();
     });
     await desktop.goto("http://127.0.0.1:4173/index.html", { waitUntil: "networkidle" });
     const connectedTodayText = await desktop.locator("#connect-google").textContent();
-    if (!connectedTodayText?.includes("Google Connected")) {
-      throw new Error(`Today connect button should show connected state. Found: ${connectedTodayText}`);
+    if (!connectedTodayText?.includes(seededEmail)) {
+      throw new Error(`Today connect button should show account email. Found: ${connectedTodayText}`);
     }
 
     await desktop.goto("http://127.0.0.1:4173/schedules.html", { waitUntil: "networkidle" });
@@ -97,8 +111,8 @@ const run = async () => {
     if (schedulesTitle !== "Schedules") {
       throw new Error(`Unexpected Schedules title: ${schedulesTitle}`);
     }
-    if (!connectedSchedulesText?.includes("Google Connected")) {
-      throw new Error(`Schedules connect button should show connected state. Found: ${connectedSchedulesText}`);
+    if (!connectedSchedulesText?.includes(seededEmail)) {
+      throw new Error(`Schedules connect button should show account email. Found: ${connectedSchedulesText}`);
     }
     if (!schedulesStatus?.includes("Showing events") && !schedulesStatus?.includes("No events")) {
       throw new Error(`Unexpected Schedules status with restored session: ${schedulesStatus}`);
@@ -508,9 +522,30 @@ const run = async () => {
     });
     await desktop.goto("http://127.0.0.1:4173/planner.html", { waitUntil: "domcontentloaded" });
     const connectButtonText = await desktop.locator("#connect-google").textContent();
-    if (!connectButtonText?.includes("Google Connected")) {
-      throw new Error(`Planner connect button should show connected state. Found: ${connectButtonText}`);
+    if (!connectButtonText?.includes(seededEmail)) {
+      throw new Error(`Planner connect button should show account email. Found: ${connectButtonText}`);
     }
+    await desktop.goto("http://127.0.0.1:4173/setting.html", { waitUntil: "domcontentloaded" });
+    await wait(160);
+    const settingsEmail = await desktop.locator("#account-email").textContent();
+    const settingsSignOutEnabled = await desktop.locator("#sign-out").isEnabled();
+    if (!settingsEmail?.includes(seededEmail) || !settingsSignOutEnabled) {
+      throw new Error(`Settings should show signed-in email and enabled sign-out. Found email=${settingsEmail}, enabled=${settingsSignOutEnabled}`);
+    }
+    await desktop.locator("#sign-out").click();
+    await wait(160);
+    const settingsEmailAfterSignOut = await desktop.locator("#account-email").textContent();
+    if (settingsEmailAfterSignOut !== "Not connected") {
+      throw new Error(`Settings should show disconnected state after sign-out. Found: ${settingsEmailAfterSignOut}`);
+    }
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, "visual-test-desktop-settings-current.png"),
+      fullPage: true,
+    });
+    await desktop.screenshot({
+      path: path.join(screenshotsDir, `visual-test-desktop-settings-${releaseVersion}.png`),
+      fullPage: true,
+    });
     await desktop.hover("#connect-google");
     await wait(120);
     await desktop.screenshot({
@@ -521,7 +556,7 @@ const run = async () => {
       path: path.join(screenshotsDir, `visual-test-desktop-hover-${releaseVersion}.png`),
       fullPage: true,
     });
-    await desktop.unroute("https://www.googleapis.com/calendar/v3/**");
+    await desktop.unroute("https://www.googleapis.com/**");
     await desktop.evaluate(() => {
       window.localStorage.removeItem("lifeos_google_calendar_auth_v1");
       window.localStorage.removeItem("lifeos_google_calendar_write_auth_v1");
@@ -620,6 +655,16 @@ const run = async () => {
     });
     await mobile.screenshot({
       path: path.join(screenshotsDir, `visual-test-mobile-planner-step2-${releaseVersion}.png`),
+      fullPage: true,
+    });
+    await mobile.goto("http://127.0.0.1:4173/setting.html", { waitUntil: "domcontentloaded" });
+    await wait(120);
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, "visual-test-mobile-settings-current.png"),
+      fullPage: true,
+    });
+    await mobile.screenshot({
+      path: path.join(screenshotsDir, `visual-test-mobile-settings-${releaseVersion}.png`),
       fullPage: true,
     });
 

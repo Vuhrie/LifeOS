@@ -43,6 +43,7 @@ export const createCalendarClient = ({ onStateChange }) => {
     isSignedIn: false,
     isLoading: false,
     error: "",
+    accountKey: "anon",
   };
 
   let accessToken = "";
@@ -97,7 +98,22 @@ export const createCalendarClient = ({ onStateChange }) => {
     accessToken = "";
     accessTokenExpiryMs = 0;
     state.isSignedIn = false;
+    state.accountKey = "anon";
     clearPersistedSession();
+  };
+
+  const resolveAccountKey = async () => {
+    if (!isTokenUsable()) return "anon";
+    try {
+      const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) return "anon";
+      const payload = await response.json();
+      return String(payload.email || "").trim().toLowerCase() || "anon";
+    } catch {
+      return "anon";
+    }
   };
 
   const restoreSessionIfValid = () => {
@@ -113,6 +129,10 @@ export const createCalendarClient = ({ onStateChange }) => {
     accessToken = session.accessToken;
     accessTokenExpiryMs = session.expiresAt;
     state.isSignedIn = true;
+    resolveAccountKey().then((key) => {
+      state.accountKey = key || "anon";
+      emit();
+    });
     return true;
   };
 
@@ -160,6 +180,10 @@ export const createCalendarClient = ({ onStateChange }) => {
 
         try {
           applyTokenResponse(response);
+          resolveAccountKey().then((key) => {
+            state.accountKey = key || "anon";
+            emit();
+          });
           emit();
           resolve(accessToken);
         } catch (error) {
@@ -192,7 +216,11 @@ export const createCalendarClient = ({ onStateChange }) => {
     if (isTokenUsable()) {
       return accessToken;
     }
-    return requestToken("consent");
+    try {
+      return await requestToken("", true);
+    } catch {
+      return requestToken("consent");
+    }
   };
 
   const fetchEvents = async ({ start, end }) => {

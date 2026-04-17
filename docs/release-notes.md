@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.19
+
+- Updated Google auth buttons to show the signed-in account email when available instead of a generic `Google Connected` label.
+- Added a functional Google account section in Settings with live account email/state and a working `Sign out` button.
+- Extended read-only calendar auth state to resolve account email and expose it to shared nav button UI.
+- Improved token renewal behavior to attempt silent GIS re-auth before prompting for consent, keeping sessions alive as long as Google allows.
+- Updated visual regression tests for email-based connected state and Settings sign-out flow.
+
 ## v1.0.18
 
 - Removed the `Save AI-Assisted Draft` button from Major Goals AI Assisted controls.
