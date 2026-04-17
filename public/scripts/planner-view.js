@@ -66,7 +66,6 @@ export const createPlannerView = (ui) => {
       ui.majorGoalAiClearImport,
       ui.addCommitment,
       ui.addGoal,
-      ui.addGoalAiSeed,
       ui.addHabit,
       ui.aiChangedSince,
       ui.aiTaskProgressNotes,

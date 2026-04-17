@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v1.0.17</title>
+  <title>Planner | LifeOS v1.0.18</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v1.0.17</a>
+      <a class="brand" href="index.html">LifeOS v1.0.18</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -31,7 +31,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.17</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.18</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -177,7 +177,6 @@
               <label>Optional Target Date<input id="goal-ai-target-date" type="date"></label>
             </div>
             <label>Context Notes<textarea id="goal-ai-notes" rows="3" placeholder="Context, constraints, preferences, current level, important outcomes."></textarea></label>
-            <button class="action-button" type="button" id="add-goal-ai-seed">Save AI-Assisted Draft</button>
             <div class="ai-assist-actions">
               <button class="action-button" type="button" id="major-goal-ai-build-prompt">Build Major Goal Prompt</button>
               <button class="action-button" type="button" id="major-goal-ai-copy-prompt">Copy Prompt</button>
@@ -189,7 +188,7 @@
               <button class="action-button action-button--primary" type="button" id="major-goal-ai-apply-import" disabled>Insert Verified Major Goal</button>
               <button class="action-button action-button--danger" type="button" id="major-goal-ai-clear-import">Clear</button>
             </div>
-            <p class="ai-assist-status" id="major-goal-ai-status" data-kind="neutral">Add an AI-assisted draft to begin.</p>
+            <p class="ai-assist-status" id="major-goal-ai-status" data-kind="neutral">Enter a goal idea, then build the major-goal prompt.</p>
           </div>
           <ul class="list-block" id="goals-list"></ul>
         </article>

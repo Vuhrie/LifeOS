@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.17";
+const releaseVersion = "v1.0.18";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -272,6 +272,10 @@ const run = async () => {
     const aiGoalFieldsVisible = await desktop.locator("#major-goal-ai-fields").isVisible();
     if (!aiGoalFieldsVisible) {
       throw new Error("AI-assisted major-goal fields should be visible after selecting AI Assisted mode.");
+    }
+    const saveAiDraftButtonCount = await desktop.locator("#add-goal-ai-seed").count();
+    if (saveAiDraftButtonCount !== 0) {
+      throw new Error("Save AI-Assisted Draft button should not exist.");
     }
     await desktop.fill("#goal-ai-title", "Get good at cybersecurity");
     await desktop.fill("#goal-ai-notes", "Prefer certificate-driven progression.");

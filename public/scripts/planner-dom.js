@@ -45,7 +45,6 @@ export const getPlannerUi = () => ({
   goalAiTitle: $("#goal-ai-title"),
   goalAiTargetDate: $("#goal-ai-target-date"),
   goalAiNotes: $("#goal-ai-notes"),
-  addGoalAiSeed: $("#add-goal-ai-seed"),
   majorGoalAiBuildPrompt: $("#major-goal-ai-build-prompt"),
   majorGoalAiCopyPrompt: $("#major-goal-ai-copy-prompt"),
   majorGoalAiPromptOutput: $("#major-goal-ai-prompt-output"),

@@ -468,11 +468,11 @@ export const initPlannerController = (ui) => {
         ui.goalAiNotes.value = "";
         save();
         rerenderAll();
-        view.setStatus("Saved current AI-assisted draft and built prompt.", "success");
+        view.setStatus("Built prompt from your current AI-assisted goal input.", "success");
       }
     }
     if (!selectedSeed) {
-      throw new Error("Enter a Goal Idea first, or click Save AI-Assisted Draft, then build prompt.");
+      throw new Error("Enter a Goal Idea first, then build the major-goal prompt.");
     }
     return buildMajorGoalAiPrompt({
       currentMajorGoals: week.goals,
@@ -647,36 +647,6 @@ export const initPlannerController = (ui) => {
     save();
     rerenderAll();
     view.setStatus(deadline ? "Major goal added." : "Major goal added. AI may propose a deadline.", "success");
-  });
-
-  ui.addGoalAiSeed?.addEventListener("click", () => {
-    if (!majorGoalMode) {
-      view.setStatus("Choose Manual or AI Assisted mode first.", "warning");
-      return;
-    }
-    if (majorGoalMode !== "ai_assisted") {
-      view.setStatus("Switch to AI Assisted mode to add AI drafts.", "warning");
-      return;
-    }
-    const title = ui.goalAiTitle.value.trim();
-    if (!title) {
-      view.setStatus("Goal idea is required for AI-assisted major goal drafts.", "warning");
-      return;
-    }
-    week.aiMajorGoalSeeds = [
-      ...(week.aiMajorGoalSeeds || []),
-      createAiMajorGoalSeed({
-        title,
-        targetDate: dateOnly(ui.goalAiTargetDate.value),
-        notes: String(ui.goalAiNotes.value || "").trim(),
-      }),
-    ];
-    ui.goalAiTitle.value = "";
-    ui.goalAiTargetDate.value = "";
-    ui.goalAiNotes.value = "";
-    save();
-    rerenderAll();
-    view.setStatus("AI-assisted major-goal draft saved.", "success");
   });
 
   ui.addHabit.addEventListener("click", () => {

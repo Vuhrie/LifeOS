@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.18
+
+- Removed the `Save AI-Assisted Draft` button from Major Goals AI Assisted controls.
+- Simplified major-goal AI flow to `enter goal idea -> Build Major Goal Prompt`, while preserving auto-seed behavior behind the scenes.
+- Updated UI status/error copy so users are no longer instructed to save an AI-assisted draft manually.
+- Added visual regression coverage to fail if the removed button reappears.
+
 ## v1.0.17
 
 - Added automatic cleanup for stale AI-managed minor goals and tasks when their parent Major Goal has been removed.
