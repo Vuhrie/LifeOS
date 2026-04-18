@@ -180,6 +180,7 @@ export const initPlannerController = (ui) => {
     view.renderHabits(week.habits);
     view.renderPriorityMajorGoalOptions(week.goals, week.aiPlannerInputs?.priorityMajorGoalId || "");
     view.renderDraft(sessionDraft);
+    view.renderDecisionSnapshot({ snapshot: week.googleDecisionContext, commitLog: week.commitLog });
   };
 
   const hasDraftPreview = () => Boolean(sessionDraft?.preview?.days?.length);
@@ -264,6 +265,17 @@ export const initPlannerController = (ui) => {
     if (!week.aiPlannerInputs || typeof week.aiPlannerInputs !== "object") {
       week.aiPlannerInputs = { notes: "", changedSinceLastRun: "", taskProgressNotes: "", priorityMajorGoalId: "" };
     }
+    if (!week.googleDecisionContext || typeof week.googleDecisionContext !== "object") {
+      week.googleDecisionContext = {
+        lastCapturedAt: "",
+        horizonStartIso: "",
+        horizonEndIso: "",
+        totalEvents: 0,
+        externalEvents: 0,
+        managedEvents: 0,
+        dismissedEvents: 0,
+      };
+    }
     if (!Array.isArray(week.ignoredGoogleEventIds)) week.ignoredGoogleEventIds = [];
     if (!Array.isArray(week.dismissedGoogleCommitmentIds)) week.dismissedGoogleCommitmentIds = [];
     if (!week.importedEventEdits || typeof week.importedEventEdits !== "object") week.importedEventEdits = {};
@@ -288,6 +300,11 @@ export const initPlannerController = (ui) => {
         applyUiFromState,
         writeClient,
         lastAuthStateRef,
+        onGoogleContextCaptured: (snapshot) => {
+          week.googleDecisionContext = { ...week.googleDecisionContext, ...snapshot };
+          save();
+          rerenderAll();
+        },
       });
     }
   };
@@ -442,6 +459,11 @@ export const initPlannerController = (ui) => {
     applyUiFromState,
     writeClient,
     lastAuthStateRef,
+    onGoogleContextCaptured: (snapshot) => {
+      week.googleDecisionContext = { ...week.googleDecisionContext, ...snapshot };
+      save();
+      rerenderAll();
+    },
   });
 
   const aiBridge = createAiBridgeUi({
@@ -914,6 +936,22 @@ export const initPlannerController = (ui) => {
       view.setStatus("Second confirmation failed. Commit canceled.", "warning");
       return false;
     }
+    const pendingCommit = {
+      commitId: `commit_${Date.now().toString(36)}`,
+      timestamp: new Date().toISOString(),
+      startedAt: new Date().toISOString(),
+      status: "running",
+      startIso: horizonStart.toISOString(),
+      endIso: horizonEnd.toISOString(),
+      targetCount: commitItems.length,
+      existingCount: null,
+      writes: [],
+      deletes: [],
+      failed: [],
+    };
+    week.commitLog.push(pendingCommit);
+    save();
+    rerenderAll();
     view.showCommitProgress();
     view.updateCommitProgress({
       phase: "Preparing",
@@ -933,17 +971,14 @@ export const initPlannerController = (ui) => {
           if (update.current) view.appendCommitProgressLog(update.current);
         },
       });
-      week.commitLog.push({
-        commitId: result.commitId,
-        timestamp: new Date().toISOString(),
-        startIso: horizonStart.toISOString(),
-        endIso: horizonEnd.toISOString(),
-        writes: result.writes,
-        deletes: result.deletes,
-        failed: result.failed,
-        targetCount: result.targetCount,
-        existingCount: result.existingCount,
-      });
+      pendingCommit.commitId = result.commitId;
+      pendingCommit.writes = result.writes;
+      pendingCommit.deletes = result.deletes;
+      pendingCommit.failed = result.failed;
+      pendingCommit.targetCount = result.targetCount;
+      pendingCommit.existingCount = result.existingCount;
+      pendingCommit.finishedAt = new Date().toISOString();
+      pendingCommit.status = result.failed.length ? "partial" : "succeeded";
       week.ignoredGoogleEventIds = [];
       week.importedEventEdits = {};
       sessionDraft = null;
@@ -958,6 +993,14 @@ export const initPlannerController = (ui) => {
       );
       return true;
     } catch (error) {
+      const latest = week.commitLog[week.commitLog.length - 1];
+      if (latest) {
+        latest.status = "failed";
+        latest.finishedAt = new Date().toISOString();
+        latest.failed = [...(latest.failed || []), { stage: "commit", error: error.message }];
+      }
+      save();
+      rerenderAll();
       view.appendCommitProgressLog(`Commit failed: ${error.message}`);
       view.setStatus(`Commit failed: ${error.message}`, "error");
       return false;

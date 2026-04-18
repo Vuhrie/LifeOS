@@ -84,4 +84,8 @@ export const getPlannerUi = () => ({
   aiTaskProgressNotes: $("#ai-task-progress-notes"),
   aiBriefNotes: $("#ai-brief-notes"),
   aiPriorityMajorGoal: $("#ai-priority-major-goal"),
+  decisionSnapshotCapturedAt: $("#decision-snapshot-captured-at"),
+  decisionSnapshotWindow: $("#decision-snapshot-window"),
+  decisionSnapshotEvents: $("#decision-snapshot-events"),
+  decisionSnapshotCommit: $("#decision-snapshot-commit"),
 });

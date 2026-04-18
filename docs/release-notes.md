@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.24
+
+- Added D1-persisted `googleDecisionContext` snapshot fields to planner state so schedule decisions can be traced against captured Google occupancy context.
+- Added `Decision Context Snapshot` card in Planner Step 2 to show last captured window/event counts and last calendar commit status.
+- Updated schedule prompt-build pipeline to capture and persist Google occupancy summary (`total`, `external`, `managed`, `dismissed`) each time prompt context is built.
+- Upgraded calendar commit logging in planner state to explicit lifecycle statuses (`running`, `succeeded`, `partial`, `failed`) with timestamps and operation outcomes.
+- Preserved draft as temporary session-only preview while canonical planner entities continue syncing through D1.
+
 ## v1.0.23
 
 - Refactored planner draft to session-only runtime state so draft schedule preview is never persisted as canonical planner data.

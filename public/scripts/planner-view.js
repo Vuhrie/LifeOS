@@ -15,8 +15,20 @@ const renderList = (target, items, map, empty = "No items yet.") => {
 const formatTime = (value) =>
   new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value));
 
-const formatDate = (value) =>
+  const formatDate = (value) =>
   new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(value));
+
+const formatDateTime = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
 
 const draftCard = (item) => `
   <article class="draft-event-card" data-kind="${escapeHtml(item.kind)}">
@@ -254,6 +266,37 @@ export const createPlannerView = (ui) => {
     ui.aiPriorityMajorGoal.innerHTML = options.join("");
   };
 
+  const renderDecisionSnapshot = ({ snapshot, commitLog }) => {
+    if (ui.decisionSnapshotCapturedAt) {
+      ui.decisionSnapshotCapturedAt.textContent = snapshot?.lastCapturedAt
+        ? formatDateTime(snapshot.lastCapturedAt)
+        : "-";
+    }
+    if (ui.decisionSnapshotWindow) {
+      const start = snapshot?.horizonStartIso ? formatDate(snapshot.horizonStartIso) : "";
+      const end = snapshot?.horizonEndIso ? formatDate(snapshot.horizonEndIso) : "";
+      ui.decisionSnapshotWindow.textContent = start && end ? `${start} -> ${end}` : "-";
+    }
+    if (ui.decisionSnapshotEvents) {
+      const total = Number(snapshot?.totalEvents || 0);
+      const external = Number(snapshot?.externalEvents || 0);
+      const managed = Number(snapshot?.managedEvents || 0);
+      const dismissed = Number(snapshot?.dismissedEvents || 0);
+      ui.decisionSnapshotEvents.textContent = `total ${total} | external ${external} | managed ${managed} | dismissed ${dismissed}`;
+    }
+    if (ui.decisionSnapshotCommit) {
+      const latestCommit = Array.isArray(commitLog) ? commitLog[commitLog.length - 1] : null;
+      if (!latestCommit) {
+        ui.decisionSnapshotCommit.textContent = "-";
+        return;
+      }
+      const status = String(latestCommit.status || "unknown");
+      const commitId = String(latestCommit.commitId || "-");
+      const timestamp = formatDateTime(latestCommit.finishedAt || latestCommit.startedAt || latestCommit.timestamp || "");
+      ui.decisionSnapshotCommit.textContent = `${commitId} (${status}) @ ${timestamp}`;
+    }
+  };
+
   return {
     setStatus,
     setPlannerLock,
@@ -263,6 +306,7 @@ export const createPlannerView = (ui) => {
     renderMinorGoals,
     renderTasks,
     renderDraft,
+    renderDecisionSnapshot,
     renderPriorityMajorGoalOptions,
     setStep,
     resetCommitProgress,

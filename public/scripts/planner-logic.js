@@ -164,6 +164,7 @@ export const createPlannerLogic = ({
   applyUiFromState,
   writeClient,
   lastAuthStateRef,
+  onGoogleContextCaptured,
 }) => {
   const buildPromptContext = async () => {
     const start = new Date();
@@ -205,6 +206,10 @@ export const createPlannerLogic = ({
     const eventsRaw = lastAuthStateRef.current.isSignedIn
       ? await writeClient.fetchExistingEvents({ startIso: start.toISOString(), endIso: end.toISOString() })
       : [];
+    const totalEvents = (eventsRaw || []).length;
+    const managedEvents = (eventsRaw || []).filter((event) =>
+      managedIdsFromCommitLog.has(String(event?.id || "")) || isLifeOsManagedCalendarEvent(event),
+    ).length;
     const events = (eventsRaw || []).filter((event) => {
       const eventId = String(event?.id || "");
       if (!eventId) return true;
@@ -212,6 +217,15 @@ export const createPlannerLogic = ({
         && !ignoredGoogleIds.has(eventId)
         && !managedIdsFromCommitLog.has(eventId)
         && !isLifeOsManagedCalendarEvent(event);
+    });
+    onGoogleContextCaptured?.({
+      lastCapturedAt: new Date().toISOString(),
+      horizonStartIso: start.toISOString(),
+      horizonEndIso: end.toISOString(),
+      totalEvents,
+      externalEvents: events.length,
+      managedEvents,
+      dismissedEvents: dismissedGoogleIds.size,
     });
     const promptCommitments = (week.profile.commitments || []).filter((item) => {
       if (String(item.source || "") !== "google_imported") return true;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planner | LifeOS v1.0.23</title>
+  <title>Planner | LifeOS v1.0.24</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/planner.css">
@@ -12,7 +12,7 @@
 <body>
   <header class="site-header">
     <nav class="navbar" aria-label="Primary">
-      <a class="brand" href="index.html">LifeOS v1.0.23</a>
+      <a class="brand" href="index.html">LifeOS v1.0.24</a>
       <div class="desktop-nav">
         <a class="nav-link" href="index.html">Today</a>
         <a class="nav-link" href="schedules.html">Schedules</a>
@@ -31,7 +31,7 @@
       <div class="drawer-header">
         <div class="drawer-brand-block">
           <p class="drawer-eyebrow">Navigation</p>
-          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.23</p></div>
+          <div><p class="drawer-brand">LifeOS</p><p class="drawer-version">v1.0.24</p></div>
         </div>
         <button class="drawer-close" type="button" aria-label="Close navigation menu"><span aria-hidden="true">X</span></button>
       </div>
@@ -222,6 +222,17 @@
             </label>
           </div>
           <label>Extra user preference notes<textarea id="ai-brief-notes" rows="3" placeholder="Energy, time preference, intensity limits, or arrangement requests."></textarea></label>
+        </article>
+
+        <article class="planner-card">
+          <h2>Decision Context Snapshot</h2>
+          <p class="planner-subtitle">Google occupancy considered during the latest schedule prompt build. Saved with planner state.</p>
+          <ul class="list-block">
+            <li><strong>Captured At:</strong> <span id="decision-snapshot-captured-at">-</span></li>
+            <li><strong>Window:</strong> <span id="decision-snapshot-window">-</span></li>
+            <li><strong>Events:</strong> <span id="decision-snapshot-events">-</span></li>
+            <li><strong>Last Calendar Commit:</strong> <span id="decision-snapshot-commit">-</span></li>
+          </ul>
         </article>
 
         <article class="planner-card">
