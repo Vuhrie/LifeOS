@@ -869,7 +869,12 @@ export const initPlannerController = (ui) => {
       );
       cleanupPlannerWeek(week);
     }
-    if (habitId) week.habits = week.habits.filter((item) => item.id !== habitId);
+    if (habitId) {
+      week.habits = week.habits.filter((item) => item.id !== habitId);
+      week.tasks = (week.tasks || []).filter((item) => String(item?.habitId || "") !== habitId);
+      week.managedSlots = (week.managedSlots || []).filter((slot) =>
+        String(slot?.habitId || "") !== habitId && String(slot?.type || "") !== "habit");
+    }
     if (commitmentId || goalId || habitId) { save(); rerenderAll(); }
   });
 
@@ -904,7 +909,8 @@ export const initPlannerController = (ui) => {
       horizonStart,
       horizonDays,
     });
-    const tasks = [...week.tasks, ...habitTasks];
+    const nonHabitTasks = (week.tasks || []).filter((task) => !String(task?.habitId || ""));
+    const tasks = [...nonHabitTasks, ...habitTasks];
     const nonHabitManagedSlots = (week.managedSlots || []).filter((slot) => String(slot?.type || "") !== "habit");
     const draft = generateDraftPlan({
       goal,

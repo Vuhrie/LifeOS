@@ -15,18 +15,44 @@ const hasMeaningfulState = (state) =>
       && Object.keys(state.weeks).length,
   );
 
+const sanitizeLegacyHabitArtifacts = (state) => {
+  const clone = JSON.parse(JSON.stringify(state || {}));
+  const weeks = clone.weeks && typeof clone.weeks === "object" ? clone.weeks : {};
+  Object.values(weeks).forEach((week) => {
+    if (!week || typeof week !== "object") return;
+    const tasks = Array.isArray(week.tasks) ? week.tasks : [];
+    const removedIds = new Set(
+      tasks
+        .filter((item) => String(item?.habitId || ""))
+        .map((item) => String(item?.id || ""))
+        .filter(Boolean),
+    );
+    week.tasks = tasks.filter((item) => !String(item?.habitId || ""));
+    if (Array.isArray(week.managedSlots)) {
+      week.managedSlots = week.managedSlots.filter((slot) => {
+        const sourceId = String(slot?.sourceId || "");
+        const type = String(slot?.type || "");
+        const habitId = String(slot?.habitId || "");
+        return !habitId && type !== "habit" && (!sourceId || !removedIds.has(sourceId));
+      });
+    }
+  });
+  clone.weeks = weeks;
+  return clone;
+};
+
 const stripDraftFromState = (state) => {
   if (!state || typeof state !== "object") {
-    return { schemaVersion: 12, currentWeekKey: "", weeks: {}, history: [] };
+    return { schemaVersion: 13, currentWeekKey: "", weeks: {}, history: [] };
   }
-  const clone = JSON.parse(JSON.stringify(state));
+  const clone = sanitizeLegacyHabitArtifacts(state);
   const weeks = clone.weeks && typeof clone.weeks === "object" ? clone.weeks : {};
   Object.values(weeks).forEach((week) => {
     if (!week || typeof week !== "object") return;
     delete week.draft;
   });
   clone.weeks = weeks;
-  clone.schemaVersion = Math.max(12, Number(clone.schemaVersion || 12));
+  clone.schemaVersion = Math.max(13, Number(clone.schemaVersion || 13));
   return clone;
 };
 
@@ -138,7 +164,7 @@ export const createPlannerSyncClient = ({
       }
       const localVersion = hasMeaningfulState(local)
         ? local
-        : { schemaVersion: 12, currentWeekKey: "", weeks: {}, history: [] };
+        : { schemaVersion: 13, currentWeekKey: "", weeks: {}, history: [] };
       const created = await putProfile(localVersion, 0);
       if (!created.conflict) {
         perAccountVersion.set(accountKey, created.version);

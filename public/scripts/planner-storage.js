@@ -51,7 +51,7 @@ const defaultWeekState = () => ({
   majorGoalAiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
-const defaultState = () => ({ schemaVersion: 12, currentWeekKey: "", weeks: {}, history: [] });
+const defaultState = () => ({ schemaVersion: 13, currentWeekKey: "", weeks: {}, history: [] });
 
 const normalizeNeed = (value, fallbackDuration) => {
   const item = parse(value, {});
@@ -188,7 +188,7 @@ const normalizeWeekState = (week) => {
       }))
       .filter((item) => item.title || item.action === "modify")
     : [];
-  const tasks = Array.isArray(next.tasks)
+  const rawTasks = Array.isArray(next.tasks)
     ? next.tasks.map((item) => ({
       id: String(item?.id || uid("task")),
       weekKey: String(item?.weekKey || ""),
@@ -204,6 +204,23 @@ const normalizeWeekState = (week) => {
       source: String(item?.source || "ai"),
       updatedAt: String(item?.updatedAt || new Date().toISOString()),
     })).filter((item) => item.title)
+    : [];
+  const removedLegacyHabitTaskIds = new Set(
+    rawTasks
+      .filter((item) => String(item.habitId || ""))
+      .map((item) => String(item.id || "")),
+  );
+  const tasks = rawTasks.filter((item) => !String(item.habitId || ""));
+  const managedSlots = Array.isArray(next.managedSlots)
+    ? next.managedSlots.filter((slot) => {
+      const sourceId = String(slot?.sourceId || "");
+      const type = String(slot?.type || "");
+      const habitId = String(slot?.habitId || "");
+      if (habitId) return false;
+      if (type === "habit") return false;
+      if (sourceId && removedLegacyHabitTaskIds.has(sourceId)) return false;
+      return true;
+    })
     : [];
   return {
     profile,
@@ -234,7 +251,7 @@ const normalizeWeekState = (week) => {
     },
     availabilityRules: Array.isArray(next.availabilityRules) ? next.availabilityRules : [],
     commitLog: Array.isArray(next.commitLog) ? next.commitLog : [],
-    managedSlots: Array.isArray(next.managedSlots) ? next.managedSlots : [],
+    managedSlots,
     ignoredGoogleEventIds: Array.isArray(next.ignoredGoogleEventIds)
       ? next.ignoredGoogleEventIds.map((item) => String(item || "")).filter(Boolean)
       : [],
@@ -266,7 +283,7 @@ export const loadPlannerState = (accountKey = "anon") => {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
-    const state = { schemaVersion: 12, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
+    const state = { schemaVersion: 13, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
     Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => { state.weeks[key] = normalizeWeekState(value); });
     return state;
   } catch {

@@ -37,7 +37,7 @@ export const cleanupPlannerWeek = (week) => {
   const originalTasks = list(week.tasks);
   const keptTasks = originalTasks.filter((item) => {
     if (!isAiManaged(item)) return true;
-    if (item?.habitId) return true;
+    if (item?.habitId) return false;
 
     const majorGoalId = String(item?.majorGoalId || "");
     const minorGoalId = String(item?.minorGoalId || "");

@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.26
+
+- Fixed legacy habit resurrection by sanitizing planner state to remove old `tasks` entries that carried `habitId` from pre-D1 behavior.
+- Hardened deterministic `Generate` flow to ignore habit-linked persisted tasks and derive habit scheduling only from current `week.habits`.
+- Updated habit deletion flow to cascade-clean linked legacy habit tasks and habit managed slots.
+- Updated cloud sync state sanitation so pulled/saved profiles also strip legacy habit artifacts, preventing reappearance across devices.
+- Bumped planner schema baseline to `13` for normalized storage/sync state.
+
 ## v1.0.25
 
 - Fixed deterministic `Generate` drift that could preserve stale AI-applied habit slots with outdated durations.
