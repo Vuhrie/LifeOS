@@ -20,8 +20,11 @@ const normTime = (value, fallback) => (TIME_RE.test(String(value || "")) ? Strin
 const extractJson = (raw) => {
   const text = String(raw || "").trim();
   if (!text) return "";
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) return fenced[1].trim();
+  const fencedMatches = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)];
+  if (fencedMatches.length) {
+    const last = fencedMatches[fencedMatches.length - 1];
+    if (last?.[1]) return last[1].trim();
+  }
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   return start >= 0 && end > start ? text.slice(start, end + 1) : "";

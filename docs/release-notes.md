@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.30
+
+- Fixed schedule JSON import parsing to select the last fenced JSON block instead of the first.
+- Prevented false applies where in-progress/template JSON was parsed ahead of the actual `schedule_ready` payload.
+- Restored reliable minor-goal/task ingestion when chatbot responses contain multiple fenced JSON blocks.
+
 ## v1.0.29
 
 - Clarified schedule prompt-builder semantics so commitments and goals are explicitly treated as different purpose classes.
