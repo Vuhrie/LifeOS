@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.28
+
+- Fixed AI schedule apply linkage so tasks keep correct connections to newly-created minor goals even when imported JSON includes custom `minorGoalId` values.
+- Added stable minor-goal source-id/title remapping during apply, preventing AI tasks from becoming orphaned and disappearing after cleanup/sync.
+- Preserved downstream deterministic draft generation visibility for AI-managed minor goals and tasks by ensuring linked task relationships remain valid.
+
 ## v1.0.27
 
 - Enforced planner-defined-only deterministic draft generation: Google calendar events are no longer fetched or used during `Generate Schedule`.

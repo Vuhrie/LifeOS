@@ -141,6 +141,8 @@ const resolveMinorGoalId = (task, minorGoals) => {
   return match?.id || "";
 };
 
+const titleKey = (value) => String(value || "").trim().toLowerCase();
+
 const isLifeOsManagedCalendarEvent = (event) =>
   Boolean(event?.isLifeOsManaged)
   || String(event?.description || "").includes("lifeos_slot_id:")
@@ -348,15 +350,34 @@ export const createPlannerLogic = ({
       throw new Error(validation.errors.join(" "));
     }
 
-    const nextMinorGoals = (validation.plan.minorGoals || []).map((item) =>
-      createMinorGoal({
+    const minorGoalIdMap = new Map();
+    const nextMinorGoals = (validation.plan.minorGoals || []).map((item) => {
+      const createdMinorGoal = createMinorGoal({
         majorGoalId: resolveMajorGoal(item, week.goals),
         title: item.title,
         deadlineIso: item.deadline ? `${item.deadline}T23:59:59` : "",
         status: item.status || "active",
         notes: item.notes || "",
         source: "ai",
-      }));
+      });
+      const sourceMinorGoalId = String(item.id || "");
+      if (sourceMinorGoalId) minorGoalIdMap.set(sourceMinorGoalId, createdMinorGoal.id);
+      const sourceMinorGoalTitleKey = titleKey(item.title);
+      if (sourceMinorGoalTitleKey) minorGoalIdMap.set(`title:${sourceMinorGoalTitleKey}`, createdMinorGoal.id);
+      return createdMinorGoal;
+    });
+
+    const resolveAppliedTaskMinorGoalId = (item) => {
+      const sourceMinorGoalId = String(item.minorGoalId || "");
+      if (sourceMinorGoalId && minorGoalIdMap.has(sourceMinorGoalId)) {
+        return String(minorGoalIdMap.get(sourceMinorGoalId) || "");
+      }
+      const sourceMinorGoalTitleKey = titleKey(item.minorGoalTitle);
+      if (sourceMinorGoalTitleKey && minorGoalIdMap.has(`title:${sourceMinorGoalTitleKey}`)) {
+        return String(minorGoalIdMap.get(`title:${sourceMinorGoalTitleKey}`) || "");
+      }
+      return resolveMinorGoalId(item, nextMinorGoals);
+    };
 
     const nextTasks = (validation.plan.tasks || []).map((item) =>
       createTask({
@@ -366,7 +387,7 @@ export const createPlannerLogic = ({
         priority: 3,
         energy: item.energy || "deep",
         majorGoalId: "",
-        minorGoalId: resolveMinorGoalId(item, nextMinorGoals),
+        minorGoalId: resolveAppliedTaskMinorGoalId(item),
         status: item.status || "not_started",
         source: "ai",
       }));
