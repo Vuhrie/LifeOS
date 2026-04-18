@@ -198,6 +198,48 @@ const collectCommitItemsFromDraft = (draft) => {
   return items;
 };
 
+const inHorizonWindow = (dateValue, horizonStart, horizonEnd) => {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return false;
+  return date >= horizonStart && date < horizonEnd;
+};
+
+const buildDraftFromSlots = ({ slots, horizonStart, horizonDays }) => {
+  const start = new Date(horizonStart);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + horizonDays);
+  const filtered = (Array.isArray(slots) ? slots : [])
+    .map((slot) => {
+      const slotStart = new Date(slot.start);
+      const slotEnd = new Date(slot.end);
+      if (Number.isNaN(slotStart.getTime()) || Number.isNaN(slotEnd.getTime()) || slotEnd <= slotStart) return null;
+      if (!inHorizonWindow(slotStart, start, end)) return null;
+      return {
+        ...slot,
+        start: slotStart,
+        end: slotEnd,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.start - right.start || String(left.id || "").localeCompare(String(right.id || "")));
+  return {
+    validation: { ok: true, errors: [] },
+    slots: filtered,
+    unscheduled: [],
+    warnings: [],
+    trace: [],
+    metrics: {
+      scheduledCount: filtered.length,
+      unscheduledCount: 0,
+      totalScheduledMinutes: filtered.reduce((sum, item) => sum + Math.max(0, Number(item.durationMinutes || 0)), 0),
+      unchangedCount: filtered.length,
+      addedCount: 0,
+      removedCount: 0,
+    },
+  };
+};
+
 export const initPlannerController = (ui) => {
   let accountKey = "anon";
   let app = loadPlannerState(accountKey);
@@ -905,6 +947,44 @@ export const initPlannerController = (ui) => {
     }));
     const horizonStart = tomorrowStart();
     const horizonDays = 7;
+    const horizonEnd = new Date(horizonStart);
+    horizonEnd.setDate(horizonStart.getDate() + horizonDays);
+    const persistedAiSlots = (week.managedSlots || [])
+      .filter((slot) => slot && slot.persistedFromAiApply === true)
+      .filter((slot) => inHorizonWindow(slot.start, horizonStart, horizonEnd));
+    if (persistedAiSlots.length) {
+      const draftFromAi = buildDraftFromSlots({
+        slots: persistedAiSlots,
+        horizonStart,
+        horizonDays,
+      });
+      latestImportedEventsById = new Map();
+      draftFromAi.importedEvents = [];
+      draftFromAi.horizonStartIso = horizonStart.toISOString();
+      draftFromAi.horizonDays = horizonDays;
+      draftFromAi.preview = buildPlannerPreview({
+        draftSlots: draftFromAi.slots,
+        existingEvents: [],
+        horizonStart,
+        horizonDays,
+        commitments: planningCommitments,
+        profile: planningProfile,
+      });
+      draftFromAi.warnings = previewOverlapWarnings(draftFromAi.slots, []);
+      sessionDraft = draftFromAi;
+      week.managedSlots = draftFromAi.slots.map((slot) => ({
+        ...slot,
+        lifeosManaged: true,
+        persistedFromAiApply: true,
+        planRunId: `run_${Date.now().toString(36)}`,
+      }));
+      save();
+      view.renderDraft(draftFromAi);
+      view.resetCommitProgress();
+      view.setStatus(`Schedule generated from applied AI plan (${draftFromAi.slots.length} slots).`, "success");
+      currentStep = view.setStep(3);
+      return;
+    }
     const habitTasks = buildDeterministicHabitTasks({
       habits: week.habits,
       horizonStart,

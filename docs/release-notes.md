@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.31
+
+- Updated `Generate Schedule` to prioritize the full last-applied AI schedule slots within the rolling 7-day window.
+- Ensured generated draft includes pasted-and-applied AI plan content (tasks, habits, rest, free_time, and other managed slots) rather than collapsing back to deterministic-only output.
+- Kept Google schedule import excluded from generation preview inputs; only planner-owned commitments and applied AI-managed slots are used.
+
 ## v1.0.30
 
 - Fixed schedule JSON import parsing to select the last fenced JSON block instead of the first.
