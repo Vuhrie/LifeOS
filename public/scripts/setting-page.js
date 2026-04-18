@@ -15,6 +15,22 @@ const syncNowButton = document.querySelector("#sync-now");
 const syncConfig = window.LIFEOS_PLANNER_SYNC_CONFIG || {};
 const syncApiBase = String(syncConfig.apiBaseUrl || "").replace(/\/$/, "");
 
+const parseSyncErrorPayload = async (response) => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+const formatSyncHttpError = (status, payload) => {
+  if (status === 401) {
+    const hint = String(payload?.hint || "").trim();
+    return hint || "Google session is missing required identity permission. Reconnect Google.";
+  }
+  return `Cloud sync request failed (${status}).`;
+};
+
 const formatDateTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
@@ -94,15 +110,25 @@ if (connectButton) {
     try {
       const token = await writeClient.getAccessToken({ interactive: false });
       if (!token) throw new Error("Missing Google token.");
-      const response = await fetch(`${syncApiBase}/profile`, {
+      let response = await fetch(`${syncApiBase}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (response.status === 401) {
+        setSyncStatus("Cloud auth needs refresh. Reconnecting Google...", "loading");
+        const refreshedToken = await writeClient.getAccessToken({ interactive: true, forceRefresh: true });
+        response = await fetch(`${syncApiBase}/profile`, {
+          headers: { Authorization: `Bearer ${refreshedToken}` },
+        });
+      }
       if (response.status === 404) {
         setSyncMeta({ state: "No cloud profile", version: "-", updatedAt: "-" });
         setSyncStatus("No profile in D1 yet. It will be created on first planner sync.", "warning");
         return;
       }
-      if (!response.ok) throw new Error(`Cloud sync request failed (${response.status}).`);
+      if (!response.ok) {
+        const errorPayload = await parseSyncErrorPayload(response);
+        throw new Error(formatSyncHttpError(response.status, errorPayload));
+      }
       const payload = await response.json();
       setSyncMeta({
         state: "Cloud profile found",

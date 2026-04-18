@@ -6,7 +6,12 @@ import {
 } from "./auth-session.js";
 
 const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
-const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const GOOGLE_SCOPE = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "openid",
+  "email",
+  "profile",
+].join(" ");
 const CONFIG = window.LIFEOS_CALENDAR_CONFIG ?? {};
 
 const waitForGoogleIdentity = async (timeoutMs = 8000) => {
@@ -150,9 +155,10 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
       return requestToken("consent");
     }
   };
-  const getAccessToken = async ({ interactive = false } = {}) => {
-    if (tokenValid()) return accessToken;
+  const getAccessToken = async ({ interactive = false, forceRefresh = false } = {}) => {
+    if (!forceRefresh && tokenValid()) return accessToken;
     if (!interactive) return "";
+    if (forceRefresh) return requestToken("consent");
     return ensureSignedIn();
   };
 

@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.22
+
+- Expanded Google auth scope to include identity claims (`openid`, `email`, `profile`) alongside calendar write scope so cloud sync verification can validate account identity reliably.
+- Added forced interactive token refresh path for explicit cloud sync checks (`Sync Now`) when server auth returns `401`.
+- Improved cloud sync error handling in Settings with specific guidance for identity-scope/session failures.
+- Upgraded Worker `401` responses to include structured auth diagnostics (`code`, `hint`, `providerStatus`) for safer troubleshooting.
+- Updated UI and automated visual release references to `v1.0.22`.
+
 ## v1.0.21
 
 - Hardened Cloudflare Worker + D1 sync path with stricter planner-state validation, payload-size guards, and configurable CORS allowlist (`ALLOWED_ORIGINS`).

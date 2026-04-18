@@ -53,17 +53,45 @@ const readBearer = (request) => {
 };
 
 const verifyGoogleToken = async (token) => {
-  if (!token) return null;
-  const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) return null;
-  const payload = await response.json();
-  if (!payload || !payload.sub) return null;
-  return {
-    userId: String(payload.sub),
-    email: String(payload.email || "").toLowerCase(),
-  };
+  if (!token) {
+    return {
+      ok: false,
+      code: "missing_bearer",
+      hint: "Missing Google bearer token. Reconnect Google and retry sync.",
+    };
+  }
+  try {
+    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      return {
+        ok: false,
+        code: "google_userinfo_rejected",
+        providerStatus: response.status,
+        hint: "Google token is expired or missing identity scope. Reconnect Google and retry sync.",
+      };
+    }
+    const payload = await response.json();
+    if (!payload || !payload.sub) {
+      return {
+        ok: false,
+        code: "google_userinfo_invalid",
+        hint: "Google token did not include account identity. Reconnect Google and retry sync.",
+      };
+    }
+    return {
+      ok: true,
+      userId: String(payload.sub),
+      email: String(payload.email || "").toLowerCase(),
+    };
+  } catch {
+    return {
+      ok: false,
+      code: "google_userinfo_unreachable",
+      hint: "Unable to verify Google token right now. Retry in a moment.",
+    };
+  }
 };
 
 const sanitizeState = (state) => {
@@ -213,7 +241,20 @@ const writeProfile = async ({ db, userId, email, statePayload, baseVersion, flag
 const withAuth = async (request, env) => {
   const token = readBearer(request);
   const identity = await verifyGoogleToken(token);
-  if (!identity) return { error: json({ error: "Unauthorized" }, 401, corsHeaders(request, env)) };
+  if (!identity.ok) {
+    return {
+      error: json(
+        {
+          error: "Unauthorized",
+          code: identity.code,
+          hint: identity.hint,
+          providerStatus: identity.providerStatus || null,
+        },
+        401,
+        corsHeaders(request, env),
+      ),
+    };
+  }
   if (!env.PLANNER_DB) return { error: json({ error: "Database binding PLANNER_DB is missing" }, 500, corsHeaders(request, env)) };
   const flags = await detectSchemaFlags(env.PLANNER_DB);
   return { identity, db: env.PLANNER_DB, flags };
