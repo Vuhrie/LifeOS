@@ -895,7 +895,8 @@ export const initPlannerController = (ui) => {
   ui.generate.addEventListener("click", async () => {
     if (!lastAuthStateRef.current.isSignedIn) return view.setStatus("Connect Google first to plan.", "warning");
     const hasAiGoalSeeds = Boolean((week.aiMajorGoalSeeds || []).length);
-    await syncImportedGoogleCommitments({ silent: true });
+    const planningCommitments = (week.profile.commitments || []).filter((item) => String(item?.source || "") !== "google_imported");
+    const planningProfile = { ...week.profile, commitments: planningCommitments };
     const goal = week.goals[0] || null;
     const minorGoals = week.minorGoals.map((item) => ({
       id: item.id,
@@ -919,29 +920,21 @@ export const initPlannerController = (ui) => {
       availabilityRules: week.availabilityRules,
       horizonStart,
       horizonDays,
-      profile: week.profile,
+      profile: planningProfile,
       existingSlots: nonHabitManagedSlots,
       lockedHorizonHours: week.settings.lockedHorizonHours,
     });
-    const end = new Date(horizonStart);
-    end.setDate(end.getDate() + horizonDays);
-    let existingEvents = [];
-    try {
-      existingEvents = await writeClient.fetchExistingEvents({ startIso: horizonStart.toISOString(), endIso: end.toISOString() });
-    } catch {}
-    const visibleExistingEvents = filterHiddenGoogleEvents(existingEvents, week);
-    const editedExistingEvents = applyImportedEventEdits(visibleExistingEvents, week.importedEventEdits);
-    latestImportedEventsById = new Map(editedExistingEvents.map((item) => [String(item.id), item]));
-    draft.importedEvents = visibleExistingEvents;
+    latestImportedEventsById = new Map();
+    draft.importedEvents = [];
     draft.horizonStartIso = horizonStart.toISOString();
     draft.horizonDays = horizonDays;
     draft.preview = buildPlannerPreview({
       draftSlots: draft.slots,
-      existingEvents: editedExistingEvents,
+      existingEvents: [],
       horizonStart,
       horizonDays,
-      commitments: week.profile.commitments,
-      profile: week.profile,
+      commitments: planningCommitments,
+      profile: planningProfile,
     });
     sessionDraft = draft;
     week.managedSlots = draft.slots.map((slot) => ({
@@ -951,7 +944,7 @@ export const initPlannerController = (ui) => {
       planRunId: `run_${Date.now().toString(36)}`,
     }));
     if (draft.validation.ok) {
-      draft.warnings = previewOverlapWarnings(draft.slots, editedExistingEvents);
+      draft.warnings = previewOverlapWarnings(draft.slots, []);
     }
     save();
     view.renderDraft(draft);

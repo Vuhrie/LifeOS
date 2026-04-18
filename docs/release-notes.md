@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.27
+
+- Enforced planner-defined-only deterministic draft generation: Google calendar events are no longer fetched or used during `Generate Schedule`.
+- Excluded `google_imported` commitments from deterministic draft planning and preview rendering.
+- Removed imported-event overlap contribution from deterministic draft warnings so generated drafts reflect only planner-owned inputs.
+- Preserved explicit Google write flow and step-3 commit controls; this change only affects draft generation inputs.
+
 ## v1.0.26
 
 - Fixed legacy habit resurrection by sanitizing planner state to remove old `tasks` entries that carried `habitId` from pre-D1 behavior.
