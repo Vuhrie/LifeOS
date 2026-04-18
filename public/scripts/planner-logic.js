@@ -377,7 +377,6 @@ export const createPlannerLogic = ({
     } else {
       applyLegacyOperations(plan);
     }
-    week.draft = null;
     applyUiFromState();
     refreshAvailabilityFromProfile();
     rerenderAll();

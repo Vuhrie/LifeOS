@@ -98,12 +98,18 @@ const sanitizeState = (state) => {
   if (!state || typeof state !== "object" || Array.isArray(state)) return null;
   if (typeof state.currentWeekKey !== "string") return null;
   if (!state.weeks || typeof state.weeks !== "object" || Array.isArray(state.weeks)) return null;
-  const schemaVersion = Number(state.schemaVersion);
+  const cleanState = JSON.parse(JSON.stringify(state));
+  Object.values(cleanState.weeks || {}).forEach((week) => {
+    if (!week || typeof week !== "object") return;
+    delete week.draft;
+  });
+  cleanState.schemaVersion = Math.max(12, Number(cleanState.schemaVersion || 12));
+  const schemaVersion = Number(cleanState.schemaVersion);
   if (Number.isNaN(schemaVersion) || schemaVersion < 1) return null;
   try {
-    const serialized = JSON.stringify(state);
+    const serialized = JSON.stringify(cleanState);
     if (!serialized || serialized.length > MAX_STATE_BYTES) return null;
-    return { state, serialized, schemaVersion };
+    return { state: cleanState, serialized, schemaVersion };
   } catch {
     return null;
   }

@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.23
+
+- Refactored planner draft to session-only runtime state so draft schedule preview is never persisted as canonical planner data.
+- Removed persisted `week.draft` from planner state normalization and raised planner schema baseline to `12`.
+- Hardened save and cloud sync serialization to strip any legacy persisted `draft` data before local save and D1 sync writes.
+- Updated cleanup behavior so stale AI cleanup only mutates canonical planner entities (minor goals/tasks/managed slots), not draft persistence.
+- Added explicit Step 3 UI copy clarifying that draft is temporary while defined elements and planner inputs are real saved data.
+
 ## v1.0.22
 
 - Expanded Google auth scope to include identity claims (`openid`, `email`, `profile`) alongside calendar write scope so cloud sync verification can validate account identity reliably.

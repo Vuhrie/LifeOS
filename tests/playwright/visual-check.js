@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.22";
+const releaseVersion = "v1.0.23";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -160,7 +160,7 @@ const run = async () => {
     const cleanupSeed = await desktop.evaluate(() => {
       const key = Object.keys(window.localStorage)
         .find((item) => item.startsWith("lifeos_planner_state_v2_")) || "lifeos_planner_state_v2_anon";
-      const state = JSON.parse(window.localStorage.getItem(key) || '{"schemaVersion":11,"currentWeekKey":"","weeks":{},"history":[]}');
+      const state = JSON.parse(window.localStorage.getItem(key) || '{"schemaVersion":12,"currentWeekKey":"","weeks":{},"history":[]}');
       const weekKey = state.currentWeekKey || Object.keys(state.weeks || {})[0] || "visual-cleanup-week";
       const existingWeek = state.weeks?.[weekKey] || {};
       state.currentWeekKey = weekKey;

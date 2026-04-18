@@ -7,7 +7,7 @@ const isAiManaged = (item) => {
 
 const list = (value) => (Array.isArray(value) ? value : []);
 
-export const cleanupPlannerWeek = (week, { clearDraftOnChange = true } = {}) => {
+export const cleanupPlannerWeek = (week) => {
   if (!week || typeof week !== "object") {
     return { changed: false, removedMinorGoals: 0, removedTasks: 0, clearedDraft: false };
   }
@@ -83,11 +83,5 @@ export const cleanupPlannerWeek = (week, { clearDraftOnChange = true } = {}) => 
     });
   }
 
-  let clearedDraft = false;
-  if (clearDraftOnChange && week.draft) {
-    week.draft = null;
-    clearedDraft = true;
-  }
-
-  return { changed: true, removedMinorGoals, removedTasks, clearedDraft };
+  return { changed: true, removedMinorGoals, removedTasks, clearedDraft: false };
 };

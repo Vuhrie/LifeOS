@@ -15,6 +15,21 @@ const hasMeaningfulState = (state) =>
       && Object.keys(state.weeks).length,
   );
 
+const stripDraftFromState = (state) => {
+  if (!state || typeof state !== "object") {
+    return { schemaVersion: 12, currentWeekKey: "", weeks: {}, history: [] };
+  }
+  const clone = JSON.parse(JSON.stringify(state));
+  const weeks = clone.weeks && typeof clone.weeks === "object" ? clone.weeks : {};
+  Object.values(weeks).forEach((week) => {
+    if (!week || typeof week !== "object") return;
+    delete week.draft;
+  });
+  clone.weeks = weeks;
+  clone.schemaVersion = Math.max(12, Number(clone.schemaVersion || 12));
+  return clone;
+};
+
 const parseSyncEnvelope = (payload) => {
   if (!payload || typeof payload !== "object") return null;
   const state = payload.state;
@@ -96,8 +111,9 @@ export const createPlannerSyncClient = ({
       const remote = await getProfile();
       if (!remote) return null;
       perAccountVersion.set(accountKey, remote.version);
-      saveLocalState(remote.state, accountKey);
-      onRemoteStateApplied?.(remote.state, accountKey, remote.updatedAt);
+      const cleanRemoteState = stripDraftFromState(remote.state);
+      saveLocalState(cleanRemoteState, accountKey);
+      onRemoteStateApplied?.(cleanRemoteState, accountKey, remote.updatedAt);
       emit("Google Connected | Cloud synced", "success");
       return remote;
     } catch (error) {
@@ -111,17 +127,18 @@ export const createPlannerSyncClient = ({
     emit("Google Connected | Syncing cloud state...", "neutral");
     try {
       const remote = await getProfile();
-      const local = loadLocalState(accountKey);
+      const local = stripDraftFromState(loadLocalState(accountKey));
       if (remote) {
         perAccountVersion.set(accountKey, remote.version);
-        saveLocalState(remote.state, accountKey);
-        onRemoteStateApplied?.(remote.state, accountKey, remote.updatedAt);
+        const cleanRemoteState = stripDraftFromState(remote.state);
+        saveLocalState(cleanRemoteState, accountKey);
+        onRemoteStateApplied?.(cleanRemoteState, accountKey, remote.updatedAt);
         emit("Google Connected | Cloud synced", "success");
         return;
       }
       const localVersion = hasMeaningfulState(local)
         ? local
-        : { schemaVersion: 11, currentWeekKey: "", weeks: {}, history: [] };
+        : { schemaVersion: 12, currentWeekKey: "", weeks: {}, history: [] };
       const created = await putProfile(localVersion, 0);
       if (!created.conflict) {
         perAccountVersion.set(accountKey, created.version);
@@ -134,7 +151,7 @@ export const createPlannerSyncClient = ({
 
   const pushNow = async (accountKey) => {
     if (!enabled || !accountKey || accountKey === "anon") return;
-    const local = loadLocalState(accountKey);
+    const local = stripDraftFromState(loadLocalState(accountKey));
     const baseVersion = perAccountVersion.get(accountKey) || 0;
     try {
       emit("Google Connected | Syncing cloud state...", "neutral");

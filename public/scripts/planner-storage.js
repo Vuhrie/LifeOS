@@ -32,7 +32,6 @@ const defaultWeekState = () => ({
     priorityMajorGoalId: "",
   },
   availabilityRules: [],
-  draft: null,
   commitLog: [],
   managedSlots: [],
   ignoredGoogleEventIds: [],
@@ -43,7 +42,7 @@ const defaultWeekState = () => ({
   majorGoalAiAssist: { lastPrompt: "", lastImportText: "", lastAppliedAt: "", lastApplySummary: "" },
 });
 
-const defaultState = () => ({ schemaVersion: 11, currentWeekKey: "", weeks: {}, history: [] });
+const defaultState = () => ({ schemaVersion: 12, currentWeekKey: "", weeks: {}, history: [] });
 
 const normalizeNeed = (value, fallbackDuration) => {
   const item = parse(value, {});
@@ -216,7 +215,6 @@ const normalizeWeekState = (week) => {
       priorityMajorGoalId: String(parse(next.aiPlannerInputs, {}).priorityMajorGoalId || ""),
     },
     availabilityRules: Array.isArray(next.availabilityRules) ? next.availabilityRules : [],
-    draft: next.draft || null,
     commitLog: Array.isArray(next.commitLog) ? next.commitLog : [],
     managedSlots: Array.isArray(next.managedSlots) ? next.managedSlots : [],
     ignoredGoogleEventIds: Array.isArray(next.ignoredGoogleEventIds)
@@ -250,7 +248,7 @@ export const loadPlannerState = (accountKey = "anon") => {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaultState();
-    const state = { schemaVersion: 11, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
+    const state = { schemaVersion: 12, currentWeekKey: String(parsed.currentWeekKey || ""), weeks: {}, history: Array.isArray(parsed.history) ? parsed.history : [] };
     Object.entries(parse(parsed.weeks, {})).forEach(([key, value]) => { state.weeks[key] = normalizeWeekState(value); });
     return state;
   } catch {

@@ -144,12 +144,12 @@ export const initPlannerController = (ui) => {
   let app = loadPlannerState(accountKey);
   let weekKey = rotateWeekIfNeeded(app, new Date());
   let week = ensureWeekState(app, weekKey);
-  week.draft = null;
+  let sessionDraft = null;
   const persistableState = () => {
     const cloned = JSON.parse(JSON.stringify(app));
     Object.values(cloned.weeks || {}).forEach((value) => {
       if (!value || typeof value !== "object") return;
-      value.draft = null;
+      delete value.draft;
     });
     return cloned;
   };
@@ -179,14 +179,13 @@ export const initPlannerController = (ui) => {
     view.renderTasks(week.tasks, week.minorGoals);
     view.renderHabits(week.habits);
     view.renderPriorityMajorGoalOptions(week.goals, week.aiPlannerInputs?.priorityMajorGoalId || "");
-    view.renderDraft(week.draft);
+    view.renderDraft(sessionDraft);
   };
 
-  const hasDraftPreview = () => Boolean(week.draft?.preview?.days?.length);
+  const hasDraftPreview = () => Boolean(sessionDraft?.preview?.days?.length);
 
   const clearDraftOnly = () => {
-    week.draft = null;
-    save();
+    sessionDraft = null;
     view.renderDraft(null);
     view.resetCommitProgress();
   };
@@ -194,6 +193,8 @@ export const initPlannerController = (ui) => {
   const runStateCleanup = ({ shouldSave = true, announce = false } = {}) => {
     const result = cleanupPlannerWeek(week);
     if (!result.changed) return result;
+    sessionDraft = null;
+    view.resetCommitProgress();
     if (shouldSave) save();
     if (announce) {
       const parts = [
@@ -256,7 +257,7 @@ export const initPlannerController = (ui) => {
     app = loadPlannerState(accountKey);
     weekKey = rotateWeekIfNeeded(app, new Date());
     week = ensureWeekState(app, weekKey);
-    week.draft = null;
+    sessionDraft = null;
     if (!Array.isArray(week.aiMajorGoalSeeds)) week.aiMajorGoalSeeds = [];
     if (!Array.isArray(week.minorGoals)) week.minorGoals = [];
     if (!Array.isArray(week.tasks)) week.tasks = [];
@@ -303,9 +304,8 @@ export const initPlannerController = (ui) => {
       app = remoteState;
       weekKey = rotateWeekIfNeeded(app, new Date());
       week = ensureWeekState(app, weekKey);
-      week.draft = null;
+      sessionDraft = null;
       const cleanup = runStateCleanup({ announce: true });
-      if (cleanup.changed) view.resetCommitProgress();
       if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
       applyUiFromState();
       rerenderAll();
@@ -314,22 +314,22 @@ export const initPlannerController = (ui) => {
   });
 
   const rebuildDraftPreview = () => {
-    if (!week.draft) return;
-    const horizonStart = new Date(week.draft.horizonStartIso || Date.now());
+    if (!sessionDraft) return;
+    const horizonStart = new Date(sessionDraft.horizonStartIso || Date.now());
     horizonStart.setHours(0, 0, 0, 0);
-    const horizonDays = Number(week.draft.horizonDays || week.settings.horizonDays || 7);
-    const visibleImported = filterHiddenGoogleEvents(week.draft.importedEvents || [], week);
+    const horizonDays = Number(sessionDraft.horizonDays || week.settings.horizonDays || 7);
+    const visibleImported = filterHiddenGoogleEvents(sessionDraft.importedEvents || [], week);
     const editedImported = applyImportedEventEdits(visibleImported, week.importedEventEdits);
     latestImportedEventsById = new Map(editedImported.map((item) => [String(item.id), item]));
-    week.draft.preview = buildPlannerPreview({
-      draftSlots: week.draft.slots || [],
+    sessionDraft.preview = buildPlannerPreview({
+      draftSlots: sessionDraft.slots || [],
       existingEvents: editedImported,
       horizonStart,
       horizonDays,
       commitments: week.profile.commitments,
       profile: week.profile,
     });
-    week.draft.warnings = previewOverlapWarnings(week.draft.slots || [], editedImported);
+    sessionDraft.warnings = previewOverlapWarnings(sessionDraft.slots || [], editedImported);
   };
 
   const syncImportedGoogleCommitments = async ({
@@ -458,7 +458,13 @@ export const initPlannerController = (ui) => {
       return logic.buildPromptContext();
     },
     onValidateImport: (text) => parseAiBridgePlan(text),
-    onApplyImport: (plan) => logic.applyAiOperations(plan, summarizeAiBridgePlan),
+    onApplyImport: (plan) => {
+      const summary = logic.applyAiOperations(plan, summarizeAiBridgePlan);
+      sessionDraft = null;
+      view.renderDraft(null);
+      view.resetCommitProgress();
+      return summary;
+    },
     onPersist: (next) => { week.aiAssist = { ...week.aiAssist, ...next }; save(); },
   });
 
@@ -745,7 +751,7 @@ export const initPlannerController = (ui) => {
       week.ignoredGoogleEventIds = week.ignoredGoogleEventIds.filter((id) => id !== editImportedEventId);
       rebuildDraftPreview();
       save();
-      view.renderDraft(week.draft);
+      view.renderDraft(sessionDraft);
       view.setStatus("Imported event updated in planner draft. Commit to apply to Google.", "warning");
       return;
     }
@@ -760,7 +766,7 @@ export const initPlannerController = (ui) => {
       delete week.importedEventEdits[importedEventId];
       rebuildDraftPreview();
       save();
-      view.renderDraft(week.draft);
+      view.renderDraft(sessionDraft);
       view.setStatus("Imported event removed from planner draft. Commit to apply to Google.", "warning");
       return;
     }
@@ -844,7 +850,7 @@ export const initPlannerController = (ui) => {
       commitments: week.profile.commitments,
       profile: week.profile,
     });
-    week.draft = draft;
+    sessionDraft = draft;
     week.managedSlots = draft.slots.map((slot) => ({
       ...slot,
       lifeosManaged: true,
@@ -882,16 +888,16 @@ export const initPlannerController = (ui) => {
       view.setStatus("Commit is available only in Step 3 (Rolling 7-Day Plan).", "warning");
       return false;
     }
-    if (!week.draft?.preview?.days?.length) {
+    if (!sessionDraft?.preview?.days?.length) {
       view.setStatus("Generate a draft before committing.", "warning");
       return false;
     }
-    const horizonStart = new Date(week.draft.horizonStartIso || tomorrowStart());
+    const horizonStart = new Date(sessionDraft.horizonStartIso || tomorrowStart());
     horizonStart.setHours(0, 0, 0, 0);
-    const horizonDays = Number(week.draft.horizonDays || week.settings.horizonDays || 7);
+    const horizonDays = Number(sessionDraft.horizonDays || week.settings.horizonDays || 7);
     const horizonEnd = new Date(horizonStart);
     horizonEnd.setDate(horizonStart.getDate() + horizonDays);
-    const commitItems = collectCommitItemsFromDraft(week.draft);
+    const commitItems = collectCommitItemsFromDraft(sessionDraft);
     if (!commitItems.length) {
       view.setStatus("No schedule items available to commit in this rolling window.", "warning");
       return false;
@@ -940,7 +946,7 @@ export const initPlannerController = (ui) => {
       });
       week.ignoredGoogleEventIds = [];
       week.importedEventEdits = {};
-      week.draft = null;
+      sessionDraft = null;
       save();
       view.renderDraft(null);
       view.appendCommitProgressLog(
