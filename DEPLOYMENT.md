@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v1.0.28`
+- Current version: `v1.0.29`
 - Current production entry file: `public/index.html`
 - Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/main-shell.css`, `public/styles/main-drawer.css`, `public/styles/main-interactions.css`, `public/styles/calendar.css`, `public/styles/planner.css`, `public/styles/planner-shell.css`, `public/styles/planner-cards.css`, `public/styles/planner-ai.css`, `public/styles/planner-responsive.css`, `public/styles/planner-interactions.css`
 - Supporting pages: `public/schedules.html`, `public/planner.html`, `public/setting.html`
@@ -74,7 +74,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v1.0.28`.
+- The navbar shows `LifeOS v1.0.29`.
 - The desktop navbar centers the links `Today`, `Schedules`, `Planner`, and `Setting`.
 - Desktop navbar includes `Connect Google` on the right side.
 - The mobile menu button opens a left-side navigation sheet with the same navigation items.

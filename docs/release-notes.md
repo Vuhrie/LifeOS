@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.29
+
+- Clarified schedule prompt-builder semantics so commitments and goals are explicitly treated as different purpose classes.
+- Added hard prompt instructions that commitments are forced obligations, while major goals/minor goals/tasks are achievement-oriented work.
+- Added prompt guidance to prevent collapsing goals/tasks into commitments even when they share domain overlap.
+- Added prompt guidance to account for stress/workload when commitments and goals are in a similar vein.
+
 ## v1.0.28
 
 - Fixed AI schedule apply linkage so tasks keep correct connections to newly-created minor goals even when imported JSON includes custom `minorGoalId` values.
