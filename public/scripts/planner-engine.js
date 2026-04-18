@@ -135,9 +135,11 @@ const tryKeepExistingSlots = ({ existingSlots, hardBlocks, lockedUntil, horizonS
     const slotEnd = new Date(slot.end);
     if (Number.isNaN(slotStart.getTime()) || Number.isNaN(slotEnd.getTime())) return;
     if (slotStart >= horizonEnd || slotEnd <= horizonStart) return;
-    if (!isPersistedAiApply && !canKeepExistingSlot({ slot, hardBlocks, lockedUntil, horizonStart, horizonEnd })) return;
+    if (!canKeepExistingSlot({ slot, hardBlocks, lockedUntil, horizonStart, horizonEnd })) return;
     const matchingUnit = units.find((unit) => unit.id === slot.id);
-    if (!isPersistedAiApply && !matchingUnit) return;
+    if (!matchingUnit && !(isPersistedAiApply && slot.type !== "habit")) return;
+    if (matchingUnit && Number(matchingUnit.durationMinutes || 0) !== Number(slot.durationMinutes || 0)) return;
+    if (slot.type === "habit" && !matchingUnit) return;
     if (consumed.has(slot.id)) return;
     const dayKey = slotStart.toDateString();
     const habitKey = habitKeyFromSlot(slot);

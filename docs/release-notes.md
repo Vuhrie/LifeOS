@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.0.25
+
+- Fixed deterministic `Generate` drift that could preserve stale AI-applied habit slots with outdated durations.
+- Removed the hardcoded 2-hour minor-goal default in the deterministic generation path.
+- Updated generate flow to synthesize habit scheduling tasks directly from current habit definitions (frequency, duration, preferred window), so draft output reflects latest planner settings.
+- Updated slot-preservation checks to keep existing slots only when they still match current planning units and durations.
+- Updated release visual checks to validate the new deterministic habit-placement behavior.
+
 ## v1.0.24
 
 - Added D1-persisted `googleDecisionContext` snapshot fields to planner state so schedule decisions can be traced against captured Google occupancy context.

@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.24";
+const releaseVersion = "v1.0.25";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -348,16 +348,16 @@ const run = async () => {
       throw new Error("Removed imported commitment should not be reinserted after generate.");
     }
     const noGoalStatus = await desktop.locator("#planner-status").textContent();
-    if (!noGoalStatus?.includes("open hours")) {
-      throw new Error(`Planner should generate without goals and show open-hours status. Found: ${noGoalStatus}`);
+    if (!noGoalStatus?.includes("Schedule generated")) {
+      throw new Error(`Planner should generate a deterministic draft successfully. Found: ${noGoalStatus}`);
     }
     const previewText = await desktop.locator("#draft-schedule").innerText();
     const previewDayCount = await desktop.locator(".draft-day-group").count();
     if (previewText.includes("Existing Calendar Event")) {
       throw new Error("Removed imported commitment/event should not remain in draft preview.");
     }
-    if (previewText.includes("Regression Gym Habit")) {
-      throw new Error("Deterministic draft should not auto-place habit sessions without AI plan import.");
+    if (!previewText.includes("Regression Gym Habit")) {
+      throw new Error("Deterministic draft should schedule configured habits from current planner definitions.");
     }
     if (!previewText.includes("Daily Rhythm")) {
       throw new Error("Generated draft should render daily rhythm blocks.");

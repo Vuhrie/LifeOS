@@ -74,6 +74,65 @@ const tomorrowStart = () => {
   return next;
 };
 
+const isoDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const mondayStartKey = (date) => {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  const offset = (copy.getDay() + 6) % 7;
+  copy.setDate(copy.getDate() - offset);
+  return isoDate(copy);
+};
+
+const buildDeterministicHabitTasks = ({ habits, horizonStart, horizonDays }) => {
+  const rollingDays = Array.from({ length: horizonDays }).map((_, index) => {
+    const date = new Date(horizonStart);
+    date.setDate(horizonStart.getDate() + index);
+    return { date, weekKey: mondayStartKey(date) };
+  });
+  const daysPerWeek = new Map();
+  rollingDays.forEach((day) => {
+    daysPerWeek.set(day.weekKey, (daysPerWeek.get(day.weekKey) || 0) + 1);
+  });
+
+  const tasks = [];
+  (habits || []).forEach((habit) => {
+    const frequency = Math.max(0, Number(habit.frequency || 0));
+    const duration = Math.max(15, Number(habit.durationMinutes || 60));
+    if (!frequency) return;
+    const maxByWeek = new Map();
+    [...daysPerWeek.entries()].forEach(([weekKey, daysInWeekPortion]) => {
+      const partialCap = Math.ceil((frequency * daysInWeekPortion) / 7);
+      maxByWeek.set(weekKey, Math.min(frequency, Math.max(0, partialCap)));
+    });
+    const placedByWeek = new Map();
+    rollingDays.forEach((day, dayIndex) => {
+      const placed = placedByWeek.get(day.weekKey) || 0;
+      const cap = maxByWeek.get(day.weekKey) || 0;
+      if (placed >= cap) return;
+      tasks.push({
+        id: `${habit.id}_${day.weekKey}_${placed + 1}_${dayIndex}`,
+        title: `${habit.name} Session ${placed + 1}`,
+        estimateMinutes: duration,
+        priority: 3,
+        energy: "deep",
+        habitId: String(habit.id || ""),
+        preferredWindow: String(habit.window || "anytime"),
+        status: "active",
+        source: "deterministic_habit",
+      });
+      placedByWeek.set(day.weekKey, placed + 1);
+    });
+  });
+
+  return tasks;
+};
+
 const filterIgnoredEvents = (events, ignoredIds) =>
   (events || []).filter((event) => !ignoredIds.includes(String(event.id || "")));
 
@@ -836,11 +895,17 @@ export const initPlannerController = (ui) => {
     const minorGoals = week.minorGoals.map((item) => ({
       id: item.id,
       title: item.title,
-      targetHours: 2,
+      targetHours: Math.max(1, Number(item.targetHours || 1)),
     }));
-    const tasks = [...week.tasks];
     const horizonStart = tomorrowStart();
     const horizonDays = 7;
+    const habitTasks = buildDeterministicHabitTasks({
+      habits: week.habits,
+      horizonStart,
+      horizonDays,
+    });
+    const tasks = [...week.tasks, ...habitTasks];
+    const nonHabitManagedSlots = (week.managedSlots || []).filter((slot) => String(slot?.type || "") !== "habit");
     const draft = generateDraftPlan({
       goal,
       minorGoals,
@@ -849,7 +914,7 @@ export const initPlannerController = (ui) => {
       horizonStart,
       horizonDays,
       profile: week.profile,
-      existingSlots: week.managedSlots,
+      existingSlots: nonHabitManagedSlots,
       lockedHorizonHours: week.settings.lockedHorizonHours,
     });
     const end = new Date(horizonStart);
