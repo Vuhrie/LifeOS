@@ -1,3 +1,7 @@
+const MAX_STATE_BYTES = 800000;
+const SERVER_SCHEMA_VERSION = 1;
+const schemaFlagsByBinding = new Map();
+
 const json = (payload, status = 200, headers = {}) =>
   new Response(JSON.stringify(payload), {
     status,
@@ -7,10 +11,33 @@ const json = (payload, status = 200, headers = {}) =>
     },
   });
 
-const corsHeaders = (request) => {
-  const origin = request.headers.get("Origin") || "*";
+const parseAllowedOrigins = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const resolveAllowedOrigin = (request, env) => {
+  const origin = request.headers.get("Origin") || "";
+  const allowList = parseAllowedOrigins(env.ALLOWED_ORIGINS);
+  if (!allowList.length) return origin || "*";
+  if (!origin) return allowList[0];
+  if (allowList.includes(origin)) return origin;
+  return "";
+};
+
+const corsHeaders = (request, env) => {
+  const allowedOrigin = resolveAllowedOrigin(request, env);
+  if (!allowedOrigin) {
+    return {
+      "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type",
+      "Access-Control-Max-Age": "86400",
+      Vary: "Origin",
+    };
+  }
   return {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Max-Age": "86400",
@@ -39,56 +66,166 @@ const verifyGoogleToken = async (token) => {
   };
 };
 
-const fetchProfile = async (db, userId) => {
-  const result = await db
-    .prepare("SELECT user_id, email, state_json, version, updated_at FROM planner_profiles WHERE user_id = ?1")
-    .bind(userId)
-    .first();
+const sanitizeState = (state) => {
+  if (!state || typeof state !== "object" || Array.isArray(state)) return null;
+  if (typeof state.currentWeekKey !== "string") return null;
+  if (!state.weeks || typeof state.weeks !== "object" || Array.isArray(state.weeks)) return null;
+  const schemaVersion = Number(state.schemaVersion);
+  if (Number.isNaN(schemaVersion) || schemaVersion < 1) return null;
+  try {
+    const serialized = JSON.stringify(state);
+    if (!serialized || serialized.length > MAX_STATE_BYTES) return null;
+    return { state, serialized, schemaVersion };
+  } catch {
+    return null;
+  }
+};
+
+const detectSchemaFlags = async (db) => {
+  const key = String(db || "");
+  const cached = schemaFlagsByBinding.get(key);
+  if (cached) return cached;
+  const rows = await db.prepare("PRAGMA table_info(planner_profiles)").all();
+  const columns = (rows?.results || []).map((item) => String(item?.name || "").toLowerCase());
+  const flags = {
+    hasSchemaVersion: columns.includes("schema_version"),
+    hasCreatedAt: columns.includes("created_at"),
+    hasLastSeenAt: columns.includes("last_seen_at"),
+  };
+  schemaFlagsByBinding.set(key, flags);
+  return flags;
+};
+
+const profileSelectSql = (flags) => {
+  const extraColumns = [
+    flags.hasSchemaVersion ? "schema_version" : "0 AS schema_version",
+    flags.hasCreatedAt ? "created_at" : "updated_at AS created_at",
+    flags.hasLastSeenAt ? "last_seen_at" : "updated_at AS last_seen_at",
+  ];
+  return `SELECT user_id, email, state_json, version, updated_at, ${extraColumns.join(", ")} FROM planner_profiles WHERE user_id = ?1`;
+};
+
+const fetchProfile = async (db, userId, flags) => {
+  const result = await db.prepare(profileSelectSql(flags)).bind(userId).first();
   if (!result) return null;
+  const state = JSON.parse(String(result.state_json || "{}"));
   return {
     userId: String(result.user_id),
     email: String(result.email || ""),
-    state: JSON.parse(String(result.state_json || "{}")),
+    state,
     version: Number(result.version || 0),
+    schemaVersion: Number(result.schema_version || 0),
     updatedAt: String(result.updated_at || ""),
+    createdAt: String(result.created_at || ""),
+    lastSeenAt: String(result.last_seen_at || ""),
   };
 };
 
-const writeProfile = async ({ db, userId, email, state, baseVersion }) => {
-  const existing = await fetchProfile(db, userId);
+const recordSyncEvent = async (db, userId, action, detail = "") => {
+  await db
+    .prepare("INSERT INTO planner_sync_events (user_id, action, detail, created_at) VALUES (?1, ?2, ?3, ?4)")
+    .bind(userId, action, detail.slice(0, 500), new Date().toISOString())
+    .run();
+};
+
+const touchLastSeen = async (db, userId, flags) => {
+  if (!flags.hasLastSeenAt) return;
+  await db
+    .prepare("UPDATE planner_profiles SET last_seen_at = ?1 WHERE user_id = ?2")
+    .bind(new Date().toISOString(), userId)
+    .run();
+};
+
+const writeProfile = async ({ db, userId, email, statePayload, baseVersion, flags }) => {
+  const existing = await fetchProfile(db, userId, flags);
   if (!existing) {
     if (baseVersion !== 0) return { conflict: true, profile: null };
-    const version = 1;
-    const updatedAt = new Date().toISOString();
+    const now = new Date().toISOString();
+    const columns = ["user_id", "email", "state_json", "version", "updated_at"];
+    const values = ["?1", "?2", "?3", "?4", "?5"];
+    const binds = [userId, email, statePayload.serialized, 1, now];
+    if (flags.hasSchemaVersion) {
+      columns.push("schema_version");
+      values.push("?6");
+      binds.push(statePayload.schemaVersion);
+    }
+    if (flags.hasCreatedAt) {
+      columns.push("created_at");
+      values.push(`?${binds.length + 1}`);
+      binds.push(now);
+    }
+    if (flags.hasLastSeenAt) {
+      columns.push("last_seen_at");
+      values.push(`?${binds.length + 1}`);
+      binds.push(now);
+    }
     await db
-      .prepare(
-        "INSERT INTO planner_profiles (user_id, email, state_json, version, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-      )
-      .bind(userId, email, JSON.stringify(state), version, updatedAt)
+      .prepare(`INSERT INTO planner_profiles (${columns.join(", ")}) VALUES (${values.join(", ")})`)
+      .bind(...binds)
       .run();
-    return { conflict: false, profile: { userId, email, state, version, updatedAt } };
+    await recordSyncEvent(db, userId, "create_profile", `version=1 schema=${statePayload.schemaVersion}`);
+    return {
+      conflict: false,
+      profile: {
+        userId,
+        email,
+        state: statePayload.state,
+        version: 1,
+        schemaVersion: statePayload.schemaVersion,
+        updatedAt: now,
+        createdAt: now,
+        lastSeenAt: now,
+      },
+    };
   }
   if (existing.version !== baseVersion) return { conflict: true, profile: existing };
-  const nextVersion = existing.version + 1;
-  const updatedAt = new Date().toISOString();
+  const now = new Date().toISOString();
+  const updates = ["email = ?1", "state_json = ?2", "version = ?3", "updated_at = ?4"];
+  const binds = [email, statePayload.serialized, existing.version + 1, now, userId];
+  if (flags.hasSchemaVersion) {
+    updates.push(`schema_version = ?${binds.length + 1}`);
+    binds.push(statePayload.schemaVersion);
+  }
+  if (flags.hasLastSeenAt) {
+    updates.push(`last_seen_at = ?${binds.length + 1}`);
+    binds.push(now);
+  }
   await db
-    .prepare("UPDATE planner_profiles SET email = ?1, state_json = ?2, version = ?3, updated_at = ?4 WHERE user_id = ?5")
-    .bind(email, JSON.stringify(state), nextVersion, updatedAt, userId)
+    .prepare(`UPDATE planner_profiles SET ${updates.join(", ")} WHERE user_id = ?5`)
+    .bind(...binds)
     .run();
-  return { conflict: false, profile: { userId, email, state, version: nextVersion, updatedAt } };
+  await recordSyncEvent(db, userId, "update_profile", `version=${existing.version + 1} schema=${statePayload.schemaVersion}`);
+  return {
+    conflict: false,
+    profile: {
+      userId,
+      email,
+      state: statePayload.state,
+      version: existing.version + 1,
+      schemaVersion: statePayload.schemaVersion,
+      updatedAt: now,
+      createdAt: existing.createdAt || now,
+      lastSeenAt: now,
+    },
+  };
 };
 
 const withAuth = async (request, env) => {
   const token = readBearer(request);
   const identity = await verifyGoogleToken(token);
-  if (!identity) return { error: json({ error: "Unauthorized" }, 401, corsHeaders(request)) };
-  if (!env.PLANNER_DB) return { error: json({ error: "Database binding PLANNER_DB is missing" }, 500, corsHeaders(request)) };
-  return { identity, db: env.PLANNER_DB };
+  if (!identity) return { error: json({ error: "Unauthorized" }, 401, corsHeaders(request, env)) };
+  if (!env.PLANNER_DB) return { error: json({ error: "Database binding PLANNER_DB is missing" }, 500, corsHeaders(request, env)) };
+  const flags = await detectSchemaFlags(env.PLANNER_DB);
+  return { identity, db: env.PLANNER_DB, flags };
 };
 
-const parseBody = async (request) => {
+const parseBody = async (request, maxBytes) => {
+  const declaredLength = Number(request.headers.get("Content-Length") || 0);
+  if (declaredLength > maxBytes) return null;
   try {
-    const payload = await request.json();
+    const raw = await request.text();
+    if (!raw || raw.length > maxBytes) return null;
+    const payload = JSON.parse(raw);
     if (!payload || typeof payload !== "object") return null;
     return payload;
   } catch {
@@ -96,41 +233,62 @@ const parseBody = async (request) => {
   }
 };
 
-const profileResponse = (profile, request) =>
+const profileResponse = (profile, request, env) =>
   json(
-    { state: profile.state, version: profile.version, updatedAt: profile.updatedAt, email: profile.email },
+    {
+      state: profile.state,
+      version: profile.version,
+      updatedAt: profile.updatedAt,
+      createdAt: profile.createdAt,
+      lastSeenAt: profile.lastSeenAt,
+      schemaVersion: profile.schemaVersion,
+      serverSchemaVersion: SERVER_SCHEMA_VERSION,
+      email: profile.email,
+    },
     200,
-    corsHeaders(request),
+    corsHeaders(request, env),
   );
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     if (url.pathname === "/api/planner/health" && request.method === "GET") {
-      return json({ ok: true, service: "planner-sync-worker" }, 200, corsHeaders(request));
+      return json(
+        {
+          ok: true,
+          service: "planner-sync-worker",
+          serverSchemaVersion: SERVER_SCHEMA_VERSION,
+        },
+        200,
+        corsHeaders(request, env),
+      );
     }
-    if (url.pathname !== "/api/planner/profile") return json({ error: "Not found" }, 404, corsHeaders(request));
+    if (url.pathname !== "/api/planner/profile") return json({ error: "Not found" }, 404, corsHeaders(request, env));
     const auth = await withAuth(request, env);
     if (auth.error) return auth.error;
 
     if (request.method === "GET") {
-      const profile = await fetchProfile(auth.db, auth.identity.userId);
-      if (!profile) return json({ error: "Not found" }, 404, corsHeaders(request));
-      return profileResponse(profile, request);
+      const profile = await fetchProfile(auth.db, auth.identity.userId, auth.flags);
+      if (!profile) return json({ error: "Not found" }, 404, corsHeaders(request, env));
+      await touchLastSeen(auth.db, auth.identity.userId, auth.flags);
+      return profileResponse(profile, request, env);
     }
 
     if (request.method === "PUT") {
-      const body = await parseBody(request);
-      if (!body || typeof body.state !== "object") return json({ error: "Invalid payload" }, 400, corsHeaders(request));
+      const body = await parseBody(request, MAX_STATE_BYTES + 6000);
+      if (!body) return json({ error: "Invalid or oversized payload" }, 400, corsHeaders(request, env));
+      const statePayload = sanitizeState(body.state);
+      if (!statePayload) return json({ error: "Invalid planner state" }, 400, corsHeaders(request, env));
       const baseVersion = Number(body.baseVersion);
-      if (Number.isNaN(baseVersion) || baseVersion < 0) return json({ error: "Invalid baseVersion" }, 400, corsHeaders(request));
+      if (Number.isNaN(baseVersion) || baseVersion < 0) return json({ error: "Invalid baseVersion" }, 400, corsHeaders(request, env));
       const result = await writeProfile({
         db: auth.db,
         userId: auth.identity.userId,
         email: auth.identity.email,
-        state: body.state,
+        statePayload,
         baseVersion,
+        flags: auth.flags,
       });
       if (result.conflict) {
         return json(
@@ -138,14 +296,15 @@ export default {
             error: "Version conflict",
             currentVersion: result.profile ? result.profile.version : null,
             updatedAt: result.profile ? result.profile.updatedAt : null,
+            serverSchemaVersion: SERVER_SCHEMA_VERSION,
           },
           409,
-          corsHeaders(request),
+          corsHeaders(request, env),
         );
       }
-      return profileResponse(result.profile, request);
+      return profileResponse(result.profile, request, env);
     }
 
-    return json({ error: "Method not allowed" }, 405, corsHeaders(request));
+    return json({ error: "Method not allowed" }, 405, corsHeaders(request, env));
   },
 };

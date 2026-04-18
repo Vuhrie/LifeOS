@@ -71,6 +71,18 @@
   gap: 8px;
 }
 
+.settings-list--compact {
+  padding-left: 0;
+  list-style: none;
+  margin-top: 8px;
+}
+
+.settings-list--compact li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 @media (max-width: 767px) {
   .settings-shell {
     border-radius: 22px;

@@ -38,10 +38,12 @@ This project is set up as a simple static site so it can be deployed directly wi
 2. Update `cloudflare/planner-sync-worker/wrangler.toml` with the generated `database_id`.
 3. Apply schema:
    - `wrangler d1 execute lifeos_planner_db --file=cloudflare/planner-sync-worker/schema.sql`
-4. Deploy worker:
+4. If your D1 database was created before `v1.0.21`, run the migration once:
+   - `wrangler d1 execute lifeos_planner_db --file=cloudflare/planner-sync-worker/migrations/0001_profile_columns.sql`
+5. Deploy worker:
    - `wrangler deploy --config cloudflare/planner-sync-worker/wrangler.toml`
-5. Route `/api/planner/*` from your site domain to the deployed worker.
-6. Confirm `public/scripts/config.js` has `window.LIFEOS_PLANNER_SYNC_CONFIG.apiBaseUrl` pointing to that API base.
+6. Route `/api/planner/*` from your site domain to the deployed worker.
+7. Confirm `public/scripts/config.js` has `window.LIFEOS_PLANNER_SYNC_CONFIG.apiBaseUrl` pointing to that API base.
 
 ### Release Branch Examples
 

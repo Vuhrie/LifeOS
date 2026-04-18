@@ -1,4 +1,5 @@
 const CONFIG = window.LIFEOS_PLANNER_SYNC_CONFIG ?? {};
+const CONFLICT_BACKUP_PREFIX = "lifeos_sync_conflict_backup_v1_";
 
 const normalizeBaseUrl = (value) => {
   const raw = String(value || "").trim();
@@ -8,10 +9,10 @@ const normalizeBaseUrl = (value) => {
 
 const hasMeaningfulState = (state) =>
   Boolean(
-    state &&
-      state.currentWeekKey &&
-      state.weeks &&
-      Object.keys(state.weeks).length,
+    state
+      && state.currentWeekKey
+      && state.weeks
+      && Object.keys(state.weeks).length,
   );
 
 const parseSyncEnvelope = (payload) => {
@@ -19,7 +20,16 @@ const parseSyncEnvelope = (payload) => {
   const state = payload.state;
   const version = Number(payload.version);
   if (!state || Number.isNaN(version)) return null;
-  return { state, version, updatedAt: String(payload.updatedAt || "") };
+  return {
+    state,
+    version,
+    updatedAt: String(payload.updatedAt || ""),
+    createdAt: String(payload.createdAt || ""),
+    lastSeenAt: String(payload.lastSeenAt || ""),
+    schemaVersion: Number(payload.schemaVersion || 0),
+    serverSchemaVersion: Number(payload.serverSchemaVersion || 0),
+    email: String(payload.email || ""),
+  };
 };
 
 export const createPlannerSyncClient = ({
@@ -38,6 +48,20 @@ export const createPlannerSyncClient = ({
     onSyncStatus?.(message, kind);
   };
 
+  const saveConflictBackup = (accountKey, local, remote) => {
+    try {
+      window.localStorage.setItem(
+        `${CONFLICT_BACKUP_PREFIX}${accountKey}`,
+        JSON.stringify({
+          savedAt: new Date().toISOString(),
+          accountKey,
+          local,
+          remote,
+        }),
+      );
+    } catch {}
+  };
+
   const authHeaders = async () => {
     const token = await getAccessToken?.({ interactive: false });
     if (!token) throw new Error("Missing Google token for cloud sync.");
@@ -48,7 +72,9 @@ export const createPlannerSyncClient = ({
     const response = await fetch(`${apiBaseUrl}/profile`, { headers: await authHeaders() });
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`Sync read failed (${response.status}).`);
-    return parseSyncEnvelope(await response.json());
+    const parsed = parseSyncEnvelope(await response.json());
+    if (!parsed) throw new Error("Sync read returned invalid response.");
+    return parsed;
   };
 
   const putProfile = async (state, baseVersion) => {
@@ -60,6 +86,7 @@ export const createPlannerSyncClient = ({
     if (response.status === 409) return { conflict: true };
     if (!response.ok) throw new Error(`Sync write failed (${response.status}).`);
     const parsed = parseSyncEnvelope(await response.json());
+    if (!parsed) throw new Error("Sync write returned invalid response.");
     return { conflict: false, ...parsed };
   };
 
@@ -71,17 +98,17 @@ export const createPlannerSyncClient = ({
       perAccountVersion.set(accountKey, remote.version);
       saveLocalState(remote.state, accountKey);
       onRemoteStateApplied?.(remote.state, accountKey, remote.updatedAt);
-      emit("Google Connected • Synced", "success");
+      emit("Google Connected | Cloud synced", "success");
       return remote;
     } catch (error) {
-      emit(`Google Connected • Sync offline (${error.message})`, "warning");
+      emit(`Google Connected | Cloud sync offline (${error.message})`, "warning");
       return null;
     }
   };
 
   const bootstrap = async (accountKey) => {
     if (!enabled || !accountKey || accountKey === "anon") return;
-    emit("Google Connected • Syncing...", "neutral");
+    emit("Google Connected | Syncing cloud state...", "neutral");
     try {
       const remote = await getProfile();
       const local = loadLocalState(accountKey);
@@ -89,17 +116,19 @@ export const createPlannerSyncClient = ({
         perAccountVersion.set(accountKey, remote.version);
         saveLocalState(remote.state, accountKey);
         onRemoteStateApplied?.(remote.state, accountKey, remote.updatedAt);
-        emit("Google Connected • Synced", "success");
+        emit("Google Connected | Cloud synced", "success");
         return;
       }
-      const localVersion = hasMeaningfulState(local) ? local : { schemaVersion: 8, currentWeekKey: "", weeks: {}, history: [] };
+      const localVersion = hasMeaningfulState(local)
+        ? local
+        : { schemaVersion: 11, currentWeekKey: "", weeks: {}, history: [] };
       const created = await putProfile(localVersion, 0);
       if (!created.conflict) {
         perAccountVersion.set(accountKey, created.version);
-        emit("Google Connected • Synced", "success");
+        emit("Google Connected | Cloud profile created", "success");
       }
     } catch (error) {
-      emit(`Google Connected • Sync offline (${error.message})`, "warning");
+      emit(`Google Connected | Cloud sync offline (${error.message})`, "warning");
     }
   };
 
@@ -108,17 +137,18 @@ export const createPlannerSyncClient = ({
     const local = loadLocalState(accountKey);
     const baseVersion = perAccountVersion.get(accountKey) || 0;
     try {
-      emit("Google Connected • Syncing...", "neutral");
+      emit("Google Connected | Syncing cloud state...", "neutral");
       const result = await putProfile(local, baseVersion);
       if (result.conflict) {
-        emit("Google Connected • Conflict detected, refreshing cloud state.", "warning");
-        await pullLatest(accountKey);
+        const remote = await pullLatest(accountKey);
+        saveConflictBackup(accountKey, local, remote?.state || null);
+        emit("Google Connected | Conflict detected. Cloud state restored, local backup saved.", "warning");
         return;
       }
       perAccountVersion.set(accountKey, result.version);
-      emit("Google Connected • Synced", "success");
+      emit("Google Connected | Cloud synced", "success");
     } catch (error) {
-      emit(`Google Connected • Sync offline (${error.message})`, "warning");
+      emit(`Google Connected | Cloud sync offline (${error.message})`, "warning");
     }
   };
 

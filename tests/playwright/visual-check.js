@@ -5,7 +5,7 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..", "..");
 const publicDir = path.join(rootDir, "public");
 const screenshotsDir = path.join(rootDir, "tests", "visual", "screenshots");
-const releaseVersion = "v1.0.20";
+const releaseVersion = "v1.0.21";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isoDate = (date) => {
@@ -524,8 +524,13 @@ const run = async () => {
     await wait(160);
     const settingsEmail = await desktop.locator("#account-email").textContent();
     const settingsSignOutEnabled = await desktop.locator("#sign-out").isEnabled();
+    const settingsSyncCardVisible = await desktop.locator("#cloud-sync-title").isVisible();
+    const settingsSyncNowVisible = await desktop.locator("#sync-now").isVisible();
     if (!settingsEmail?.includes(seededEmail) || !settingsSignOutEnabled) {
       throw new Error(`Settings should show signed-in email and enabled sign-out. Found email=${settingsEmail}, enabled=${settingsSignOutEnabled}`);
+    }
+    if (!settingsSyncCardVisible || !settingsSyncNowVisible) {
+      throw new Error("Settings should show cloud sync card and Sync Now control.");
     }
     await desktop.locator("#sign-out").click();
     await wait(160);

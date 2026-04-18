@@ -2,6 +2,9 @@ name = "lifeos-planner-sync"
 main = "src/index.js"
 compatibility_date = "2026-04-15"
 
+[vars]
+ALLOWED_ORIGINS = "https://lifeos.derpdiepie8523.workers.dev"
+
 [[d1_databases]]
 binding = "PLANNER_DB"
 database_name = "lifeos_planner_db"

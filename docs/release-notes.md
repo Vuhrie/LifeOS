@@ -1,5 +1,16 @@
 # Release Notes
 
+## v1.0.21
+
+- Hardened Cloudflare Worker + D1 sync path with stricter planner-state validation, payload-size guards, and configurable CORS allowlist (`ALLOWED_ORIGINS`).
+- Added richer cloud profile metadata responses (`createdAt`, `lastSeenAt`, `schemaVersion`, `serverSchemaVersion`) and worker health schema version.
+- Added D1 sync-event logging table (`planner_sync_events`) for profile create/update traceability.
+- Added migration script for previously deployed D1 profiles to include new sync metadata columns.
+- Improved browser sync client conflict handling: remote refresh now saves a local conflict backup under `lifeos_sync_conflict_backup_v1_<accountKey>`.
+- Replaced fragile sync status text encoding with stable ASCII status messages.
+- Added a new Settings `Cloud Sync (D1)` card with live cloud-state check (`Sync Now`), version, and updated-at visibility per signed-in Google account.
+- Updated release visual coverage to assert the new cloud sync controls in Settings.
+
 ## v1.0.20
 
 - Added optional `scheduleBuilderInstruction` support on AI-assisted major goals and carried it into schedule prompt context.
