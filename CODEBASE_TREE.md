@@ -12,13 +12,16 @@ Life OS/
 |-- docs/
 |   |-- google-calendar-setup.md
 |   |-- release-notes.md
+|   |-- release-notes-v0.md
 |   `-- visual-testing.md
 |-- cloudflare/
 |   `-- planner-sync-worker/
 |       |-- schema.sql
 |       |-- wrangler.toml
 |       `-- src/
-|           `-- index.js
+|           |-- index.js
+|           |-- sync-worker-db.js
+|           `-- sync-worker-http.js
 |-- public/
 |   |-- index.html
 |   |-- planner.html
@@ -37,23 +40,40 @@ Life OS/
 |   |   |-- calendar-client.js
 |   |   |-- calendar-ui.js
 |   |   |-- calendar-write-client.js
+|   |   |-- calendar-write-client-commit.js
 |   |   |-- config.js
 |   |   |-- google-connect-button.js
+|   |   |-- major-goal-ai-parser.js
+|   |   |-- major-goal-ai-prompts.js
+|   |   |-- major-goal-ai-schema.js
+|   |   |-- major-goal-ai-ui.js
 |   |   |-- navigation.js
 |   |   |-- planner-commitment-ui.js
 |   |   |-- planner-controller.js
+|   |   |-- planner-controller-auth-sync.js
+|   |   |-- planner-controller-google-sync.js
+|   |   |-- planner-controller-helpers.js
+|   |   |-- planner-controller-major-goals.js
+|   |   |-- planner-controller-schedule-actions.js
+|   |   |-- planner-controller-state.js
+|   |   |-- planner-controller-ui-events.js
 |   |   |-- planner-dom.js
 |   |   |-- planner-engine.js
+|   |   |-- planner-engine-scheduling.js
 |   |   |-- planner-logic.js
+|   |   |-- planner-logic-apply.js
+|   |   |-- planner-logic-context.js
 |   |   |-- planner-page.js
 |   |   |-- planner-policy.js
 |   |   |-- planner-preview-model.js
 |   |   |-- planner-storage.js
+|   |   |-- planner-storage-state.js
 |   |   |-- planner-state-cleanup.js
 |   |   |-- planner-sync-client.js
 |   |   |-- planner-time.js
 |   |   |-- planner-validation.js
 |   |   |-- planner-view.js
+|   |   |-- planner-view-formatters.js
 |   |   |-- schedules-page.js
 |   |   |-- setting-page.js
 |   |   `-- today-page.js
@@ -71,8 +91,15 @@ Life OS/
 |       |-- planner-shell.css
 |       `-- theme.css
 |-- tests/
+|   |-- guards/
+|   |   `-- check-agents-compliance.js
 |   |-- playwright/
-|   |   `-- visual-check.js
+|   |   |-- visual-check.js
+|   |   |-- visual-check-common.js
+|   |   |-- visual-check-desktop.js
+|   |   |-- visual-check-desktop-planner-ai.js
+|   |   |-- visual-check-desktop-planner-core.js
+|   |   `-- visual-check-mobile.js
 |   `-- visual/
 |       |-- baselines/
 |       `-- screenshots/

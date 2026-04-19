@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "test:visual": "node tests/playwright/visual-check.js"
+    "test:agents": "node tests/guards/check-agents-compliance.js",
+    "test:visual": "node tests/playwright/visual-check.js",
+    "test:release": "npm run test:agents && npm run test:visual"
   },
   "devDependencies": {
     "playwright": "^1.59.1"
