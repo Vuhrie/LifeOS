@@ -216,9 +216,10 @@ const normalizeWeekState = (week) => {
       const sourceId = String(slot?.sourceId || "");
       const type = String(slot?.type || "");
       const habitId = String(slot?.habitId || "");
-      if (habitId) return false;
-      if (type === "habit") return false;
-      if (sourceId && removedLegacyHabitTaskIds.has(sourceId)) return false;
+      const persistedFromAiApply = slot?.persistedFromAiApply === true;
+      if (habitId && !persistedFromAiApply) return false;
+      if (type === "habit" && !persistedFromAiApply) return false;
+      if (sourceId && removedLegacyHabitTaskIds.has(sourceId) && !persistedFromAiApply) return false;
       return true;
     })
     : [];

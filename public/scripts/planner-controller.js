@@ -262,6 +262,7 @@ export const initPlannerController = (ui) => {
   let latestImportedEventsById = new Map();
   let logic = null;
   let majorGoalAiUi = null;
+  let writeClientRef = null;
   let currentStep = 1;
   let allowPageExit = false;
   let leaveGuardBusy = false;
@@ -290,6 +291,24 @@ export const initPlannerController = (ui) => {
     sessionDraft = null;
     view.renderDraft(null);
     view.resetCommitProgress();
+  };
+
+  const rebuildPlannerLogic = (writeClientInstance) => {
+    logic = createPlannerLogic({
+      week,
+      weekKey,
+      save,
+      rerenderAll,
+      refreshAvailabilityFromProfile,
+      applyUiFromState,
+      writeClient: writeClientInstance,
+      lastAuthStateRef,
+      onGoogleContextCaptured: (snapshot) => {
+        week.googleDecisionContext = { ...week.googleDecisionContext, ...snapshot };
+        save();
+        rerenderAll();
+      },
+    });
   };
 
   const runStateCleanup = ({ shouldSave = true, announce = false } = {}) => {
@@ -391,23 +410,7 @@ export const initPlannerController = (ui) => {
     commitmentUi.refresh();
     rerenderAll();
     majorGoalAiUi?.hydrateSavedState(week.majorGoalAiAssist);
-    if (logic) {
-      logic = createPlannerLogic({
-        week,
-        weekKey,
-        save,
-        rerenderAll,
-        refreshAvailabilityFromProfile,
-        applyUiFromState,
-        writeClient,
-        lastAuthStateRef,
-        onGoogleContextCaptured: (snapshot) => {
-          week.googleDecisionContext = { ...week.googleDecisionContext, ...snapshot };
-          save();
-          rerenderAll();
-        },
-      });
-    }
+    if (writeClientRef) rebuildPlannerLogic(writeClientRef);
   };
 
   const syncClient = createPlannerSyncClient({
@@ -423,11 +426,12 @@ export const initPlannerController = (ui) => {
       weekKey = rotateWeekIfNeeded(app, new Date());
       week = ensureWeekState(app, weekKey);
       sessionDraft = null;
-      const cleanup = runStateCleanup({ announce: true });
+      runStateCleanup({ announce: true });
       if (!week.availabilityRules?.length) refreshAvailabilityFromProfile();
       applyUiFromState();
       rerenderAll();
       majorGoalAiUi?.hydrateSavedState(week.majorGoalAiAssist);
+      if (writeClientRef) rebuildPlannerLogic(writeClientRef);
     },
   });
 
@@ -549,23 +553,9 @@ export const initPlannerController = (ui) => {
       if (state.isSignedIn) await syncImportedGoogleCommitments({ silent: true });
     },
   });
+  writeClientRef = writeClient;
 
-  logic = createPlannerLogic({
-    ui,
-    week,
-    weekKey,
-    save,
-    rerenderAll,
-    refreshAvailabilityFromProfile,
-    applyUiFromState,
-    writeClient,
-    lastAuthStateRef,
-    onGoogleContextCaptured: (snapshot) => {
-      week.googleDecisionContext = { ...week.googleDecisionContext, ...snapshot };
-      save();
-      rerenderAll();
-    },
-  });
+  rebuildPlannerLogic(writeClientRef);
 
   const aiBridge = createAiBridgeUi({
     output: ui.aiPromptOutput,

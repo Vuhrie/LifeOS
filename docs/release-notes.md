@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.32
+
+- Fixed stale planner-logic state after account/cloud week reload by rebuilding planner logic with the latest active week reference.
+- Fixed AI-applied schedule persistence so `persistedFromAiApply` managed habit slots are retained through local normalization and cloud sync sanitization.
+- Restored Generate Schedule behavior consistency so applied schedule JSON data (minor goals, tasks, and non-Google AI-managed slots) remains available to draft generation after sync/reload flows.
+
 ## v1.0.31
 
 - Updated `Generate Schedule` to prioritize the full last-applied AI schedule slots within the rolling 7-day window.

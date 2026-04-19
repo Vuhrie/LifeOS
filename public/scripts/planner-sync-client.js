@@ -33,6 +33,8 @@ const sanitizeLegacyHabitArtifacts = (state) => {
         const sourceId = String(slot?.sourceId || "");
         const type = String(slot?.type || "");
         const habitId = String(slot?.habitId || "");
+        const persistedFromAiApply = slot?.persistedFromAiApply === true;
+        if (persistedFromAiApply) return true;
         return !habitId && type !== "habit" && (!sourceId || !removedIds.has(sourceId));
       });
     }
