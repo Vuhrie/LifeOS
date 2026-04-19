@@ -14,7 +14,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 
 ### Current Release Notes
 
-- Current version: `v1.0.32`
+- Current version: `v1.0.33`
 - Current production entry file: `public/index.html`
 - Static asset stylesheets: `public/styles/theme.css`, `public/styles/main.css`, `public/styles/main-shell.css`, `public/styles/main-drawer.css`, `public/styles/main-interactions.css`, `public/styles/calendar.css`, `public/styles/planner.css`, `public/styles/planner-shell.css`, `public/styles/planner-cards.css`, `public/styles/planner-ai.css`, `public/styles/planner-responsive.css`, `public/styles/planner-interactions.css`
 - Supporting pages: `public/schedules.html`, `public/planner.html`, `public/setting.html`
@@ -45,6 +45,13 @@ This project is set up as a simple static site so it can be deployed directly wi
 6. Route `/api/planner/*` from your site domain to the deployed worker.
 7. Confirm `public/scripts/config.js` has `window.LIFEOS_PLANNER_SYNC_CONFIG.apiBaseUrl` pointing to that API base.
 
+### Planner Test Mode (No Google OAuth)
+
+- Open `public/planner-test.html` (redirects to `planner.html?testMode=1`) for planner-only testing without Google sign-in.
+- Test mode uses a synthetic bearer token format: `lifeos-test:<account>`.
+- Worker test auth must be enabled via `ALLOW_TEST_AUTH = "true"` in `cloudflare/planner-sync-worker/wrangler.toml`.
+- Test mode still uses the same D1 profile API path (`/api/planner/profile`) and planner state sync flow.
+
 ### Release Branch Examples
 
 - `release/v0.0.1`
@@ -74,7 +81,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 ### Verification Checklist
 
 - The homepage loads successfully.
-- The navbar shows `LifeOS v1.0.32`.
+- The navbar shows `LifeOS v1.0.33`.
 - The desktop navbar centers the links `Today`, `Schedules`, `Planner`, and `Setting`.
 - Desktop navbar includes `Connect Google` on the right side.
 - The mobile menu button opens a left-side navigation sheet with the same navigation items.
@@ -88,6 +95,7 @@ This project is set up as a simple static site so it can be deployed directly wi
 - `Planner` draft preview uses calendar-style merged schedule view (existing + planned) before commit.
 - `Planner` step 2 supports multiple goals, custom habits/sessions, and manual AI patch import.
 - `Planner` requires Google sign-in before planning actions and uses account-scoped planner state.
+- `Planner` test mode (`planner.html?testMode=1`) unlocks without Google OAuth while still syncing planner state to D1.
 - Signed-in planner state syncs through `/api/planner/profile` for cross-device continuity.
 - `Planner` draft output includes a schedule-style board view with supporting unscheduled/conflict lists.
 - `Today`, `Schedules`, and `Planner` all reflect signed-in state as `Google Connected`.

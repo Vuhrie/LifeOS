@@ -83,6 +83,8 @@ export const createPlannerSyncClient = ({
   onRemoteStateApplied,
 }) => {
   const apiBaseUrl = normalizeBaseUrl(CONFIG.apiBaseUrl || "/api/planner");
+  const testMode = Boolean(CONFIG.testMode);
+  const authLabel = testMode ? "Test Account Connected" : "Google Connected";
   const enabled = Boolean(apiBaseUrl);
   const perAccountVersion = new Map();
   const pushTimers = new Map();
@@ -107,7 +109,7 @@ export const createPlannerSyncClient = ({
 
   const authHeaders = async () => {
     const token = await getAccessToken?.({ interactive: false });
-    if (!token) throw new Error("Missing Google token for cloud sync.");
+    if (!token) throw new Error(testMode ? "Missing test auth token for cloud sync." : "Missing Google token for cloud sync.");
     return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   };
 
@@ -142,17 +144,17 @@ export const createPlannerSyncClient = ({
       const cleanRemoteState = stripDraftFromState(remote.state);
       saveLocalState(cleanRemoteState, accountKey);
       onRemoteStateApplied?.(cleanRemoteState, accountKey, remote.updatedAt);
-      emit("Google Connected | Cloud synced", "success");
+      emit(`${authLabel} | Cloud synced`, "success");
       return remote;
     } catch (error) {
-      emit(`Google Connected | Cloud sync offline (${error.message})`, "warning");
+      emit(`${authLabel} | Cloud sync offline (${error.message})`, "warning");
       return null;
     }
   };
 
   const bootstrap = async (accountKey) => {
     if (!enabled || !accountKey || accountKey === "anon") return;
-    emit("Google Connected | Syncing cloud state...", "neutral");
+    emit(`${authLabel} | Syncing cloud state...`, "neutral");
     try {
       const remote = await getProfile();
       const local = stripDraftFromState(loadLocalState(accountKey));
@@ -161,7 +163,7 @@ export const createPlannerSyncClient = ({
         const cleanRemoteState = stripDraftFromState(remote.state);
         saveLocalState(cleanRemoteState, accountKey);
         onRemoteStateApplied?.(cleanRemoteState, accountKey, remote.updatedAt);
-        emit("Google Connected | Cloud synced", "success");
+        emit(`${authLabel} | Cloud synced`, "success");
         return;
       }
       const localVersion = hasMeaningfulState(local)
@@ -170,10 +172,10 @@ export const createPlannerSyncClient = ({
       const created = await putProfile(localVersion, 0);
       if (!created.conflict) {
         perAccountVersion.set(accountKey, created.version);
-        emit("Google Connected | Cloud profile created", "success");
+        emit(`${authLabel} | Cloud profile created`, "success");
       }
     } catch (error) {
-      emit(`Google Connected | Cloud sync offline (${error.message})`, "warning");
+      emit(`${authLabel} | Cloud sync offline (${error.message})`, "warning");
     }
   };
 
@@ -182,18 +184,18 @@ export const createPlannerSyncClient = ({
     const local = stripDraftFromState(loadLocalState(accountKey));
     const baseVersion = perAccountVersion.get(accountKey) || 0;
     try {
-      emit("Google Connected | Syncing cloud state...", "neutral");
+      emit(`${authLabel} | Syncing cloud state...`, "neutral");
       const result = await putProfile(local, baseVersion);
       if (result.conflict) {
         const remote = await pullLatest(accountKey);
         saveConflictBackup(accountKey, local, remote?.state || null);
-        emit("Google Connected | Conflict detected. Cloud state restored, local backup saved.", "warning");
+        emit(`${authLabel} | Conflict detected. Cloud state restored, local backup saved.`, "warning");
         return;
       }
       perAccountVersion.set(accountKey, result.version);
-      emit("Google Connected | Cloud synced", "success");
+      emit(`${authLabel} | Cloud synced`, "success");
     } catch (error) {
-      emit(`Google Connected | Cloud sync offline (${error.message})`, "warning");
+      emit(`${authLabel} | Cloud sync offline (${error.message})`, "warning");
     }
   };
 

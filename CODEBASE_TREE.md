@@ -22,6 +22,7 @@ Life OS/
 |-- public/
 |   |-- index.html
 |   |-- planner.html
+|   |-- planner-test.html
 |   |-- schedules.html
 |   |-- setting.html
 |   |-- assets/

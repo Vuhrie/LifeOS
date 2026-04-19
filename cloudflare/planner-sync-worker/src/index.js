@@ -17,6 +17,8 @@ const parseAllowedOrigins = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const readBooleanEnv = (value) => ["1", "true", "yes", "on"].includes(String(value || "").trim().toLowerCase());
+
 const resolveAllowedOrigin = (request, env) => {
   const origin = request.headers.get("Origin") || "";
   const allowList = parseAllowedOrigins(env.ALLOWED_ORIGINS);
@@ -52,12 +54,38 @@ const readBearer = (request) => {
   return parts[1].trim();
 };
 
-const verifyGoogleToken = async (token) => {
+const verifyGoogleToken = async (token, env) => {
   if (!token) {
     return {
       ok: false,
       code: "missing_bearer",
       hint: "Missing Google bearer token. Reconnect Google and retry sync.",
+    };
+  }
+  if (token.startsWith("lifeos-test:")) {
+    if (!readBooleanEnv(env.ALLOW_TEST_AUTH)) {
+      return {
+        ok: false,
+        code: "test_auth_disabled",
+        hint: "Test auth mode is disabled on the sync worker.",
+      };
+    }
+    let account = token.slice("lifeos-test:".length).trim();
+    try {
+      account = decodeURIComponent(account);
+    } catch {}
+    const normalized = String(account || "").trim().toLowerCase();
+    if (!normalized) {
+      return {
+        ok: false,
+        code: "test_auth_invalid",
+        hint: "Test auth token is missing account identity.",
+      };
+    }
+    return {
+      ok: true,
+      userId: `test:${normalized}`,
+      email: normalized,
     };
   }
   try {
@@ -246,7 +274,7 @@ const writeProfile = async ({ db, userId, email, statePayload, baseVersion, flag
 
 const withAuth = async (request, env) => {
   const token = readBearer(request);
-  const identity = await verifyGoogleToken(token);
+  const identity = await verifyGoogleToken(token, env);
   if (!identity.ok) {
     return {
       error: json(

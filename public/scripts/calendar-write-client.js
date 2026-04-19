@@ -13,6 +13,9 @@ const GOOGLE_SCOPE = [
   "profile",
 ].join(" ");
 const CONFIG = window.LIFEOS_CALENDAR_CONFIG ?? {};
+const TEST_MODE = Boolean(CONFIG.testMode);
+const TEST_ACCOUNT_KEY = String(CONFIG.testAccountKey || "test-user@lifeos.local").trim().toLowerCase() || "test-user@lifeos.local";
+const TEST_AUTH_TOKEN = String(CONFIG.testAuthToken || `lifeos-test:${encodeURIComponent(TEST_ACCOUNT_KEY)}`);
 
 const waitForGoogleIdentity = async (timeoutMs = 8000) => {
   const start = Date.now();
@@ -49,7 +52,7 @@ const toIso = (value) => {
 export const createCalendarWriteClient = ({ onStateChange }) => {
   const persistence = getPersistenceConfig(CONFIG);
   const state = {
-    isConfigured: typeof CONFIG.googleClientId === "string" && CONFIG.googleClientId.includes(".apps.googleusercontent.com"),
+    isConfigured: TEST_MODE || (typeof CONFIG.googleClientId === "string" && CONFIG.googleClientId.includes(".apps.googleusercontent.com")),
     isSignedIn: false,
     isLoading: false,
     error: "",
@@ -63,6 +66,14 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   const setError = (error) => { state.error = error; emit(); };
   const tokenValid = () => accessToken && expiresAt > Date.now() + persistence.refreshSkewSeconds * 1000;
 
+  const activateTestSession = () => {
+    accessToken = TEST_AUTH_TOKEN;
+    expiresAt = Date.now() + 24 * 3600 * 1000;
+    state.isSignedIn = true;
+    state.accountKey = TEST_ACCOUNT_KEY;
+    state.error = "";
+  };
+
   const clearSession = () => {
     accessToken = "";
     expiresAt = 0;
@@ -72,6 +83,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const resolveAccountKey = async () => {
+    if (TEST_MODE) return TEST_ACCOUNT_KEY;
     if (!tokenValid()) return "anon";
     try {
       const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -84,6 +96,11 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const restore = async () => {
+    if (TEST_MODE) {
+      activateTestSession();
+      emit();
+      return true;
+    }
     const saved = loadPersistedSession(persistence.mode);
     if (!saved || typeof saved.accessToken !== "string" || typeof saved.expiresAt !== "number") return false;
     if (saved.expiresAt <= Date.now()) {
@@ -102,6 +119,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const ensureClient = async () => {
+    if (TEST_MODE) return null;
     if (!state.isConfigured) throw new Error("Google write integration is not configured.");
     if (tokenClient) return tokenClient;
     if (!(await waitForGoogleIdentity())) throw new Error("Google Identity Services failed to load.");
@@ -115,6 +133,12 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const requestToken = async (prompt = "consent", silent = false) => {
+    if (TEST_MODE) {
+      state.isLoading = false;
+      activateTestSession();
+      emit();
+      return accessToken;
+    }
     const client = await ensureClient();
     state.isLoading = true;
     setError("");
@@ -148,6 +172,13 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const ensureSignedIn = async () => {
+    if (TEST_MODE) {
+      if (!tokenValid()) activateTestSession();
+      state.isSignedIn = true;
+      state.accountKey = TEST_ACCOUNT_KEY;
+      emit();
+      return accessToken;
+    }
     if (tokenValid()) return accessToken;
     try {
       return await requestToken("", true);
@@ -156,6 +187,10 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
     }
   };
   const getAccessToken = async ({ interactive = false, forceRefresh = false } = {}) => {
+    if (TEST_MODE) {
+      if (forceRefresh || !tokenValid()) activateTestSession();
+      return accessToken;
+    }
     if (!forceRefresh && tokenValid()) return accessToken;
     if (!interactive) return "";
     if (forceRefresh) return requestToken("consent");
@@ -163,6 +198,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const fetchExistingEvents = async ({ startIso, endIso }) => {
+    if (TEST_MODE) return [];
     const token = await ensureSignedIn();
     const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
     const params = new URLSearchParams({ singleEvents: "true", orderBy: "startTime", timeMin: startIso, timeMax: endIso, maxResults: "500" });
@@ -176,6 +212,9 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const upsertEvent = async ({ slot, commitId }) => {
+    if (TEST_MODE) {
+      return { id: `test_${commitId}_${slot.id}`, title: `[LifeOS] ${slot.title}`, slotId: slot.id };
+    }
     const token = await ensureSignedIn();
     const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
     const descriptor = `lifeos_slot_id:${slot.id}`;
@@ -198,6 +237,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const deleteEvent = async (eventId) => {
+    if (TEST_MODE) return;
     const token = await ensureSignedIn();
     const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
     const response = await fetch(
@@ -210,6 +250,7 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const updateEventById = async (event) => {
+    if (TEST_MODE) return;
     const token = await ensureSignedIn();
     const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
     const payload = {
@@ -230,6 +271,9 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const insertCommitItem = async ({ item, commitId }) => {
+    if (TEST_MODE) {
+      return { id: `test_${commitId}_${item.sourceId || item.id || item.title}`, title: String(item.title || "LifeOS Event") };
+    }
     const token = await ensureSignedIn();
     const calendarId = encodeURIComponent(CONFIG.calendarId || "primary");
     const sourceId = String(item.sourceId || item.id || "");
@@ -391,6 +435,11 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
   };
 
   const signOut = () => {
+    if (TEST_MODE) {
+      clearSession();
+      emit();
+      return;
+    }
     if (accessToken && window.google?.accounts?.oauth2?.revoke) window.google.accounts.oauth2.revoke(accessToken);
     clearSession();
     emit();

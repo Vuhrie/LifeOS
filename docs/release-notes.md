@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.0.33
+
+- Added planner test mode (`planner.html?testMode=1` and `planner-test.html`) that skips Google sign-in while keeping planner behavior and cloud sync flows active.
+- Added test-token authentication support in the planner sync Worker (`lifeos-test:<account>`) behind `ALLOW_TEST_AUTH`.
+- Added test-mode auth/session behavior in calendar write client so planner can run and sync without Google OAuth or Google Calendar imports.
+- Updated sync-client messaging and headers for test-mode cloud runs.
+
 ## v1.0.32
 
 - Fixed stale planner-logic state after account/cloud week reload by rebuilding planner logic with the latest active week reference.

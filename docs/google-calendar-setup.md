@@ -45,3 +45,24 @@ When prompted by Planner, approve write-capable calendar permission so commits c
 4. Grant readonly calendar access.
 5. Confirm events load correctly.
 6. On Planner, generate a draft and confirm commit writes events to Google Calendar.
+
+## 5. Planner Test Mode (No Google Sign-In)
+
+Planner has a test-mode path that keeps planner logic and D1 sync active without Google OAuth:
+
+- `planner-test.html`
+- `planner.html?testMode=1`
+
+Test mode uses a synthetic bearer token (`lifeos-test:<account>`) and skips Google Calendar import calls.
+
+To enable worker-side test auth, set:
+
+```toml
+ALLOW_TEST_AUTH = "true"
+```
+
+in `cloudflare/planner-sync-worker/wrangler.toml` and deploy the worker.
+
+Optional test user override:
+
+- `planner.html?testMode=1&testUser=qa-user@lifeos.local`
