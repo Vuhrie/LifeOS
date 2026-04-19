@@ -46,22 +46,33 @@ When prompted by Planner, approve write-capable calendar permission so commits c
 5. Confirm events load correctly.
 6. On Planner, generate a draft and confirm commit writes events to Google Calendar.
 
-## 5. Planner Test Mode (No Google Sign-In)
+## 5. Planner Test Mode (Developer-Only, Local)
 
 Planner has a test-mode path that keeps planner logic and D1 sync active without Google OAuth:
 
 - `planner-test.html`
 - `planner.html?testMode=1`
 
+Access policy:
+
+- Test mode is only enabled on local hosts (`localhost` / `127.0.0.1`).
+- `planner-test.html` sets a developer flag in local storage, then redirects to test mode.
+- On non-local hosts, `planner-test.html` does not enable test mode.
+
 Test mode uses a synthetic bearer token (`lifeos-test:<account>`) and skips Google Calendar import calls.
 
-To enable worker-side test auth, set:
+Worker policy:
+
+- Keep `ALLOW_TEST_AUTH = "false"` for deployed environments.
+- Only set `ALLOW_TEST_AUTH = "true"` for local/developer testing sessions.
+
+Example local test override:
 
 ```toml
 ALLOW_TEST_AUTH = "true"
 ```
 
-in `cloudflare/planner-sync-worker/wrangler.toml` and deploy the worker.
+Do not deploy production worker config with test auth enabled.
 
 Optional test user override:
 

@@ -4,12 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Planner Test Mode | LifeOS v1.0.34</title>
-  <meta http-equiv="refresh" content="0; url=planner.html?testMode=1">
 </head>
 <body>
-  <p>Redirecting to Planner test mode...</p>
+  <p id="status">Checking developer access for planner test mode...</p>
+  <p><a href="planner.html">Open Planner</a></p>
   <script>
-    window.location.replace("planner.html?testMode=1");
+    (function run() {
+      var host = String(window.location.hostname || "").trim().toLowerCase();
+      var isLocalDevHost = host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+      var status = document.getElementById("status");
+      if (!isLocalDevHost) {
+        try {
+          window.localStorage.removeItem("lifeos_dev_test_mode");
+        } catch {}
+        if (status) status.textContent = "Planner test mode is developer-only and disabled on non-local hosts.";
+        return;
+      }
+      try {
+        window.localStorage.setItem("lifeos_dev_test_mode", "1");
+      } catch {}
+      var params = new URLSearchParams(window.location.search);
+      var next = new URL("planner.html", window.location.href);
+      next.searchParams.set("testMode", "1");
+      var testUser = String(params.get("testUser") || "").trim();
+      if (testUser) next.searchParams.set("testUser", testUser);
+      if (status) status.textContent = "Developer access confirmed. Redirecting to local planner test mode...";
+      window.location.replace(next.toString());
+    })();
   </script>
 </body>
 </html>
