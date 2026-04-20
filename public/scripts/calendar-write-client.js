@@ -94,7 +94,12 @@ export const createCalendarWriteClient = ({ onStateChange }) => {
     state.isSignedIn = true;
     emit();
     resolveAccountKey().then((key) => {
-      state.accountKey = key || "anon";
+      if (!key || key === "anon") {
+        clearSession();
+        setError("Google session expired. Please reconnect.");
+        return;
+      }
+      state.accountKey = key;
       emit();
     });
     return true;
