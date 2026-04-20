@@ -2,9 +2,12 @@
   "scripts": {
     "test:agents": "node tests/guards/check-agents-compliance.js",
     "test:visual": "node tests/playwright/visual-check.js",
-    "test:release": "npm run test:agents && npm run test:visual"
+    "test:release": "npm run test:agents && npm run test:visual",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "devDependencies": {
-    "playwright": "^1.59.1"
+    "playwright": "^1.59.1",
+    "wrangler": "^4.83.0"
   }
 }

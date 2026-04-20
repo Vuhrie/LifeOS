@@ -1,3 +1,10 @@
 node_modules/
 tests/visual/screenshots/*-current.png
 tests/visual/baselines/*.png
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
